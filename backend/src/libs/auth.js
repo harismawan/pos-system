@@ -2,11 +2,11 @@
  * JWT authentication helpers and middleware
  */
 
-import { Elysia } from 'elysia';
 import jwt from 'jsonwebtoken';
 import config from '../config/index.js';
 import logger from './logger.js';
 import prisma from './prisma.js';
+import { validateAccessToken } from './tokenStore.js';
 
 /**
  * Generate access token
@@ -75,6 +75,16 @@ export async function authMiddleware({ headers, set, store }) {
 
     try {
         const payload = verifyAccessToken(token);
+
+        // Validate token exists in Redis
+        const isValidInRedis = await validateAccessToken(payload.userId, token);
+        if (!isValidInRedis) {
+            set.status = 401;
+            return {
+                success: false,
+                error: 'Token has been revoked or expired',
+            };
+        }
 
         // Fetch user from database
         const user = await prisma.user.findUnique({

@@ -4,6 +4,7 @@
  */
 
 import * as authService from './auth.service.js';
+import { revokeAccessToken, revokeRefreshToken } from '../../libs/tokenStore.js';
 import logger from '../../libs/logger.js';
 
 export async function loginController({ body, set }) {
@@ -80,14 +81,32 @@ export async function getMeController({ store, set }) {
     }
 }
 
-export async function logoutController({ store }) {
-    // For stateless JWT, logout is handled client-side by removing tokens
-    // Optionally, implement token blacklisting in Redis if needed
+export async function logoutController({ headers, body, store }) {
+    try {
+        // Extract access token from authorization header
+        const authHeader = headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            const accessToken = authHeader.substring(7);
+            await revokeAccessToken(store.user.id, accessToken);
+        }
 
-    logger.info({ userId: store.user?.id }, 'User logged out');
+        // Revoke refresh token if provided in body
+        if (body?.refreshToken) {
+            await revokeRefreshToken(store.user.id, body.refreshToken);
+        }
 
-    return {
-        success: true,
-        message: 'Logged out successfully',
-    };
+        logger.info({ userId: store.user?.id }, 'User logged out and tokens revoked');
+
+        return {
+            success: true,
+            message: 'Logged out successfully',
+        };
+    } catch (err) {
+        logger.error({ err, userId: store.user?.id }, 'Logout failed');
+        // Still return success as logout is best-effort
+        return {
+            success: true,
+            message: 'Logged out successfully',
+        };
+    }
 }

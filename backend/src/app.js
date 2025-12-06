@@ -5,9 +5,10 @@
 
 import { Elysia } from 'elysia';
 import { cors } from '@elysiajs/cors';
-import { randomUUID } from 'crypto';
-import logger from './libs/logger.js';
 import config from './config/index.js';
+import { globalErrorHandler } from './libs/errorHandler.js';
+import redis from './libs/redis.js';
+import prisma from './libs/prisma.js';
 
 // Import routes
 import { authRoutes } from './modules/auth/auth.routes.js';
@@ -32,48 +33,39 @@ app.use(cors({
 }));
 
 // Global error handler
-app.onError(({ code, error, set, request }) => {
-    logger.error({
-        err: error,
-        code,
-        requestId: request.id,
-        path: request.url,
-        method: request.method,
-    }, 'Request error');
-
-    if (code === 'VALIDATION') {
-        set.status = 400;
-        return {
-            success: false,
-            error: 'Validation failed',
-            details: error.message,
-        };
-    }
-
-    if (code === 'NOT_FOUND') {
-        set.status = 404;
-        return {
-            success: false,
-            error: 'Route not found',
-        };
-    }
-
-    set.status = 500;
-    return {
-        success: false,
-        error: config.nodeEnv === 'production' ?
-            'Internal server error' :
-            error.message,
-    };
-});
+app.onError(globalErrorHandler);
 
 // Health check
-app.get('/health', () => {
-    return {
+app.get('/health', async () => {
+    const health = {
         status: 'ok',
         timestamp: new Date().toISOString(),
         environment: config.nodeEnv,
+        services: {
+            redis: 'unknown',
+            database: 'unknown',
+        },
     };
+
+    // Check Redis
+    try {
+        await redis.ping();
+        health.services.redis = 'healthy';
+    } catch (err) {
+        health.services.redis = 'unhealthy';
+        health.status = 'degraded';
+    }
+
+    // Check Database
+    try {
+        await prisma.$queryRaw`SELECT 1`;
+        health.services.database = 'healthy';
+    } catch (err) {
+        health.services.database = 'unhealthy';
+        health.status = 'degraded';
+    }
+
+    return health;
 });
 
 // API routes

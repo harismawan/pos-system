@@ -6,8 +6,10 @@
 import bcrypt from 'bcryptjs';
 import prisma from '../../libs/prisma.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../libs/auth.js';
+import { storeAccessToken, storeRefreshToken, validateRefreshToken, revokeRefreshToken } from '../../libs/tokenStore.js';
 import { enqueueAuditLogJob } from '../../libs/jobs.js';
 import logger from '../../libs/logger.js';
+import config from '../../config/index.js';
 
 /**
  * Login user
@@ -49,6 +51,10 @@ export async function login(username, password) {
     const refreshToken = generateRefreshToken({
         userId: user.id,
     });
+
+    // Store tokens in Redis with TTL
+    await storeAccessToken(user.id, accessToken, config.jwt.accessTokenTTL);
+    await storeRefreshToken(user.id, refreshToken, config.jwt.refreshTokenTTL);
 
     const outlets = user.outletUsers.map(ou => ({
         id: ou.outlet.id,
@@ -101,6 +107,15 @@ export async function refresh(refreshToken) {
         throw new Error('Invalid refresh token');
     }
 
+    // Validate refresh token exists in Redis
+    const isValid = await validateRefreshToken(user.id, refreshToken);
+    if (!isValid) {
+        throw new Error('Refresh token has been revoked or expired');
+    }
+
+    // Revoke old refresh token (one-time use)
+    await revokeRefreshToken(user.id, refreshToken);
+
     const newAccessToken = generateAccessToken({
         userId: user.id,
         role: user.role,
@@ -109,6 +124,10 @@ export async function refresh(refreshToken) {
     const newRefreshToken = generateRefreshToken({
         userId: user.id,
     });
+
+    // Store new tokens in Redis with TTL
+    await storeAccessToken(user.id, newAccessToken, config.jwt.accessTokenTTL);
+    await storeRefreshToken(user.id, newRefreshToken, config.jwt.refreshTokenTTL);
 
     return {
         accessToken: newAccessToken,

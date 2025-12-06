@@ -3,6 +3,31 @@
  * Loads and validates environment variables
  */
 
+/**
+ * Parse duration string to seconds
+ * Supports formats: 15m, 1h, 7d, 30d, etc.
+ * @param {string} duration - Duration string
+ * @returns {number} Duration in seconds
+ */
+function parseDuration(duration) {
+    const match = duration.match(/^(\d+)([smhd])$/);
+    if (!match) {
+        throw new Error(`Invalid duration format: ${duration}`);
+    }
+
+    const value = parseInt(match[1], 10);
+    const unit = match[2];
+
+    const multipliers = {
+        s: 1,
+        m: 60,
+        h: 3600,
+        d: 86400,
+    };
+
+    return value * multipliers[unit];
+}
+
 const config = {
     // Server
     port: process.env.PORT || 3000,
@@ -36,6 +61,9 @@ const config = {
         expiresIn: process.env.JWT_EXPIRES_IN || '15m',
         refreshSecret: process.env.REFRESH_TOKEN_SECRET || 'change-this-refresh-secret-in-production',
         refreshExpiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '7d',
+        // TTL in seconds for Redis token storage
+        accessTokenTTL: parseDuration(process.env.JWT_EXPIRES_IN || '15m'),
+        refreshTokenTTL: parseDuration(process.env.REFRESH_TOKEN_EXPIRES_IN || '7d'),
     },
 
     // Logging
