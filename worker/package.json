@@ -1,0 +1,15 @@
+{
+    "name": "@pos-system/worker",
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+        "dev": "bun --watch src/index.js",
+        "start": "bun src/index.js"
+    },
+    "dependencies": {
+        "@prisma/client": "^7.1.0",
+        "nodemailer": "^7.0.11",
+        "pino": "^10.1.0",
+        "pino-pretty": "^13.1.3"
+    }
+}

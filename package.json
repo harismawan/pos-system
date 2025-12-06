@@ -1,0 +1,32 @@
+{
+    "name": "pos-system",
+    "version": "1.0.0",
+    "private": true,
+    "workspaces": [
+        "backend",
+        "frontend",
+        "worker"
+    ],
+    "scripts": {
+        "backend:dev": "cd backend && bun run dev",
+        "frontend:dev": "cd frontend && bun run dev",
+        "worker:dev": "cd worker && bun run dev",
+        "dev": "bun run backend:dev & bun run frontend:dev & bun run worker:dev",
+        "backend:start": "cd backend && bun run start",
+        "frontend:build": "cd frontend && bun run build",
+        "frontend:preview": "cd frontend && bun run preview",
+        "db:migrate": "cd backend && npx prisma migrate dev",
+        "db:migrate:deploy": "cd backend && npx prisma migrate deploy",
+        "db:seed": "cd backend && npx prisma db seed",
+        "db:studio": "cd backend && npx prisma studio",
+        "docker:up": "docker-compose up -d",
+        "docker:down": "docker-compose down",
+        "docker:logs": "docker-compose logs -f"
+    },
+    "devDependencies": {
+        "prettier": "^3.1.0"
+    },
+    "engines": {
+        "bun": ">=1.0.0"
+    }
+}
