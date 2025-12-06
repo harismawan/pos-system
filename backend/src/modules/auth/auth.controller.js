@@ -6,6 +6,8 @@
 import * as authService from './auth.service.js';
 import { revokeAccessToken, revokeRefreshToken } from '../../libs/tokenStore.js';
 import logger from '../../libs/logger.js';
+import { AUT } from '../../libs/responseCodes.js';
+import { successResponse, errorResponse } from '../../libs/responses.js';
 
 export async function loginController({ body, set }) {
     try {
@@ -13,17 +15,11 @@ export async function loginController({ body, set }) {
 
         const result = await authService.login(username, password);
 
-        return {
-            success: true,
-            data: result,
-        };
+        return successResponse(AUT.LOGIN_SUCCESS, result);
     } catch (err) {
-        logger.error({ err }, 'Login failed');
+        logger.debug({ err }, 'Login failed');
         set.status = 401;
-        return {
-            success: false,
-            error: err.message || 'Authentication failed',
-        };
+        return errorResponse(AUT.INVALID_CREDENTIALS, err.message || 'Authentication failed');
     }
 }
 
@@ -33,25 +29,16 @@ export async function refreshController({ body, set }) {
 
         if (!refreshToken) {
             set.status = 400;
-            return {
-                success: false,
-                error: 'Refresh token required',
-            };
+            return errorResponse(AUT.REFRESH_TOKEN_REQUIRED, 'Refresh token required');
         }
 
         const result = await authService.refresh(refreshToken);
 
-        return {
-            success: true,
-            data: result,
-        };
+        return successResponse(AUT.REFRESH_SUCCESS, result);
     } catch (err) {
-        logger.error({ err }, 'Token refresh failed');
+        logger.debug({ err }, 'Token refresh failed');
         set.status = 401;
-        return {
-            success: false,
-            error: err.message || 'Invalid refresh token',
-        };
+        return errorResponse(AUT.INVALID_REFRESH_TOKEN, err.message || 'Invalid refresh token');
     }
 }
 
@@ -60,24 +47,13 @@ export async function getMeController({ store, set }) {
         // Assuming store.user is populated by a preceding middleware
         if (!store.user) {
             set.status = 401;
-            return {
-                success: false,
-                error: 'User not authenticated or user data not found',
-            };
+            return errorResponse(AUT.NOT_AUTHENTICATED, 'User not authenticated or user data not found');
         }
-        return {
-            success: true,
-            data: {
-                user: store.user,
-            },
-        };
+        return successResponse(AUT.GET_ME_SUCCESS, { user: store.user });
     } catch (err) {
-        logger.error({ err }, 'Get user info failed');
+        logger.debug({ err }, 'Get user info failed');
         set.status = 500;
-        return {
-            success: false,
-            error: err.message || 'Failed to get user info',
-        };
+        return errorResponse(AUT.GET_ME_FAILED, err.message || 'Failed to get user info');
     }
 }
 
@@ -97,16 +73,10 @@ export async function logoutController({ headers, body, store }) {
 
         logger.info({ userId: store.user?.id }, 'User logged out and tokens revoked');
 
-        return {
-            success: true,
-            message: 'Logged out successfully',
-        };
+        return successResponse(AUT.LOGOUT_SUCCESS, { message: 'Logged out successfully' });
     } catch (err) {
-        logger.error({ err, userId: store.user?.id }, 'Logout failed');
+        logger.debug({ err, userId: store.user?.id }, 'Logout failed');
         // Still return success as logout is best-effort
-        return {
-            success: true,
-            message: 'Logged out successfully',
-        };
+        return successResponse(AUT.LOGOUT_SUCCESS, { message: 'Logged out successfully' });
     }
 }

@@ -6,6 +6,7 @@
 import redis from './libs/redis.js';
 import logger from './libs/logger.js';
 import config from './config/index.js';
+import prisma from './libs/prisma.js';
 import { handleAuditLogJob } from './jobs/auditLog.job.js';
 import { handleEmailNotificationJob } from './jobs/emailNotification.job.js';
 import { handleReportGenerationJob } from './jobs/reportGeneration.job.js';
@@ -103,18 +104,43 @@ async function startWorker() {
 // Graceful shutdown
 process.on('SIGINT', async () => {
     logger.info('Worker shutting down...');
+    await prisma.$disconnect();
     await redis.quit();
     process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
     logger.info('Worker shutting down...');
+    await prisma.$disconnect();
     await redis.quit();
     process.exit(0);
 });
 
-// Start the worker
-startWorker().catch((err) => {
+// Initialize and start the worker
+async function init() {
+    // Test database connection
+    try {
+        await prisma.$connect();
+        logger.info('Database connected');
+    } catch (err) {
+        logger.error({ err }, 'Failed to connect to database');
+        process.exit(1);
+    }
+
+    // Test Redis connection
+    try {
+        await redis.ping();
+        logger.info('Redis connected');
+    } catch (err) {
+        logger.error({ err }, 'Failed to connect to Redis');
+        process.exit(1);
+    }
+
+    // Start the worker
+    await startWorker();
+}
+
+init().catch((err) => {
     logger.error({ err }, 'Worker failed to start');
     process.exit(1);
 });

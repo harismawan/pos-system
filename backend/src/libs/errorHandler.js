@@ -5,6 +5,8 @@
 
 import logger from './logger.js';
 import config from '../config/index.js';
+import { GEN } from './responseCodes.js';
+import { errorResponse } from './responses.js';
 
 /**
  * Global error handler function
@@ -27,20 +29,13 @@ export const globalErrorHandler = ({ code, error, set, request }) => {
     // Handle validation errors
     if (code === 'VALIDATION') {
         set.status = 400;
-        return {
-            success: false,
-            error: 'Validation failed',
-            details: error.message,
-        };
+        return errorResponse(GEN.VALIDATION_FAILED, 'Validation failed', error.message);
     }
 
     // Handle not found errors
     if (code === 'NOT_FOUND') {
         set.status = 404;
-        return {
-            success: false,
-            error: 'Route not found',
-        };
+        return errorResponse(GEN.ROUTE_NOT_FOUND, 'Route not found');
     }
 
     // Log error for non-validation errors
@@ -54,10 +49,8 @@ export const globalErrorHandler = ({ code, error, set, request }) => {
 
     // Handle all other errors
     set.status = 500;
-    return {
-        success: false,
-        error: config.nodeEnv === 'production' ?
-            'Internal server error' :
-            error.message,
-    };
+    return errorResponse(
+        GEN.INTERNAL_ERROR,
+        config.nodeEnv === 'production' ? 'Internal server error' : error.message
+    );
 };

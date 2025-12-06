@@ -4,23 +4,19 @@
 
 import * as purchaseOrdersService from './purchaseOrders.service.js';
 import logger from '../../libs/logger.js';
+import { POR } from '../../libs/responseCodes.js';
+import { successResponse, errorResponse } from '../../libs/responses.js';
 
-export async function getPurchaseOrdersController({ query, request, set }) {
+export async function getPurchaseOrdersController({ query, store, set }) {
     try {
         const outletId = store.outletId || query.outletId;
         const result = await purchaseOrdersService.getPurchaseOrders({ ...query, outletId });
 
-        return {
-            success: true,
-            data: result,
-        };
+        return successResponse(POR.LIST_SUCCESS, result);
     } catch (err) {
-        logger.error({ err }, 'Get purchase orders failed');
+        logger.debug({ err }, 'Get purchase orders failed');
         set.status = 500;
-        return {
-            success: false,
-            error: err.message || 'Failed to retrieve purchase orders',
-        };
+        return errorResponse(POR.LIST_FAILED, err.message || 'Failed to retrieve purchase orders');
     }
 }
 
@@ -28,60 +24,43 @@ export async function getPurchaseOrderByIdController({ params, set }) {
     try {
         const order = await purchaseOrdersService.getPurchaseOrderById(params.id);
 
-        return {
-            success: true,
-            data: order,
-        };
+        return successResponse(POR.GET_SUCCESS, order);
     } catch (err) {
-        logger.error({ err }, 'Get purchase order failed');
+        logger.debug({ err }, 'Get purchase order failed');
         set.status = err.message === 'Purchase order not found' ? 404 : 500;
-        return {
-            success: false,
-            error: err.message || 'Failed to retrieve purchase order',
-        };
+        const code = err.message === 'Purchase order not found' ? POR.NOT_FOUND : POR.LIST_FAILED;
+        return errorResponse(code, err.message || 'Failed to retrieve purchase order');
     }
 }
 
-export async function createPurchaseOrderController({ body, request, set }) {
+export async function createPurchaseOrderController({ body, store, set }) {
     try {
         const userId = store.user.id;
         const order = await purchaseOrdersService.createPurchaseOrder(body, userId);
 
         set.status = 201;
-        return {
-            success: true,
-            data: order,
-        };
+        return successResponse(POR.CREATE_SUCCESS, order);
     } catch (err) {
-        logger.error({ err }, 'Create purchase order failed');
+        logger.debug({ err }, 'Create purchase order failed');
         set.status = 400;
-        return {
-            success: false,
-            error: err.message || 'Failed to create purchase order',
-        };
+        return errorResponse(POR.CREATE_FAILED, err.message || 'Failed to create purchase order');
     }
 }
 
-export async function updatePurchaseOrderController({ params, body, request, set }) {
+export async function updatePurchaseOrderController({ params, body, store, set }) {
     try {
         const userId = store.user.id;
         const order = await purchaseOrdersService.updatePurchaseOrder(params.id, body, userId);
 
-        return {
-            success: true,
-            data: order,
-        };
+        return successResponse(POR.UPDATE_SUCCESS, order);
     } catch (err) {
-        logger.error({ err }, 'Update purchase order failed');
+        logger.debug({ err }, 'Update purchase order failed');
         set.status = 400;
-        return {
-            success: false,
-            error: err.message || 'Failed to update purchase order',
-        };
+        return errorResponse(POR.UPDATE_FAILED, err.message || 'Failed to update purchase order');
     }
 }
 
-export async function receivePurchaseOrderController({ params, body, request, set }) {
+export async function receivePurchaseOrderController({ params, body, store, set }) {
     try {
         const userId = store.user.id;
         const order = await purchaseOrdersService.receivePurchaseOrder(
@@ -90,35 +69,23 @@ export async function receivePurchaseOrderController({ params, body, request, se
             userId
         );
 
-        return {
-            success: true,
-            data: order,
-        };
+        return successResponse(POR.RECEIVE_SUCCESS, order);
     } catch (err) {
-        logger.error({ err }, 'Receive purchase order failed');
+        logger.debug({ err }, 'Receive purchase order failed');
         set.status = 400;
-        return {
-            success: false,
-            error: err.message || 'Failed to receive purchase order',
-        };
+        return errorResponse(POR.RECEIVE_FAILED, err.message || 'Failed to receive purchase order');
     }
 }
 
-export async function cancelPurchaseOrderController({ params, request, set }) {
+export async function cancelPurchaseOrderController({ params, store, set }) {
     try {
         const userId = store.user.id;
         const order = await purchaseOrdersService.cancelPurchaseOrder(params.id, userId);
 
-        return {
-            success: true,
-            data: order,
-        };
+        return successResponse(POR.CANCEL_SUCCESS, order);
     } catch (err) {
-        logger.error({ err }, 'Cancel purchase order failed');
+        logger.debug({ err }, 'Cancel purchase order failed');
         set.status = 400;
-        return {
-            success: false,
-            error: err.message || 'Failed to cancel purchase order',
-        };
+        return errorResponse(POR.CANCEL_FAILED, err.message || 'Failed to cancel purchase order');
     }
 }
