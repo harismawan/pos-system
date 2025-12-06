@@ -1590,6 +1590,210 @@
                     }
                 }
             ]
+        },
+        {
+            "name": "Reports",
+            "item": [
+                {
+                    "name": "Get Sales Summary",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Outlet-Id",
+                                "value": "{{outletId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/reports/sales-summary?startDate=2024-01-01&endDate=2024-12-31&groupBy=day",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "reports",
+                                "sales-summary"
+                            ],
+                            "query": [
+                                {
+                                    "key": "startDate",
+                                    "value": "2024-01-01"
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2024-12-31"
+                                },
+                                {
+                                    "key": "groupBy",
+                                    "value": "day",
+                                    "description": "Options: day, week, month"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Top Products",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Outlet-Id",
+                                "value": "{{outletId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/reports/top-products?startDate=2024-01-01&endDate=2024-12-31&limit=10",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "reports",
+                                "top-products"
+                            ],
+                            "query": [
+                                {
+                                    "key": "startDate",
+                                    "value": "2024-01-01"
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2024-12-31"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Inventory Valuation",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Outlet-Id",
+                                "value": "{{outletId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/reports/inventory-valuation?warehouseId=",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "reports",
+                                "inventory-valuation"
+                            ],
+                            "query": [
+                                {
+                                    "key": "warehouseId",
+                                    "value": "",
+                                    "description": "Optional: filter by warehouse"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Stock Movements Report",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Outlet-Id",
+                                "value": "{{outletId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/reports/stock-movements?startDate=2024-01-01&endDate=2024-12-31&page=1&limit=50",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "reports",
+                                "stock-movements"
+                            ],
+                            "query": [
+                                {
+                                    "key": "startDate",
+                                    "value": "2024-01-01"
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2024-12-31"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "50"
+                                },
+                                {
+                                    "key": "type",
+                                    "value": "TRANSFER",
+                                    "disabled": true,
+                                    "description": "Options: TRANSFER, ADJUSTMENT_IN, ADJUSTMENT_OUT, SALE, PURCHASE_RECEIPT"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Order History",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-Outlet-Id",
+                                "value": "{{outletId}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/reports/order-history?startDate=2024-01-01&endDate=2024-12-31&page=1&limit=50",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "reports",
+                                "order-history"
+                            ],
+                            "query": [
+                                {
+                                    "key": "startDate",
+                                    "value": "2024-01-01"
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2024-12-31"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "50"
+                                },
+                                {
+                                    "key": "status",
+                                    "value": "COMPLETED",
+                                    "disabled": true,
+                                    "description": "Options: PENDING, COMPLETED, CANCELLED"
+                                },
+                                {
+                                    "key": "customerId",
+                                    "value": "",
+                                    "disabled": true
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
         }
     ]
 }

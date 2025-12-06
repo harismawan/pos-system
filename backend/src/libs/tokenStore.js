@@ -95,7 +95,7 @@ export async function validateRefreshToken(userId, token) {
 
         logger.debug({ userId, exists, key }, 'Validated refresh token from Redis');
 
-        return exists === 1;
+        return exists;
     } catch (err) {
         logger.debug({ err, userId }, 'Failed to validate refresh token from Redis');
         return false;

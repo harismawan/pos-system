@@ -1,0 +1,72 @@
+/**
+ * Reports controller
+ */
+
+import * as reportsService from './reports.service.js';
+import { REP } from '../../libs/responseCodes.js';
+import { successResponse, errorResponse } from '../../libs/responses.js';
+import logger from '../../libs/logger.js';
+
+export async function getSalesSummaryController({ query, store, set }) {
+    try {
+        const outletId = store.outletId || query.outletId;
+        const result = await reportsService.getSalesSummary({ ...query, outletId });
+
+        return successResponse(REP.SALES_SUMMARY_SUCCESS, result);
+    } catch (err) {
+        logger.error({ err }, 'Get sales summary failed');
+        set.status = 500;
+        return errorResponse(REP.REPORT_FAILED, err.message || 'Failed to get sales summary');
+    }
+}
+
+export async function getTopProductsController({ query, store, set }) {
+    try {
+        const outletId = store.outletId || query.outletId;
+        const result = await reportsService.getTopProducts({ ...query, outletId });
+
+        return successResponse(REP.TOP_PRODUCTS_SUCCESS, result);
+    } catch (err) {
+        logger.error({ err }, 'Get top products failed');
+        set.status = 500;
+        return errorResponse(REP.REPORT_FAILED, err.message || 'Failed to get top products');
+    }
+}
+
+export async function getInventoryValuationController({ query, set }) {
+    try {
+        const result = await reportsService.getInventoryValuation(query);
+
+        return successResponse(REP.INVENTORY_VALUATION_SUCCESS, result);
+    } catch (err) {
+        logger.error({ err }, 'Get inventory valuation failed');
+        set.status = 500;
+        return errorResponse(REP.REPORT_FAILED, err.message || 'Failed to get inventory valuation');
+    }
+}
+
+export async function getStockMovementsController({ query, store, set }) {
+    try {
+        const outletId = store.outletId || query.outletId;
+        const result = await reportsService.getStockMovementReport({ ...query, outletId });
+
+        return successResponse(REP.STOCK_MOVEMENTS_SUCCESS, result);
+    } catch (err) {
+        logger.error({ err }, 'Get stock movements failed');
+        set.status = 500;
+        return errorResponse(REP.REPORT_FAILED, err.message || 'Failed to get stock movements');
+    }
+}
+
+export async function getOrderHistoryController({ query, store, set }) {
+    try {
+        const outletId = store.outletId || query.outletId;
+        const result = await reportsService.getOrderHistory({ ...query, outletId });
+
+        return successResponse(REP.ORDER_HISTORY_SUCCESS, result);
+    } catch (err) {
+        logger.error({ err }, 'Get order history failed');
+        set.status = 500;
+        return errorResponse(REP.REPORT_FAILED, err.message || 'Failed to get order history');
+    }
+}

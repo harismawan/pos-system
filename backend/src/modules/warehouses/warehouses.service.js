@@ -178,15 +178,54 @@ export async function deleteWarehouse(id) {
 export async function getWarehouseInventory(warehouseId, filters = {}) {
     const { lowStock, page = 1, limit = 50 } = filters;
 
-    const where = { warehouseId };
+    const skip = (page - 1) * limit;
 
+    // If lowStock filter is used, we need a raw query since Prisma doesn't support column-to-column comparison
     if (lowStock) {
-        where.quantityOnHand = {
-            lte: prisma.raw('minimum_stock'),
+        // Count query
+        const countResult = await prisma.$queryRawUnsafe(`
+            SELECT COUNT(*)::int as count
+            FROM inventories
+            WHERE warehouse_id = $1 AND quantity_on_hand <= minimum_stock
+        `, warehouseId);
+        const total = countResult[0]?.count || 0;
+
+        // Get inventory IDs
+        const idsResult = await prisma.$queryRawUnsafe(`
+            SELECT id
+            FROM inventories
+            WHERE warehouse_id = $1 AND quantity_on_hand <= minimum_stock
+            ORDER BY created_at DESC
+            LIMIT ${limit} OFFSET ${skip}
+        `, warehouseId);
+        const ids = idsResult.map(r => r.id);
+
+        // Fetch full records with relations
+        const inventories = ids.length > 0 ? await prisma.inventory.findMany({
+            where: { id: { in: ids } },
+            include: {
+                product: true,
+            },
+            orderBy: {
+                product: {
+                    name: 'asc',
+                },
+            },
+        }) : [];
+
+        return {
+            inventories,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            },
         };
     }
 
-    const skip = (page - 1) * limit;
+    // Regular query without lowStock filter
+    const where = { warehouseId };
 
     const [inventories, total] = await Promise.all([
         prisma.inventory.findMany({
@@ -215,3 +254,4 @@ export async function getWarehouseInventory(warehouseId, filters = {}) {
         },
     };
 }
+

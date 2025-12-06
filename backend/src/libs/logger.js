@@ -9,7 +9,7 @@ import config from '../config/index.js';
 const logger = pino({
     level: config.logging?.level || (config.nodeEnv === 'production' ? 'info' : 'debug'),
     redact: {
-        paths: config.logging?.redactPaths || [],
+        paths: config.nodeEnv === 'production' ? config.logging?.redactPaths || [] : [],
         censor: '[REDACTED]',
     },
     transport:

@@ -9,7 +9,7 @@ import { commonSchemas } from '../../libs/validation.js';
 const posOrderItemSchema = t.Object({
     productId: t.String(),
     quantity: t.Numeric({ minimum: 0.01 }),
-    unitPrice: t.Numeric({ minimum: 0 }),
+    unitPrice: t.Optional(t.Numeric({ minimum: 0 })),
     discountAmount: t.Optional(t.Numeric({ minimum: 0, default: 0 })),
 });
 
@@ -18,10 +18,10 @@ export const createPosOrderBodySchema = {
     body: t.Object({
         outletId: t.String(),
         warehouseId: t.String(),
-        registerId: t.Optional(t.String()),
-        customerId: t.Optional(t.String()),
+        registerId: t.Optional(t.Nullable(t.String())),
+        customerId: t.Optional(t.Nullable(t.String())),
         items: t.Array(posOrderItemSchema, { minItems: 1 }),
-        notes: t.Optional(t.String()),
+        notes: t.Optional(t.Nullable(t.String())),
     }),
 };
 

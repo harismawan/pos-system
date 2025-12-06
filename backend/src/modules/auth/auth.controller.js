@@ -38,6 +38,9 @@ export async function refreshController({ body, set }) {
     } catch (err) {
         logger.debug({ err }, 'Token refresh failed');
         set.status = 401;
+        if (err.code === 'REFRESH_TOKEN_EXPIRED') {
+            return errorResponse(AUT.REFRESH_TOKEN_EXPIRED, err.message);
+        }
         return errorResponse(AUT.INVALID_REFRESH_TOKEN, err.message || 'Invalid refresh token');
     }
 }

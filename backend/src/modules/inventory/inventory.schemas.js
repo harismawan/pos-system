@@ -20,6 +20,7 @@ export const adjustInventoryBodySchema = {
     body: t.Object({
         productId: t.String(),
         warehouseId: t.String(),
+        type: t.Union([t.Literal('ADJUSTMENT_IN'), t.Literal('ADJUSTMENT_OUT')]),
         quantity: t.Numeric(),
         notes: t.Optional(t.String()),
     }),

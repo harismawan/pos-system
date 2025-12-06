@@ -13,6 +13,81 @@ import logger from '../../libs/logger.js';
 export async function getInventory(filters = {}) {
     const { productId, warehouseId, outletId, lowStock, page = 1, limit = 50 } = filters;
 
+    const skip = (page - 1) * limit;
+
+    // If lowStock filter is used, we need a raw query since Prisma doesn't support column-to-column comparison
+    if (lowStock) {
+        const conditions = ['i.quantity_on_hand <= i.minimum_stock'];
+        const params = [];
+
+        if (productId) {
+            params.push(productId);
+            conditions.push(`i.product_id = $${params.length}`);
+        }
+
+        if (warehouseId) {
+            params.push(warehouseId);
+            conditions.push(`i.warehouse_id = $${params.length}`);
+        }
+
+        if (outletId) {
+            params.push(outletId);
+            conditions.push(`w.outlet_id = $${params.length}`);
+        }
+
+        const whereClause = conditions.join(' AND ');
+
+        // Count query
+        const countQuery = `
+            SELECT COUNT(*)::int as count
+            FROM inventories i
+            JOIN warehouses w ON i.warehouse_id = w.id
+            WHERE ${whereClause}
+        `;
+        const countResult = await prisma.$queryRawUnsafe(countQuery, ...params);
+        const total = countResult[0]?.count || 0;
+
+        // Get inventory IDs that match low stock condition
+        const idsQuery = `
+            SELECT i.id
+            FROM inventories i
+            JOIN warehouses w ON i.warehouse_id = w.id
+            WHERE ${whereClause}
+            ORDER BY i.created_at DESC
+            LIMIT ${limit} OFFSET ${skip}
+        `;
+        const idsResult = await prisma.$queryRawUnsafe(idsQuery, ...params);
+        const ids = idsResult.map(r => r.id);
+
+        // Fetch full records with relations using Prisma
+        const inventories = ids.length > 0 ? await prisma.inventory.findMany({
+            where: { id: { in: ids } },
+            include: {
+                product: true,
+                warehouse: {
+                    include: {
+                        outlet: true,
+                    },
+                },
+            },
+            orderBy: [
+                { warehouse: { outlet: { name: 'asc' } } },
+                { product: { name: 'asc' } },
+            ],
+        }) : [];
+
+        return {
+            inventories,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
+    }
+
+    // Regular query without lowStock filter
     const where = {};
 
     if (productId) {
@@ -28,15 +103,6 @@ export async function getInventory(filters = {}) {
             outletId,
         };
     }
-
-    // Low stock filter - items at or below minimum stock
-    if (lowStock) {
-        where.quantityOnHand = {
-            lte: prisma.raw('minimum_stock'),
-        };
-    }
-
-    const skip = (page - 1) * limit;
 
     const [inventories, total] = await Promise.all([
         prisma.inventory.findMany({

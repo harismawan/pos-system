@@ -52,9 +52,25 @@ export function verifyRefreshToken(token) {
     try {
         return jwt.verify(token, config.jwt.refreshSecret);
     } catch (err) {
+        if (err.name === 'TokenExpiredError') {
+            const error = new Error('Refresh token expired');
+            error.code = 'REFRESH_TOKEN_EXPIRED';
+            throw error;
+        }
         throw new Error('Invalid or expired refresh token');
     }
 }
+
+/**
+ * Elysia authentication beforeHandle function
+ * Validates JWT and attaches user info to store
+ */
+// Import response codes
+import { AUT } from './responseCodes.js';
+
+// ... (previous imports)
+
+// ... (previous helper functions verifyAccessToken etc)
 
 /**
  * Elysia authentication beforeHandle function
@@ -67,6 +83,7 @@ export async function authMiddleware({ headers, set, store }) {
         set.status = 401;
         return {
             success: false,
+            code: AUT.NOT_AUTHENTICATED,
             error: 'Missing or invalid authorization header',
         };
     }
@@ -74,7 +91,20 @@ export async function authMiddleware({ headers, set, store }) {
     const token = authHeader.substring(7);
 
     try {
-        const payload = verifyAccessToken(token);
+        let payload;
+        try {
+            payload = jwt.verify(token, config.jwt.secret);
+        } catch (err) {
+            if (err.name === 'TokenExpiredError') {
+                set.status = 401;
+                return {
+                    success: false,
+                    code: AUT.ACCESS_TOKEN_EXPIRED,
+                    error: 'Access token expired',
+                };
+            }
+            throw new Error('Invalid token');
+        }
 
         // Validate token exists in Redis
         const isValidInRedis = await validateAccessToken(payload.userId, token);
@@ -82,6 +112,7 @@ export async function authMiddleware({ headers, set, store }) {
             set.status = 401;
             return {
                 success: false,
+                code: AUT.ACCESS_TOKEN_EXPIRED,
                 error: 'Token has been revoked or expired',
             };
         }
@@ -102,9 +133,12 @@ export async function authMiddleware({ headers, set, store }) {
             set.status = 401;
             return {
                 success: false,
+                code: AUT.NOT_AUTHENTICATED,
                 error: 'User not found or inactive',
             };
         }
+
+        // ... (rest of user context building)
 
         // Build user context and attach to store
         store.user = {
@@ -130,6 +164,7 @@ export async function authMiddleware({ headers, set, store }) {
                 set.status = 403;
                 return {
                     success: false,
+                    code: 'AUT-403-001',
                     error: 'No access to specified outlet',
                 };
             }
@@ -140,6 +175,7 @@ export async function authMiddleware({ headers, set, store }) {
         set.status = 401;
         return {
             success: false,
+            code: AUT.NOT_AUTHENTICATED,
             error: err.message || 'Authentication failed',
         };
     }
