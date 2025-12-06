@@ -5,6 +5,7 @@ import { useUiStore } from '../../store/uiStore.js';
 import * as productsApi from '../../api/productsApi.js';
 import ConfirmModal from '../../components/ConfirmModal.jsx';
 import ProductDetailModal from '../../components/products/ProductDetailModal.jsx';
+import { useDebounce } from '../../hooks/useDebounce.js';
 
 // Custom styles for react-data-table-component
 const customStyles = {
@@ -65,6 +66,7 @@ function ProductsListPage() {
     const [perPage, setPerPage] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
+    const debouncedSearchTerm = useDebounce(searchTerm);
     const [filterCategory, setFilterCategory] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
 
@@ -103,8 +105,8 @@ function ProductsListPage() {
     };
 
     useEffect(() => {
-        loadProducts(currentPage, perPage, searchTerm, filterCategory, filterStatus);
-    }, [currentPage, perPage, searchTerm, filterCategory, filterStatus]);
+        loadProducts(currentPage, perPage, debouncedSearchTerm, filterCategory, filterStatus);
+    }, [currentPage, perPage, debouncedSearchTerm, filterCategory, filterStatus]);
 
     const handlePageChange = (page) => {
         setCurrentPage(page);
@@ -117,7 +119,7 @@ function ProductsListPage() {
 
     const handleSearch = (e) => {
         setSearchTerm(e.target.value);
-        setCurrentPage(1);
+        // Page reset will happen when debouncedSearchTerm changes
     };
 
     const openDeleteModal = (id, name) => {

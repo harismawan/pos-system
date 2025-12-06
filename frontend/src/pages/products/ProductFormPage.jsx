@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useUiStore } from '../../store/uiStore.js';
 import * as productsApi from '../../api/productsApi.js';
+import { useFormValidation, validators } from '../../hooks/useFormValidation.js';
 
 const initialFormState = {
     sku: '',
@@ -16,16 +17,35 @@ const initialFormState = {
     isActive: true,
 };
 
+// Validation rules for the form
+const validationRules = {
+    sku: [validators.required],
+    name: [validators.required, validators.minLength(2)],
+    basePrice: [validators.required, validators.min(0)],
+    costPrice: [validators.min(0)],
+    taxRate: [validators.min(0), validators.max(100)],
+};
+
 function ProductFormPage() {
     const navigate = useNavigate();
     const { id } = useParams();
     const showNotification = useUiStore((state) => state.showNotification);
     const isEditMode = Boolean(id);
 
-    const [formData, setFormData] = useState(initialFormState);
+    const {
+        values: formData,
+        errors,
+        touched,
+        handleChange,
+        handleBlur,
+        setValues,
+        validateAll,
+        reset,
+        getError,
+    } = useFormValidation(initialFormState, validationRules);
+
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [errors, setErrors] = useState({});
 
     useEffect(() => {
         if (isEditMode) {
@@ -37,7 +57,7 @@ function ProductFormPage() {
         try {
             setLoading(true);
             const product = await productsApi.getProductById(id);
-            setFormData({
+            reset({
                 sku: product.sku || '',
                 barcode: product.barcode || '',
                 name: product.name || '',
@@ -57,32 +77,18 @@ function ProductFormPage() {
         }
     };
 
-    const validateForm = () => {
-        const newErrors = {};
-        if (!formData.sku.trim()) newErrors.sku = 'SKU is required';
-        if (!formData.name.trim()) newErrors.name = 'Product name is required';
-        if (!formData.basePrice || parseFloat(formData.basePrice) < 0) {
-            newErrors.basePrice = 'Valid base price is required';
-        }
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value,
-        }));
-        // Clear error when field is modified
-        if (errors[name]) {
-            setErrors(prev => ({ ...prev, [name]: undefined }));
-        }
+    // Helper to get input className based on validation state
+    const getInputClassName = (fieldName) => {
+        if (!touched[fieldName]) return '';
+        return errors[fieldName] ? 'input-error' : 'input-valid';
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!validateForm()) return;
+        if (!validateAll()) {
+            showNotification('Please fix the errors in the form', 'error');
+            return;
+        }
 
         try {
             setSaving(true);
@@ -146,10 +152,11 @@ function ProductFormPage() {
                                 name="sku"
                                 value={formData.sku}
                                 onChange={handleChange}
+                                onBlur={handleBlur}
                                 placeholder="e.g., PROD-001"
-                                style={{ borderColor: errors.sku ? 'var(--error-500)' : undefined }}
+                                className={getInputClassName('sku')}
                             />
-                            {errors.sku && <p className="form-error">{errors.sku}</p>}
+                            {getError('sku') && <p className="form-error">{getError('sku')}</p>}
                         </div>
 
                         <div className="form-group">
@@ -171,10 +178,11 @@ function ProductFormPage() {
                             name="name"
                             value={formData.name}
                             onChange={handleChange}
+                            onBlur={handleBlur}
                             placeholder="Enter product name"
-                            style={{ borderColor: errors.name ? 'var(--error-500)' : undefined }}
+                            className={getInputClassName('name')}
                         />
-                        {errors.name && <p className="form-error">{errors.name}</p>}
+                        {getError('name') && <p className="form-error">{getError('name')}</p>}
                     </div>
 
                     <div className="form-group">
@@ -233,12 +241,13 @@ function ProductFormPage() {
                                 name="basePrice"
                                 value={formData.basePrice}
                                 onChange={handleChange}
+                                onBlur={handleBlur}
                                 placeholder="0"
                                 min="0"
                                 step="0.01"
-                                style={{ borderColor: errors.basePrice ? 'var(--error-500)' : undefined }}
+                                className={getInputClassName('basePrice')}
                             />
-                            {errors.basePrice && <p className="form-error">{errors.basePrice}</p>}
+                            {getError('basePrice') && <p className="form-error">{getError('basePrice')}</p>}
                         </div>
 
                         <div className="form-group">

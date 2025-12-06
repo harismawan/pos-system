@@ -4,6 +4,7 @@ import { useUiStore } from '../../store/uiStore.js';
 import { useOutletStore } from '../../store/outletStore.js';
 import { useAuthStore } from '../../store/authStore.js';
 import * as warehousesApi from '../../api/warehousesApi.js';
+import { useFormValidation, validators } from '../../hooks/useFormValidation.js';
 
 const initialFormState = {
     name: '',
@@ -20,6 +21,11 @@ const initialFormState = {
     isActive: true,
 };
 
+const validationRules = {
+    name: [validators.required],
+    code: [validators.required],
+};
+
 function WarehouseFormPage() {
     const navigate = useNavigate();
     const { id } = useParams();
@@ -28,16 +34,25 @@ function WarehouseFormPage() {
     const outlets = useAuthStore((state) => state.outlets);
     const isEditMode = Boolean(id);
 
-    const [formData, setFormData] = useState(initialFormState);
+    const {
+        values: formData,
+        errors,
+        touched,
+        handleChange,
+        handleBlur,
+        validateAll,
+        reset,
+        getError,
+    } = useFormValidation(initialFormState, validationRules);
+
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [errors, setErrors] = useState({});
 
     useEffect(() => {
         if (isEditMode) {
             loadWarehouse();
         } else if (activeOutlet) {
-            setFormData(prev => ({ ...prev, outletId: activeOutlet.id }));
+            reset({ ...initialFormState, outletId: activeOutlet.id });
         }
     }, [id, activeOutlet]);
 
@@ -45,7 +60,7 @@ function WarehouseFormPage() {
         try {
             setLoading(true);
             const warehouse = await warehousesApi.getWarehouseById(id);
-            setFormData({
+            reset({
                 name: warehouse.name || '',
                 code: warehouse.code || '',
                 type: warehouse.type || 'OUTLET',
@@ -67,28 +82,17 @@ function WarehouseFormPage() {
         }
     };
 
-    const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value,
-        }));
-        if (errors[name]) {
-            setErrors(prev => ({ ...prev, [name]: undefined }));
-        }
-    };
-
-    const validate = () => {
-        const newErrors = {};
-        if (!formData.name.trim()) newErrors.name = 'Name is required';
-        if (!formData.code.trim()) newErrors.code = 'Code is required';
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
+    const getInputClassName = (fieldName) => {
+        if (!touched[fieldName]) return '';
+        return errors[fieldName] ? 'input-error' : 'input-valid';
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!validate()) return;
+        if (!validateAll()) {
+            showNotification('Please fix the errors in the form', 'error');
+            return;
+        }
 
         try {
             setSaving(true);
@@ -150,10 +154,11 @@ function WarehouseFormPage() {
                                 name="name"
                                 value={formData.name}
                                 onChange={handleChange}
+                                onBlur={handleBlur}
                                 placeholder="e.g., Main Warehouse"
-                                style={{ borderColor: errors.name ? 'var(--error-500)' : undefined }}
+                                className={getInputClassName('name')}
                             />
-                            {errors.name && <p className="form-error">{errors.name}</p>}
+                            {getError('name') && <p className="form-error">{getError('name')}</p>}
                         </div>
 
                         <div className="form-group">
@@ -163,10 +168,11 @@ function WarehouseFormPage() {
                                 name="code"
                                 value={formData.code}
                                 onChange={handleChange}
+                                onBlur={handleBlur}
                                 placeholder="e.g., WH-001"
-                                style={{ borderColor: errors.code ? 'var(--error-500)' : undefined }}
+                                className={getInputClassName('code')}
                             />
-                            {errors.code && <p className="form-error">{errors.code}</p>}
+                            {getError('code') && <p className="form-error">{getError('code')}</p>}
                         </div>
                     </div>
 

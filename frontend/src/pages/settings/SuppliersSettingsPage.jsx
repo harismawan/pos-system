@@ -4,6 +4,7 @@ import { useUiStore } from '../../store/uiStore.js';
 import * as suppliersApi from '../../api/suppliersApi.js';
 import ConfirmModal from '../../components/ConfirmModal.jsx';
 import SupplierDetailModal from '../../components/settings/SupplierDetailModal.jsx';
+import { useFormValidation, validators } from '../../hooks/useFormValidation.js';
 
 const customStyles = {
     headRow: {
@@ -52,14 +53,35 @@ function SuppliersSettingsPage() {
     const [selectedSupplier, setSelectedSupplier] = useState(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
 
-    const [formData, setFormData] = useState({
+    // Form validation for modal
+    const supplierValidationRules = {
+        name: [validators.required],
+        email: [validators.email],
+        phone: [validators.phone],
+    };
+
+    const {
+        values: formData,
+        errors: formErrors,
+        touched: formTouched,
+        handleChange: handleFormChange,
+        handleBlur: handleFormBlur,
+        validateAll: validateForm,
+        reset: resetForm,
+        getError: getFormError,
+    } = useFormValidation({
         name: '',
         code: '',
         contactName: '',
         email: '',
         phone: '',
         isActive: true,
-    });
+    }, supplierValidationRules);
+
+    const getInputClassName = (fieldName) => {
+        if (!formTouched[fieldName]) return '';
+        return formErrors[fieldName] ? 'input-error' : 'input-valid';
+    };
 
     useEffect(() => {
         loadSuppliers(1, perPage);
@@ -96,7 +118,7 @@ function SuppliersSettingsPage() {
 
     const openModal = (supplier = null) => {
         setEditingSupplier(supplier);
-        setFormData(supplier ? {
+        resetForm(supplier ? {
             name: supplier.name || '',
             code: supplier.code || '',
             contactName: supplier.contactName || '',
@@ -109,8 +131,8 @@ function SuppliersSettingsPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.name.trim()) {
-            showNotification('Name is required', 'error');
+        if (!validateForm()) {
+            showNotification('Please fix the errors in the form', 'error');
             return;
         }
         try {
@@ -242,17 +264,22 @@ function SuppliersSettingsPage() {
                                         <label className="form-label">Company Name *</label>
                                         <input
                                             type="text"
+                                            name="name"
                                             value={formData.name}
-                                            onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))}
+                                            onChange={handleFormChange}
+                                            onBlur={handleFormBlur}
                                             placeholder="Supplier name"
+                                            className={getInputClassName('name')}
                                         />
+                                        {getFormError('name') && <p className="form-error">{getFormError('name')}</p>}
                                     </div>
                                     <div className="form-group">
                                         <label className="form-label">Code</label>
                                         <input
                                             type="text"
+                                            name="code"
                                             value={formData.code}
-                                            onChange={(e) => setFormData(p => ({ ...p, code: e.target.value }))}
+                                            onChange={handleFormChange}
                                             placeholder="e.g., SUP001"
                                         />
                                     </div>
@@ -261,8 +288,9 @@ function SuppliersSettingsPage() {
                                     <label className="form-label">Contact Name</label>
                                     <input
                                         type="text"
+                                        name="contactName"
                                         value={formData.contactName}
-                                        onChange={(e) => setFormData(p => ({ ...p, contactName: e.target.value }))}
+                                        onChange={handleFormChange}
                                         placeholder="Contact person"
                                     />
                                 </div>
@@ -271,27 +299,36 @@ function SuppliersSettingsPage() {
                                         <label className="form-label">Email</label>
                                         <input
                                             type="email"
+                                            name="email"
                                             value={formData.email}
-                                            onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))}
+                                            onChange={handleFormChange}
+                                            onBlur={handleFormBlur}
                                             placeholder="Email"
+                                            className={getInputClassName('email')}
                                         />
+                                        {getFormError('email') && <p className="form-error">{getFormError('email')}</p>}
                                     </div>
                                     <div className="form-group">
                                         <label className="form-label">Phone</label>
                                         <input
                                             type="text"
+                                            name="phone"
                                             value={formData.phone}
-                                            onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))}
+                                            onChange={handleFormChange}
+                                            onBlur={handleFormBlur}
                                             placeholder="Phone"
+                                            className={getInputClassName('phone')}
                                         />
+                                        {getFormError('phone') && <p className="form-error">{getFormError('phone')}</p>}
                                     </div>
                                 </div>
                                 <div className="form-group">
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                                         <input
                                             type="checkbox"
+                                            name="isActive"
                                             checked={formData.isActive}
-                                            onChange={(e) => setFormData(p => ({ ...p, isActive: e.target.checked }))}
+                                            onChange={handleFormChange}
                                             style={{ width: '16px', height: '16px', accentColor: 'var(--primary-500)' }}
                                         />
                                         Active supplier

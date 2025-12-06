@@ -22,6 +22,7 @@ import { inventoryRoutes } from './modules/inventory/inventory.routes.js';
 import { suppliersRoutes } from './modules/suppliers/suppliers.routes.js';
 import { purchaseOrdersRoutes } from './modules/purchaseOrders/purchaseOrders.routes.js';
 import { reportsRoutes } from './modules/reports/reports.routes.js';
+import { usersRoutes } from './modules/users/users.routes.js';
 
 const app = new Elysia();
 
@@ -83,6 +84,7 @@ app.group('/api', (app) =>
         .use(suppliersRoutes)
         .use(purchaseOrdersRoutes)
         .use(reportsRoutes)
+        .use(usersRoutes)
 );
 
 export default app;

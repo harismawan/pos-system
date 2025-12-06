@@ -2,24 +2,48 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore.js';
 import { useOutletStore } from '../../store/outletStore.js';
+import { useFormValidation, validators } from '../../hooks/useFormValidation.js';
+
+const validationRules = {
+    username: [validators.required],
+    password: [validators.required, validators.minLength(6)],
+};
 
 function LoginPage() {
     const navigate = useNavigate();
     const login = useAuthStore((state) => state.login);
     const setActiveOutlet = useOutletStore((state) => state.setActiveOutlet);
 
-    const [username, setUsername] = useState('owner');
-    const [password, setPassword] = useState('password123');
+    const {
+        values: formData,
+        errors,
+        touched,
+        handleChange,
+        handleBlur,
+        validateAll,
+        getError,
+    } = useFormValidation({ username: 'owner', password: 'password123' }, validationRules);
+
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+
+    const getInputClassName = (fieldName) => {
+        if (!touched[fieldName]) return '';
+        return errors[fieldName] ? 'input-error' : 'input-valid';
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+
+        if (!validateAll()) {
+            return;
+        }
+
         setLoading(true);
 
         try {
-            const data = await login(username, password);
+            const data = await login(formData.username, formData.password);
 
             if (data.outlets && data.outlets.length > 0) {
                 const defaultOutlet = data.outlets.find(o => o.isDefault) || data.outlets[0];
@@ -75,22 +99,28 @@ function LoginPage() {
                         <label className="form-label">Username</label>
                         <input
                             type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            required
+                            name="username"
+                            value={formData.username}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
                             placeholder="Enter your username"
+                            className={getInputClassName('username')}
                         />
+                        {getError('username') && <p className="form-error">{getError('username')}</p>}
                     </div>
 
                     <div className="form-group">
                         <label className="form-label">Password</label>
                         <input
                             type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
                             placeholder="Enter your password"
+                            className={getInputClassName('password')}
                         />
+                        {getError('password') && <p className="form-error">{getError('password')}</p>}
                     </div>
 
                     {error && (

@@ -5,6 +5,8 @@ import { useUiStore } from '../../store/uiStore.js';
 import * as customersApi from '../../api/customersApi.js';
 import ConfirmModal from '../../components/ConfirmModal.jsx';
 import CustomerDetailModal from '../../components/settings/CustomerDetailModal.jsx';
+import { useDebounce } from '../../hooks/useDebounce.js';
+import { useFormValidation, validators } from '../../hooks/useFormValidation.js';
 
 const customStyles = {
     headRow: {
@@ -44,33 +46,54 @@ function CustomersSettingsPage() {
     const [perPage, setPerPage] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
+    const debouncedSearchTerm = useDebounce(searchTerm);
     const [showModal, setShowModal] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState(null);
     const [saving, setSaving] = useState(false);
     const [deleteModal, setDeleteModal] = useState({ open: false, id: null, name: '' });
     const [deleting, setDeleting] = useState(false);
 
-    // Detail modal state
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
 
-    const [formData, setFormData] = useState({
+    // Form validation for modal
+    const customerValidationRules = {
+        name: [validators.required],
+        email: [validators.email],
+        phone: [validators.phone],
+    };
+
+    const {
+        values: formData,
+        errors: formErrors,
+        touched: formTouched,
+        handleChange: handleFormChange,
+        handleBlur: handleFormBlur,
+        validateAll: validateForm,
+        reset: resetForm,
+        getError: getFormError,
+    } = useFormValidation({
         name: '',
         email: '',
         phone: '',
         code: '',
         priceTierId: '',
-    });
+    }, customerValidationRules);
+
+    const getInputClassName = (fieldName) => {
+        if (!formTouched[fieldName]) return '';
+        return formErrors[fieldName] ? 'input-error' : 'input-valid';
+    };
 
     useEffect(() => {
         loadCustomers();
-    }, [currentPage, perPage, searchTerm]);
+    }, [currentPage, perPage, debouncedSearchTerm]);
 
     const loadCustomers = async () => {
         try {
             setLoading(true);
             const params = { page: currentPage, limit: perPage };
-            if (searchTerm) params.search = searchTerm;
+            if (debouncedSearchTerm) params.search = debouncedSearchTerm;
             const result = await customersApi.getCustomers(params);
             setCustomers(result.customers || []);
             setTotalRows(result.pagination?.total || 0);
@@ -83,7 +106,7 @@ function CustomersSettingsPage() {
 
     const openModal = (customer = null) => {
         setEditingCustomer(customer);
-        setFormData(customer ? {
+        resetForm(customer ? {
             name: customer.name || '',
             email: customer.email || '',
             phone: customer.phone || '',
@@ -100,8 +123,8 @@ function CustomersSettingsPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.name.trim()) {
-            showNotification('Name is required', 'error');
+        if (!validateForm()) {
+            showNotification('Please fix the errors in the form', 'error');
             return;
         }
         try {
@@ -192,7 +215,7 @@ function CustomersSettingsPage() {
                     className="search-input"
                     placeholder="Search customers..."
                     value={searchTerm}
-                    onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                     style={{ maxWidth: '320px' }}
                 />
             </div>
@@ -241,17 +264,22 @@ function CustomersSettingsPage() {
                                         <label className="form-label">Name *</label>
                                         <input
                                             type="text"
+                                            name="name"
                                             value={formData.name}
-                                            onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))}
+                                            onChange={handleFormChange}
+                                            onBlur={handleFormBlur}
                                             placeholder="Customer name"
+                                            className={getInputClassName('name')}
                                         />
+                                        {getFormError('name') && <p className="form-error">{getFormError('name')}</p>}
                                     </div>
                                     <div className="form-group">
                                         <label className="form-label">Customer Code</label>
                                         <input
                                             type="text"
+                                            name="code"
                                             value={formData.code}
-                                            onChange={(e) => setFormData(p => ({ ...p, code: e.target.value }))}
+                                            onChange={handleFormChange}
                                             placeholder="e.g., CUST001"
                                         />
                                     </div>
@@ -259,19 +287,27 @@ function CustomersSettingsPage() {
                                         <label className="form-label">Email</label>
                                         <input
                                             type="email"
+                                            name="email"
                                             value={formData.email}
-                                            onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))}
+                                            onChange={handleFormChange}
+                                            onBlur={handleFormBlur}
                                             placeholder="email@example.com"
+                                            className={getInputClassName('email')}
                                         />
+                                        {getFormError('email') && <p className="form-error">{getFormError('email')}</p>}
                                     </div>
                                     <div className="form-group">
                                         <label className="form-label">Phone</label>
                                         <input
                                             type="text"
+                                            name="phone"
                                             value={formData.phone}
-                                            onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))}
+                                            onChange={handleFormChange}
+                                            onBlur={handleFormBlur}
                                             placeholder="Phone number"
+                                            className={getInputClassName('phone')}
                                         />
+                                        {getFormError('phone') && <p className="form-error">{getFormError('phone')}</p>}
                                     </div>
                                 </div>
                                 <div className="modal-footer">

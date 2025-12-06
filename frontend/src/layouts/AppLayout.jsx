@@ -2,42 +2,48 @@ import React, { useState } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore.js';
 import { useOutletStore } from '../store/outletStore.js';
+import { usePermissions, PERMISSIONS } from '../hooks/usePermissions.js';
 
-const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: '📊' },
-    { path: '/pos', label: 'POS', icon: '🛒' },
-    { path: '/products', label: 'Products', icon: '📦' },
-    { path: '/inventory', label: 'Inventory', icon: '📋' },
-    { path: '/warehouses', label: 'Warehouses', icon: '🏭' },
-    { path: '/purchase-orders', label: 'Purchase Orders', icon: '📝' },
-    {
-        label: 'Reports',
-        icon: '📈',
-        children: [
-            { path: '/reports', label: 'Overview' },
-            { path: '/reports/sales', label: 'Sales' },
-            { path: '/reports/orders', label: 'Order History' },
-            { path: '/reports/products', label: 'Products' },
-            { path: '/reports/inventory', label: 'Inventory' },
-        ]
-    },
-    {
-        label: 'Settings',
-        icon: '⚙️',
-        children: [
-            { path: '/settings/outlets', label: 'Outlets' },
-            { path: '/settings/customers', label: 'Customers' },
-            { path: '/settings/suppliers', label: 'Suppliers' },
-        ]
-    },
-];
+
 
 function AppLayout() {
     const navigate = useNavigate();
     const location = useLocation();
     const { user, outlets, logout } = useAuthStore();
     const { activeOutlet, setActiveOutlet } = useOutletStore();
+    const { can } = usePermissions();
     const [expandedMenu, setExpandedMenu] = useState(null);
+
+    // Build dynamic nav items based on permissions
+    const navItems = [
+        { path: '/dashboard', label: 'Dashboard', icon: '📊' },
+        can(PERMISSIONS.POS_ACCESS) && { path: '/pos', label: 'POS', icon: '🛒' },
+        can(PERMISSIONS.PRODUCTS_VIEW) && { path: '/products', label: 'Products', icon: '📦' },
+        can(PERMISSIONS.INVENTORY_VIEW) && { path: '/inventory', label: 'Inventory', icon: '📋' },
+        can(PERMISSIONS.SETTINGS_WAREHOUSES) && { path: '/warehouses', label: 'Warehouses', icon: '🏭' },
+        can(PERMISSIONS.PURCHASE_VIEW) && { path: '/purchase-orders', label: 'Purchase Orders', icon: '📝' },
+        can(PERMISSIONS.REPORTS_VIEW) && {
+            label: 'Reports',
+            icon: '📈',
+            children: [
+                { path: '/reports', label: 'Overview' },
+                { path: '/reports/sales', label: 'Sales' },
+                { path: '/reports/orders', label: 'Order History' },
+                { path: '/reports/products', label: 'Products' },
+                { path: '/reports/inventory', label: 'Inventory' },
+            ]
+        },
+        {
+            label: 'Settings',
+            icon: '⚙️',
+            children: [
+                can(PERMISSIONS.SETTINGS_OUTLETS) && { path: '/settings/outlets', label: 'Outlets' },
+                can(PERMISSIONS.SETTINGS_CUSTOMERS) && { path: '/settings/customers', label: 'Customers' },
+                can(PERMISSIONS.SETTINGS_SUPPLIERS) && { path: '/settings/suppliers', label: 'Suppliers' },
+                can(PERMISSIONS.USERS_VIEW) && { path: '/settings/users', label: 'Users' },
+            ].filter(Boolean)
+        },
+    ].filter(Boolean);
 
     const handleLogout = async () => {
         await logout();

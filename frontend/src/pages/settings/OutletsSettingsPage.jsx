@@ -5,6 +5,7 @@ import { useAuthStore } from '../../store/authStore.js';
 import * as outletsApi from '../../api/outletsApi.js';
 import ConfirmModal from '../../components/ConfirmModal.jsx';
 import OutletDetailModal from '../../components/settings/OutletDetailModal.jsx';
+import { useFormValidation, validators } from '../../hooks/useFormValidation.js';
 
 const customStyles = {
     headRow: {
@@ -57,14 +58,35 @@ function OutletsSettingsPage() {
     const [selectedOutlet, setSelectedOutlet] = useState(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
 
-    const [formData, setFormData] = useState({
+    // Form validation for modal
+    const outletValidationRules = {
+        name: [validators.required],
+        code: [validators.required],
+        phone: [validators.phone],
+    };
+
+    const {
+        values: formData,
+        errors: formErrors,
+        touched: formTouched,
+        handleChange: handleFormChange,
+        handleBlur: handleFormBlur,
+        validateAll: validateForm,
+        reset: resetForm,
+        getError: getFormError,
+    } = useFormValidation({
         name: '',
         code: '',
         addressLine1: '',
         city: '',
         phone: '',
         isActive: true,
-    });
+    }, outletValidationRules);
+
+    const getInputClassName = (fieldName) => {
+        if (!formTouched[fieldName]) return '';
+        return formErrors[fieldName] ? 'input-error' : 'input-valid';
+    };
 
     useEffect(() => {
         loadOutlets(1, perPage);
@@ -101,7 +123,7 @@ function OutletsSettingsPage() {
 
     const openModal = (outlet = null) => {
         setEditingOutlet(outlet);
-        setFormData(outlet ? {
+        resetForm(outlet ? {
             name: outlet.name || '',
             code: outlet.code || '',
             addressLine1: outlet.addressLine1 || '',
@@ -114,8 +136,8 @@ function OutletsSettingsPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.name.trim() || !formData.code.trim()) {
-            showNotification('Name and code are required', 'error');
+        if (!validateForm()) {
+            showNotification('Please fix the errors in the form', 'error');
             return;
         }
         try {
@@ -251,27 +273,36 @@ function OutletsSettingsPage() {
                                         <label className="form-label">Name *</label>
                                         <input
                                             type="text"
+                                            name="name"
                                             value={formData.name}
-                                            onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))}
+                                            onChange={handleFormChange}
+                                            onBlur={handleFormBlur}
                                             placeholder="Outlet name"
+                                            className={getInputClassName('name')}
                                         />
+                                        {getFormError('name') && <p className="form-error">{getFormError('name')}</p>}
                                     </div>
                                     <div className="form-group">
                                         <label className="form-label">Code *</label>
                                         <input
                                             type="text"
+                                            name="code"
                                             value={formData.code}
-                                            onChange={(e) => setFormData(p => ({ ...p, code: e.target.value }))}
+                                            onChange={handleFormChange}
+                                            onBlur={handleFormBlur}
                                             placeholder="e.g., OUT001"
+                                            className={getInputClassName('code')}
                                         />
+                                        {getFormError('code') && <p className="form-error">{getFormError('code')}</p>}
                                     </div>
                                 </div>
                                 <div className="form-group">
                                     <label className="form-label">Address</label>
                                     <input
                                         type="text"
+                                        name="addressLine1"
                                         value={formData.addressLine1}
-                                        onChange={(e) => setFormData(p => ({ ...p, addressLine1: e.target.value }))}
+                                        onChange={handleFormChange}
                                         placeholder="Street address"
                                     />
                                 </div>
@@ -280,8 +311,9 @@ function OutletsSettingsPage() {
                                         <label className="form-label">City</label>
                                         <input
                                             type="text"
+                                            name="city"
                                             value={formData.city}
-                                            onChange={(e) => setFormData(p => ({ ...p, city: e.target.value }))}
+                                            onChange={handleFormChange}
                                             placeholder="City"
                                         />
                                     </div>
@@ -289,18 +321,23 @@ function OutletsSettingsPage() {
                                         <label className="form-label">Phone</label>
                                         <input
                                             type="text"
+                                            name="phone"
                                             value={formData.phone}
-                                            onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))}
+                                            onChange={handleFormChange}
+                                            onBlur={handleFormBlur}
                                             placeholder="Phone"
+                                            className={getInputClassName('phone')}
                                         />
+                                        {getFormError('phone') && <p className="form-error">{getFormError('phone')}</p>}
                                     </div>
                                 </div>
                                 <div className="form-group">
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                                         <input
                                             type="checkbox"
+                                            name="isActive"
                                             checked={formData.isActive}
-                                            onChange={(e) => setFormData(p => ({ ...p, isActive: e.target.checked }))}
+                                            onChange={handleFormChange}
                                             style={{ width: '16px', height: '16px', accentColor: 'var(--primary-500)' }}
                                         />
                                         Active outlet
