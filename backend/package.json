@@ -5,6 +5,7 @@
     "scripts": {
         "dev": "bun --watch src/server.js",
         "start": "bun src/server.js",
+        "test": "bun test",
         "db:migrate": "bun prisma migrate dev",
         "db:migrate:deploy": "bun prisma migrate deploy",
         "db:seed": "bun prisma db seed",

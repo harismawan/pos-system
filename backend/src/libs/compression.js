@@ -41,7 +41,7 @@ function getBestEncoding(acceptEncoding) {
 /**
  * Compress data based on encoding
  */
-function compress(data, encoding) {
+export function compress(data, encoding) {
     const buffer = typeof data === 'string' ? Buffer.from(data) : data;
 
     if (encoding === 'gzip') {

@@ -9,7 +9,7 @@ Improvement recommendations for features, performance, and system architecture.
 ### Testing & Code Quality
 | Priority | Task | Impact |
 |----------|------|--------|
-| 🔴 High | Add unit tests for backend services | Catch bugs early, enable refactoring |
+| ✅ Done | Add unit tests for backend services | Catch bugs early, enable refactoring |
 | 🔴 High | Add E2E tests with Playwright | Ensure critical flows work |
 | 🟡 Med | Setup ESLint + Prettier | Consistent code style |
 | 🟡 Med | Add Husky pre-commit hooks | Prevent bad commits |
