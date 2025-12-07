@@ -1,92 +1,100 @@
-import '../../testSetup.js';
-import { describe, it, expect, mock, beforeEach } from 'bun:test';
-import { createPrismaMock } from '../../mocks/prisma.js';
+import "../../testSetup.js";
+import { describe, it, expect, mock, beforeEach } from "bun:test";
+import { createPrismaMock } from "../../mocks/prisma.js";
 
 const prismaMock = createPrismaMock();
 
-mock.module('../../../src/libs/prisma.js', () => ({ default: prismaMock }));
+mock.module("../../../src/libs/prisma.js", () => ({ default: prismaMock }));
 
-const suppliersService = await import('../../../src/modules/suppliers/suppliers.service.js');
+const suppliersService =
+  await import("../../../src/modules/suppliers/suppliers.service.js");
 
-describe('modules/suppliers/suppliers.service', () => {
-    beforeEach(() => {
-        prismaMock.supplier.findMany.mockReset?.();
-        prismaMock.supplier.count.mockReset?.();
-        prismaMock.supplier.findUnique.mockReset?.();
-        prismaMock.supplier.create.mockReset?.();
-        prismaMock.supplier.update.mockReset?.();
-        prismaMock.supplier.delete.mockReset?.();
-        prismaMock.purchaseOrder.count.mockReset?.();
+describe("modules/suppliers/suppliers.service", () => {
+  beforeEach(() => {
+    prismaMock.supplier.findMany.mockReset?.();
+    prismaMock.supplier.count.mockReset?.();
+    prismaMock.supplier.findUnique.mockReset?.();
+    prismaMock.supplier.create.mockReset?.();
+    prismaMock.supplier.update.mockReset?.();
+    prismaMock.supplier.delete.mockReset?.();
+    prismaMock.purchaseOrder.count.mockReset?.();
+  });
+
+  it("lists suppliers with filters and pagination", async () => {
+    prismaMock.supplier.findMany.mockResolvedValue([{ id: "s1" }]);
+    prismaMock.supplier.count.mockResolvedValue(1);
+
+    const res = await suppliersService.getSuppliers({
+      search: "abc",
+      isActive: true,
+      page: 2,
+      limit: 5,
     });
 
-    it('lists suppliers with filters and pagination', async () => {
-        prismaMock.supplier.findMany.mockResolvedValue([{ id: 's1' }]);
-        prismaMock.supplier.count.mockResolvedValue(1);
+    const args = prismaMock.supplier.findMany.calls[0][0];
+    expect(args.where.isActive).toBe(true);
+    expect(args.where.OR.length).toBeGreaterThan(0);
+    expect(args.skip).toBe(5);
+    expect(res.pagination.totalPages).toBe(1);
+    expect(res.suppliers[0].id).toBe("s1");
+  });
 
-        const res = await suppliersService.getSuppliers({
-            search: 'abc',
-            isActive: true,
-            page: 2,
-            limit: 5,
-        });
-
-        const args = prismaMock.supplier.findMany.calls[0][0];
-        expect(args.where.isActive).toBe(true);
-        expect(args.where.OR.length).toBeGreaterThan(0);
-        expect(args.skip).toBe(5);
-        expect(res.pagination.totalPages).toBe(1);
-        expect(res.suppliers[0].id).toBe('s1');
+  it("returns supplier with related purchase orders", async () => {
+    prismaMock.supplier.findUnique.mockResolvedValue({
+      id: "s1",
+      purchaseOrders: [],
     });
 
-    it('returns supplier with related purchase orders', async () => {
-        prismaMock.supplier.findUnique.mockResolvedValue({ id: 's1', purchaseOrders: [] });
+    const supplier = await suppliersService.getSupplierById("s1");
 
-        const supplier = await suppliersService.getSupplierById('s1');
+    expect(supplier.id).toBe("s1");
+    const args = prismaMock.supplier.findUnique.calls[0][0];
+    expect(args.include.purchaseOrders.include.warehouse).toBe(true);
+  });
 
-        expect(supplier.id).toBe('s1');
-        const args = prismaMock.supplier.findUnique.calls[0][0];
-        expect(args.include.purchaseOrders.include.warehouse).toBe(true);
+  it("creates supplier", async () => {
+    prismaMock.supplier.create.mockResolvedValue({ id: "new" });
+
+    const supplier = await suppliersService.createSupplier({ name: "Test" });
+
+    expect(supplier.id).toBe("new");
+    expect(prismaMock.supplier.create.calls[0][0].data.name).toBe("Test");
+  });
+
+  it("updates supplier", async () => {
+    prismaMock.supplier.update.mockResolvedValue({ id: "s1", name: "Updated" });
+
+    const supplier = await suppliersService.updateSupplier("s1", {
+      name: "Updated",
     });
 
-    it('creates supplier', async () => {
-        prismaMock.supplier.create.mockResolvedValue({ id: 'new' });
+    expect(supplier.name).toBe("Updated");
+    expect(prismaMock.supplier.update.calls[0][0].where.id).toBe("s1");
+  });
 
-        const supplier = await suppliersService.createSupplier({ name: 'Test' });
+  it("prevents deleting suppliers with purchase orders", async () => {
+    prismaMock.purchaseOrder.count.mockImplementation(async () => 3);
 
-        expect(supplier.id).toBe('new');
-        expect(prismaMock.supplier.create.calls[0][0].data.name).toBe('Test');
-    });
+    await expect(suppliersService.deleteSupplier("sup-1")).rejects.toThrow(
+      "Cannot delete supplier with existing purchase orders",
+    );
+  });
 
-    it('updates supplier', async () => {
-        prismaMock.supplier.update.mockResolvedValue({ id: 's1', name: 'Updated' });
+  it("throws when supplier is not found", async () => {
+    prismaMock.supplier.findUnique.mockImplementation(async () => null);
 
-        const supplier = await suppliersService.updateSupplier('s1', { name: 'Updated' });
+    await expect(suppliersService.getSupplierById("missing")).rejects.toThrow(
+      "Supplier not found",
+    );
+  });
 
-        expect(supplier.name).toBe('Updated');
-        expect(prismaMock.supplier.update.calls[0][0].where.id).toBe('s1');
-    });
+  it("deletes supplier when there are no purchase orders", async () => {
+    prismaMock.purchaseOrder.count.mockResolvedValue(0);
+    prismaMock.supplier.delete.mockResolvedValue({});
 
-    it('prevents deleting suppliers with purchase orders', async () => {
-        prismaMock.purchaseOrder.count.mockImplementation(async () => 3);
+    const res = await suppliersService.deleteSupplier("sup-1");
 
-        await expect(suppliersService.deleteSupplier('sup-1'))
-            .rejects.toThrow('Cannot delete supplier with existing purchase orders');
-    });
-
-    it('throws when supplier is not found', async () => {
-        prismaMock.supplier.findUnique.mockImplementation(async () => null);
-
-        await expect(suppliersService.getSupplierById('missing'))
-            .rejects.toThrow('Supplier not found');
-    });
-
-    it('deletes supplier when there are no purchase orders', async () => {
-        prismaMock.purchaseOrder.count.mockResolvedValue(0);
-        prismaMock.supplier.delete.mockResolvedValue({});
-
-        const res = await suppliersService.deleteSupplier('sup-1');
-
-        expect(res.message).toMatch(/deleted/i);
-        expect(prismaMock.supplier.delete.calls[0][0].where.id).toBe('sup-1');
-    });
+    expect(res.message).toMatch(/deleted/i);
+    expect(prismaMock.supplier.delete.calls[0][0].where.id).toBe("sup-1");
+  });
 });

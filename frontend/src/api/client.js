@@ -2,204 +2,206 @@
  * API client with authentication, outlet headers, and automatic token refresh
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 class ApiClient {
-    constructor() {
-        this.baseURL = API_BASE_URL;
-        this.token = localStorage.getItem('accessToken');
-        this.refreshToken = null;
-        this.outletId = localStorage.getItem('activeOutletId');
-        this.isRefreshing = false;
-        this.refreshSubscribers = [];
+  constructor() {
+    this.baseURL = API_BASE_URL;
+    this.token = localStorage.getItem("accessToken");
+    this.refreshToken = null;
+    this.outletId = localStorage.getItem("activeOutletId");
+    this.isRefreshing = false;
+    this.refreshSubscribers = [];
+  }
+
+  setToken(token) {
+    this.token = token;
+    if (token) {
+      localStorage.setItem("accessToken", token);
+    } else {
+      localStorage.removeItem("accessToken");
+    }
+  }
+
+  setRefreshToken(refreshToken) {
+    this.refreshToken = refreshToken;
+  }
+
+  setOutlet(outletId) {
+    this.outletId = outletId;
+    if (outletId) {
+      localStorage.setItem("activeOutletId", outletId);
+    } else {
+      localStorage.removeItem("activeOutletId");
+    }
+  }
+
+  getHeaders() {
+    const headers = {
+      "Content-Type": "application/json",
+    };
+
+    if (this.token) {
+      headers["Authorization"] = `Bearer ${this.token}`;
     }
 
-    setToken(token) {
-        this.token = token;
-        if (token) {
-            localStorage.setItem('accessToken', token);
-        } else {
-            localStorage.removeItem('accessToken');
-        }
+    if (this.outletId) {
+      headers["X-Outlet-Id"] = this.outletId;
     }
 
-    setRefreshToken(refreshToken) {
-        this.refreshToken = refreshToken;
+    return headers;
+  }
+
+  // Subscribe to token refresh
+  onTokenRefreshed(callback) {
+    this.refreshSubscribers.push(callback);
+  }
+
+  // Notify all subscribers that token has been refreshed
+  notifySubscribers(newToken) {
+    this.refreshSubscribers.forEach((callback) => callback(newToken));
+    this.refreshSubscribers = [];
+  }
+
+  // Attempt to refresh the access token
+  async refreshAccessToken() {
+    // Get refresh token from auth storage
+    const authStorage = localStorage.getItem("auth-storage");
+    if (!authStorage) {
+      throw new Error("No auth storage found");
     }
 
-    setOutlet(outletId) {
-        this.outletId = outletId;
-        if (outletId) {
-            localStorage.setItem('activeOutletId', outletId);
-        } else {
-            localStorage.removeItem('activeOutletId');
-        }
+    const parsed = JSON.parse(authStorage);
+    const refreshToken = parsed?.state?.refreshToken;
+
+    if (!refreshToken) {
+      throw new Error("No refresh token available");
     }
 
-    getHeaders() {
-        const headers = {
-            'Content-Type': 'application/json',
-        };
+    const response = await fetch(`${this.baseURL}/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+    });
 
-        if (this.token) {
-            headers['Authorization'] = `Bearer ${this.token}`;
-        }
+    const data = await response.json();
 
-        if (this.outletId) {
-            headers['X-Outlet-Id'] = this.outletId;
-        }
-
-        return headers;
+    if (!response.ok) {
+      throw new Error(data.error || "Token refresh failed");
     }
 
-    // Subscribe to token refresh
-    onTokenRefreshed(callback) {
-        this.refreshSubscribers.push(callback);
-    }
+    // Update local token
+    this.setToken(data.data.accessToken);
 
-    // Notify all subscribers that token has been refreshed
-    notifySubscribers(newToken) {
-        this.refreshSubscribers.forEach(callback => callback(newToken));
-        this.refreshSubscribers = [];
-    }
+    // Update auth storage with new tokens
+    parsed.state.accessToken = data.data.accessToken;
+    parsed.state.refreshToken = data.data.refreshToken;
+    localStorage.setItem("auth-storage", JSON.stringify(parsed));
 
-    // Attempt to refresh the access token
-    async refreshAccessToken() {
-        // Get refresh token from auth storage
-        const authStorage = localStorage.getItem('auth-storage');
-        if (!authStorage) {
-            throw new Error('No auth storage found');
-        }
+    return data.data.accessToken;
+  }
 
-        const parsed = JSON.parse(authStorage);
-        const refreshToken = parsed?.state?.refreshToken;
+  async request(endpoint, options = {}, retry = true) {
+    const url = `${this.baseURL}${endpoint}`;
+    const config = {
+      ...options,
+      headers: {
+        ...this.getHeaders(),
+        ...options.headers,
+      },
+    };
 
-        if (!refreshToken) {
-            throw new Error('No refresh token available');
-        }
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
 
-        const response = await fetch(`${this.baseURL}/auth/refresh`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken }),
-        });
+      if (!response.ok) {
+        // Check if it's a token expired error (401)
+        // Backend returns code at top level for error responses
+        const isTokenExpired =
+          response.status === 401 && data.code === "AUT-401-004";
 
-        const data = await response.json();
+        if (isTokenExpired && retry) {
+          // Try to refresh the token
+          if (!this.isRefreshing) {
+            this.isRefreshing = true;
 
-        if (!response.ok) {
-            throw new Error(data.error || 'Token refresh failed');
-        }
+            try {
+              const newToken = await this.refreshAccessToken();
+              this.isRefreshing = false;
+              this.notifySubscribers(newToken);
 
-        // Update local token
-        this.setToken(data.data.accessToken);
+              // Retry the original request with new token
+              return this.request(endpoint, options, false);
+            } catch (refreshError) {
+              this.isRefreshing = false;
+              this.refreshSubscribers = [];
 
-        // Update auth storage with new tokens
-        parsed.state.accessToken = data.data.accessToken;
-        parsed.state.refreshToken = data.data.refreshToken;
-        localStorage.setItem('auth-storage', JSON.stringify(parsed));
-
-        return data.data.accessToken;
-    }
-
-    async request(endpoint, options = {}, retry = true) {
-        const url = `${this.baseURL}${endpoint}`;
-        const config = {
-            ...options,
-            headers: {
-                ...this.getHeaders(),
-                ...options.headers,
-            },
-        };
-
-        try {
-            const response = await fetch(url, config);
-            const data = await response.json();
-
-            if (!response.ok) {
-                // Check if it's a token expired error (401)
-                // Backend returns code at top level for error responses
-                const isTokenExpired = response.status === 401 && data.code === 'AUT-401-004';
-
-                if (isTokenExpired && retry) {
-                    // Try to refresh the token
-                    if (!this.isRefreshing) {
-                        this.isRefreshing = true;
-
-                        try {
-                            const newToken = await this.refreshAccessToken();
-                            this.isRefreshing = false;
-                            this.notifySubscribers(newToken);
-
-                            // Retry the original request with new token
-                            return this.request(endpoint, options, false);
-                        } catch (refreshError) {
-                            this.isRefreshing = false;
-                            this.refreshSubscribers = [];
-
-                            // Clear auth and redirect to login
-                            this.handleAuthFailure();
-                            throw new Error('Session expired. Please login again.');
-                        }
-                    } else {
-                        // Wait for the refresh to complete
-                        return new Promise((resolve, reject) => {
-                            this.onTokenRefreshed((newToken) => {
-                                // Retry with new token
-                                this.request(endpoint, options, false)
-                                    .then(resolve)
-                                    .catch(reject);
-                            });
-                        });
-                    }
-                }
-
-                throw new Error(data.error || 'Request failed');
+              // Clear auth and redirect to login
+              this.handleAuthFailure();
+              throw new Error("Session expired. Please login again.");
             }
-
-            return data;
-        } catch (err) {
-            console.error('API Error:', err);
-            throw err;
+          } else {
+            // Wait for the refresh to complete
+            return new Promise((resolve, reject) => {
+              this.onTokenRefreshed((newToken) => {
+                // Retry with new token
+                this.request(endpoint, options, false)
+                  .then(resolve)
+                  .catch(reject);
+              });
+            });
+          }
         }
-    }
 
-    handleAuthFailure() {
-        // Clear tokens
-        this.setToken(null);
-        this.setOutlet(null);
-        localStorage.removeItem('auth-storage');
+        throw new Error(data.error || "Request failed");
+      }
 
-        // Redirect to login if not already there
-        if (window.location.pathname !== '/login') {
-            window.location.href = '/login';
-        }
+      return data;
+    } catch (err) {
+      console.error("API Error:", err);
+      throw err;
     }
+  }
 
-    get(endpoint, params = {}) {
-        const query = new URLSearchParams(params).toString();
-        const url = query ? `${endpoint}?${query}` : endpoint;
-        return this.request(url, { method: 'GET' });
-    }
+  handleAuthFailure() {
+    // Clear tokens
+    this.setToken(null);
+    this.setOutlet(null);
+    localStorage.removeItem("auth-storage");
 
-    post(endpoint, body) {
-        return this.request(endpoint, {
-            method: 'POST',
-            body: JSON.stringify(body),
-        });
+    // Redirect to login if not already there
+    if (window.location.pathname !== "/login") {
+      window.location.href = "/login";
     }
+  }
 
-    put(endpoint, body) {
-        return this.request(endpoint, {
-            method: 'PUT',
-            body: JSON.stringify(body),
-        });
-    }
+  get(endpoint, params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const url = query ? `${endpoint}?${query}` : endpoint;
+    return this.request(url, { method: "GET" });
+  }
 
-    delete(endpoint) {
-        return this.request(endpoint, {
-            method: 'DELETE',
-        });
-    }
+  post(endpoint, body) {
+    return this.request(endpoint, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  }
+
+  put(endpoint, body) {
+    return this.request(endpoint, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
+  }
+
+  delete(endpoint) {
+    return this.request(endpoint, {
+      method: "DELETE",
+    });
+  }
 }
 
 export const apiClient = new ApiClient();

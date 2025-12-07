@@ -2,76 +2,79 @@
  * Reports controller
  */
 
-import * as reportsService from './reports.service.js';
-import { REP } from '../../libs/responseCodes.js';
-import { successResponse, errorResponse } from '../../libs/responses.js';
-import logger from '../../libs/logger.js';
+import * as reportsService from "./reports.service.js";
+import { REP } from "../../libs/responseCodes.js";
+import { successResponse, errorResponse } from "../../libs/responses.js";
+import logger from "../../libs/logger.js";
 
 export async function getSalesSummaryController({ query, store, set }) {
-    try {
-        const outletId = store.outletId || query.outletId;
-        const result = await reportsService.getSalesSummary({ ...query, outletId });
+  try {
+    const outletId = store.outletId || query.outletId;
+    const result = await reportsService.getSalesSummary({ ...query, outletId });
 
-        return successResponse(REP.SALES_SUMMARY_SUCCESS, result);
-    } catch (err) {
-        logger.error({ err }, 'Get sales summary failed');
-        set.status = err.statusCode || 500;
-        const message = set.status === 500 ? 'Internal Server Error' : err.message;
-        return errorResponse(REP.REPORT_FAILED, message);
-    }
+    return successResponse(REP.SALES_SUMMARY_SUCCESS, result);
+  } catch (err) {
+    logger.error({ err }, "Get sales summary failed");
+    set.status = err.statusCode || 500;
+    const message = set.status === 500 ? "Internal Server Error" : err.message;
+    return errorResponse(REP.REPORT_FAILED, message);
+  }
 }
 
 export async function getTopProductsController({ query, store, set }) {
-    try {
-        const outletId = store.outletId || query.outletId;
-        const result = await reportsService.getTopProducts({ ...query, outletId });
+  try {
+    const outletId = store.outletId || query.outletId;
+    const result = await reportsService.getTopProducts({ ...query, outletId });
 
-        return successResponse(REP.TOP_PRODUCTS_SUCCESS, result);
-    } catch (err) {
-        logger.error({ err }, 'Get top products failed');
-        set.status = err.statusCode || 500;
-        const message = set.status === 500 ? 'Internal Server Error' : err.message;
-        return errorResponse(REP.REPORT_FAILED, message);
-    }
+    return successResponse(REP.TOP_PRODUCTS_SUCCESS, result);
+  } catch (err) {
+    logger.error({ err }, "Get top products failed");
+    set.status = err.statusCode || 500;
+    const message = set.status === 500 ? "Internal Server Error" : err.message;
+    return errorResponse(REP.REPORT_FAILED, message);
+  }
 }
 
 export async function getInventoryValuationController({ query, set }) {
-    try {
-        const result = await reportsService.getInventoryValuation(query);
+  try {
+    const result = await reportsService.getInventoryValuation(query);
 
-        return successResponse(REP.INVENTORY_VALUATION_SUCCESS, result);
-    } catch (err) {
-        logger.error({ err }, 'Get inventory valuation failed');
-        set.status = err.statusCode || 500;
-        const message = set.status === 500 ? 'Internal Server Error' : err.message;
-        return errorResponse(REP.REPORT_FAILED, message);
-    }
+    return successResponse(REP.INVENTORY_VALUATION_SUCCESS, result);
+  } catch (err) {
+    logger.error({ err }, "Get inventory valuation failed");
+    set.status = err.statusCode || 500;
+    const message = set.status === 500 ? "Internal Server Error" : err.message;
+    return errorResponse(REP.REPORT_FAILED, message);
+  }
 }
 
 export async function getStockMovementsController({ query, store, set }) {
-    try {
-        const outletId = store.outletId || query.outletId;
-        const result = await reportsService.getStockMovementReport({ ...query, outletId });
+  try {
+    const outletId = store.outletId || query.outletId;
+    const result = await reportsService.getStockMovementReport({
+      ...query,
+      outletId,
+    });
 
-        return successResponse(REP.STOCK_MOVEMENTS_SUCCESS, result);
-    } catch (err) {
-        logger.error({ err }, 'Get stock movements failed');
-        set.status = err.statusCode || 500;
-        const message = set.status === 500 ? 'Internal Server Error' : err.message;
-        return errorResponse(REP.REPORT_FAILED, message);
-    }
+    return successResponse(REP.STOCK_MOVEMENTS_SUCCESS, result);
+  } catch (err) {
+    logger.error({ err }, "Get stock movements failed");
+    set.status = err.statusCode || 500;
+    const message = set.status === 500 ? "Internal Server Error" : err.message;
+    return errorResponse(REP.REPORT_FAILED, message);
+  }
 }
 
 export async function getOrderHistoryController({ query, store, set }) {
-    try {
-        const outletId = store.outletId || query.outletId;
-        const result = await reportsService.getOrderHistory({ ...query, outletId });
+  try {
+    const outletId = store.outletId || query.outletId;
+    const result = await reportsService.getOrderHistory({ ...query, outletId });
 
-        return successResponse(REP.ORDER_HISTORY_SUCCESS, result);
-    } catch (err) {
-        logger.error({ err }, 'Get order history failed');
-        set.status = err.statusCode || 500;
-        const message = set.status === 500 ? 'Internal Server Error' : err.message;
-        return errorResponse(REP.REPORT_FAILED, message);
-    }
+    return successResponse(REP.ORDER_HISTORY_SUCCESS, result);
+  } catch (err) {
+    logger.error({ err }, "Get order history failed");
+    set.status = err.statusCode || 500;
+    const message = set.status === 500 ? "Internal Server Error" : err.message;
+    return errorResponse(REP.REPORT_FAILED, message);
+  }
 }

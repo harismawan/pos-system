@@ -5,19 +5,22 @@
  * @returns {string} Formatted date string
  */
 export const formatDateTime = (date, options = {}) => {
-    if (!date) return '-';
+  if (!date) return "-";
 
-    const defaultOptions = {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'Asia/Jakarta',
-        hour12: false
-    };
+  const defaultOptions = {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Jakarta",
+    hour12: false,
+  };
 
-    return new Date(date).toLocaleString('id-ID', { ...defaultOptions, ...options });
+  return new Date(date).toLocaleString("id-ID", {
+    ...defaultOptions,
+    ...options,
+  });
 };
 
 /**
@@ -26,11 +29,11 @@ export const formatDateTime = (date, options = {}) => {
  * @returns {string} Formatted date string
  */
 export const formatDateOnly = (date) => {
-    return formatDateTime(date, {
-        hour: undefined,
-        minute: undefined,
-        second: undefined
-    });
+  return formatDateTime(date, {
+    hour: undefined,
+    minute: undefined,
+    second: undefined,
+  });
 };
 
 /**
@@ -39,11 +42,11 @@ export const formatDateOnly = (date) => {
  * @returns {string} Formatted time string
  */
 export const formatTimeOnly = (date) => {
-    return formatDateTime(date, {
-        year: undefined,
-        month: undefined,
-        day: undefined,
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+  return formatDateTime(date, {
+    year: undefined,
+    month: undefined,
+    day: undefined,
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 };

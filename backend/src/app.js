@@ -3,28 +3,28 @@
  * Middleware, error handling, and routing
  */
 
-import { Elysia } from 'elysia';
-import { cors } from '@elysiajs/cors';
-import config from './config/index.js';
-import { globalErrorHandler } from './libs/errorHandler.js';
-import { compression } from './libs/compression.js';
-import redis from './libs/redis.js';
-import prisma from './libs/prisma.js';
+import { Elysia } from "elysia";
+import { cors } from "@elysiajs/cors";
+import config from "./config/index.js";
+import { globalErrorHandler } from "./libs/errorHandler.js";
+import { compression } from "./libs/compression.js";
+import redis from "./libs/redis.js";
+import prisma from "./libs/prisma.js";
 
 // Import routes
-import { authRoutes } from './modules/auth/auth.routes.js';
-import { productsRoutes } from './modules/products/products.routes.js';
-import { pricingRoutes } from './modules/pricing/pricing.routes.js';
-import { salesRoutes } from './modules/sales/sales.routes.js';
-import { customersRoutes } from './modules/customers/customers.routes.js';
-import { outletsRoutes } from './modules/outlets/outlets.routes.js';
-import { warehousesRoutes } from './modules/warehouses/warehouses.routes.js';
-import { inventoryRoutes } from './modules/inventory/inventory.routes.js';
-import { suppliersRoutes } from './modules/suppliers/suppliers.routes.js';
-import { purchaseOrdersRoutes } from './modules/purchaseOrders/purchaseOrders.routes.js';
-import { reportsRoutes } from './modules/reports/reports.routes.js';
-import { usersRoutes } from './modules/users/users.routes.js';
-import { auditLogsRoutes } from './modules/auditLogs/auditLogs.routes.js';
+import { authRoutes } from "./modules/auth/auth.routes.js";
+import { productsRoutes } from "./modules/products/products.routes.js";
+import { pricingRoutes } from "./modules/pricing/pricing.routes.js";
+import { salesRoutes } from "./modules/sales/sales.routes.js";
+import { customersRoutes } from "./modules/customers/customers.routes.js";
+import { outletsRoutes } from "./modules/outlets/outlets.routes.js";
+import { warehousesRoutes } from "./modules/warehouses/warehouses.routes.js";
+import { inventoryRoutes } from "./modules/inventory/inventory.routes.js";
+import { suppliersRoutes } from "./modules/suppliers/suppliers.routes.js";
+import { purchaseOrdersRoutes } from "./modules/purchaseOrders/purchaseOrders.routes.js";
+import { reportsRoutes } from "./modules/reports/reports.routes.js";
+import { usersRoutes } from "./modules/users/users.routes.js";
+import { auditLogsRoutes } from "./modules/auditLogs/auditLogs.routes.js";
 
 const app = new Elysia();
 
@@ -32,66 +32,73 @@ const app = new Elysia();
 app.use(compression);
 
 // CORS middleware
-app.use(cors({
+app.use(
+  cors({
     origin: config.cors.origin,
     credentials: config.cors.credentials,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Outlet-Id', 'X-Request-ID'],
-    exposeHeaders: ['X-Request-ID'],
-}));
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Outlet-Id",
+      "X-Request-ID",
+    ],
+    exposeHeaders: ["X-Request-ID"],
+  }),
+);
 
 // Global error handler
 app.onError(globalErrorHandler);
 
 // Health check
-app.get('/health', async () => {
-    const health = {
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-        environment: config.nodeEnv,
-        services: {
-            redis: 'unknown',
-            database: 'unknown',
-        },
-    };
+app.get("/health", async () => {
+  const health = {
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    environment: config.nodeEnv,
+    services: {
+      redis: "unknown",
+      database: "unknown",
+    },
+  };
 
-    // Check Redis
-    try {
-        await redis.ping();
-        health.services.redis = 'healthy';
-    } catch (err) {
-        health.services.redis = 'unhealthy';
-        health.status = 'degraded';
-    }
+  // Check Redis
+  try {
+    await redis.ping();
+    health.services.redis = "healthy";
+  } catch (err) {
+    health.services.redis = "unhealthy";
+    health.status = "degraded";
+  }
 
-    // Check Database
-    try {
-        await prisma.$queryRaw`SELECT 1`;
-        health.services.database = 'healthy';
-    } catch (err) {
-        health.services.database = 'unhealthy';
-        health.status = 'degraded';
-    }
+  // Check Database
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    health.services.database = "healthy";
+  } catch (err) {
+    health.services.database = "unhealthy";
+    health.status = "degraded";
+  }
 
-    return health;
+  return health;
 });
 
 // API routes
-app.group('/api', (app) =>
-    app
-        .use(authRoutes)
-        .use(productsRoutes)
-        .use(pricingRoutes)
-        .use(salesRoutes)
-        .use(customersRoutes)
-        .use(outletsRoutes)
-        .use(warehousesRoutes)
-        .use(inventoryRoutes)
-        .use(suppliersRoutes)
-        .use(purchaseOrdersRoutes)
-        .use(reportsRoutes)
-        .use(usersRoutes)
-        .use(auditLogsRoutes)
+app.group("/api", (app) =>
+  app
+    .use(authRoutes)
+    .use(productsRoutes)
+    .use(pricingRoutes)
+    .use(salesRoutes)
+    .use(customersRoutes)
+    .use(outletsRoutes)
+    .use(warehousesRoutes)
+    .use(inventoryRoutes)
+    .use(suppliersRoutes)
+    .use(purchaseOrdersRoutes)
+    .use(reportsRoutes)
+    .use(usersRoutes)
+    .use(auditLogsRoutes),
 );
 
 export default app;

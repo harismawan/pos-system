@@ -38,6 +38,7 @@ pos-system/
 ## 🛠️ Tech Stack
 
 ### Backend
+
 - **Runtime**: Bun (JavaScript)
 - **Framework**: Elysia
 - **Database**: PostgreSQL with Prisma ORM
@@ -46,6 +47,7 @@ pos-system/
 - **Logging**: Pino (structured JSON logs)
 
 ### Frontend
+
 - **Framework**: React 18
 - **Build Tool**: Vite
 - **State Management**: Zustand
@@ -53,6 +55,7 @@ pos-system/
 - **Styling**: CSS (no framework)
 
 ### Worker
+
 - **Runtime**: Bun (JavaScript)
 - **Queue**: Redis (BRPOP pattern)
 - **Jobs**: Audit logs, email notifications, report generation
@@ -109,6 +112,7 @@ cp frontend/.env.example frontend/.env
 Edit each `.env` file with your configuration:
 
 **backend/.env**:
+
 ```env
 DATABASE_URL="postgresql://pos_user:pos_password@localhost:5432/pos_db?schema=public"
 REDIS_URL="redis://localhost:6379"
@@ -117,6 +121,7 @@ JWT_SECRET="your-secret-key-change-this-in-production"
 ```
 
 **worker/.env**:
+
 ```env
 DATABASE_URL="postgresql://pos_user:pos_password@localhost:5432/pos_db?schema=public"
 REDIS_URL="redis://localhost:6379"
@@ -125,6 +130,7 @@ SMTP_HOST="smtp.example.com"
 ```
 
 **frontend/.env**:
+
 ```env
 VITE_API_URL="http://localhost:3000"
 ```
@@ -138,6 +144,7 @@ docker-compose up -d
 ```
 
 This will start:
+
 - PostgreSQL on `localhost:5432`
 - Redis on `localhost:6379`
 
@@ -151,6 +158,7 @@ npx prisma db seed
 ```
 
 The seed script creates:
+
 - Default owner user (username: `owner`, password: `password123`)
 - Main outlet with warehouse
 - Sample products with inventory
@@ -168,6 +176,7 @@ bun run dev
 ```
 
 This starts:
+
 - **Backend**: http://localhost:3000
 - **Frontend**: http://localhost:5173
 - **Worker**: Running in background
@@ -206,6 +215,7 @@ bun run frontend:preview
 ### 1. Login
 
 Navigate to http://localhost:5173 and login with:
+
 - **Username**: `owner`
 - **Password**: `password123`
 
@@ -222,6 +232,7 @@ After login, select an outlet from the dropdown in the header. The system will u
 5. Click **Complete Order**
 
 The system will:
+
 - Create the order
 - Add payment
 - Update inventory automatically
@@ -236,6 +247,7 @@ Navigate to **Products** to view, create, edit, or deactivate products.
 Complete API reference is available in **[API.md](./API.md)**
 
 Quick links to endpoints:
+
 - [Authentication](./API.md#authentication) - Login, refresh, logout
 - [Products](./API.md#products) - Product management
 - [Pricing](./API.md#pricing) - Tiered pricing system
@@ -281,12 +293,14 @@ Prices are resolved in this order:
 Base URL: `http://localhost:3000/api`
 
 ### Authentication
+
 - `POST /auth/login` - Login with username/password
 - `POST /auth/refresh` - Refresh access token
 - `POST /auth/logout` - Logout (invalidate token)
 - `GET /auth/me` - Get current user info
 
 ### Products
+
 - `GET /products` - List products (with filters, pagination)
 - `GET /products/:id` - Get product by ID
 - `POST /products` - Create product
@@ -294,6 +308,7 @@ Base URL: `http://localhost:3000/api`
 - `DELETE /products/:id` - Soft delete product
 
 ### Pricing
+
 - `GET /pricing/quote` - Get price quote for a product
 - `GET /pricing/tiers` - List price tiers
 - `POST /pricing/tiers` - Create price tier
@@ -302,6 +317,7 @@ Base URL: `http://localhost:3000/api`
 - `POST /pricing/products/:productId/prices` - Set product price
 
 ### POS / Sales
+
 - `POST /pos/orders` - Create new POS order
 - `GET /pos/orders` - List orders (with filters)
 - `GET /pos/orders/:id` - Get order by ID
@@ -314,15 +330,18 @@ Base URL: `http://localhost:3000/api`
 The worker processes three types of jobs from Redis queues:
 
 ### 1. Audit Log Jobs
+
 - Persist audit events to database
 - Track: user logins, sales, procurement, etc.
 
 ### 2. Email Notifications
+
 - Send order receipts to customers
 - Procurement notifications
 - System alerts
 
 ### 3. Report Generation
+
 - Sales summaries (revenue, top products)
 - Stock reports (low stock alerts)
 - Heavy/async report processing
@@ -426,6 +445,7 @@ MIT License - feel free to use this as a template for your projects.
 ## 🙏 Acknowledgements
 
 Built with:
+
 - [Bun](https://bun.sh/)
 - [Elysia](https://elysiajs.com/)
 - [Prisma](https://www.prisma.io/)

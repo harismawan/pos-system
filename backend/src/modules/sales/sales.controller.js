@@ -2,89 +2,99 @@
  * Sales controller
  */
 
-import * as salesService from './sales.service.js';
-import logger from '../../libs/logger.js';
-import { SAL } from '../../libs/responseCodes.js';
-import { successResponse, errorResponse } from '../../libs/responses.js';
+import * as salesService from "./sales.service.js";
+import logger from "../../libs/logger.js";
+import { SAL } from "../../libs/responseCodes.js";
+import { successResponse, errorResponse } from "../../libs/responses.js";
 
 export async function createPosOrderController({ body, store, set }) {
-    try {
-        const userId = store.user.id;
-        const order = await salesService.createPosOrder(body, userId);
+  try {
+    const userId = store.user.id;
+    const order = await salesService.createPosOrder(body, userId);
 
-        set.status = 201;
-        return successResponse(SAL.CREATE_ORDER_SUCCESS, order);
-    } catch (err) {
-        logger.error({ err }, 'Create POS order failed');
-        set.status = err.statusCode || 400;
-        const message = set.status === 500 ? 'Internal Server Error' : err.message;
-        return errorResponse(SAL.CREATE_FAILED, message);
-    }
+    set.status = 201;
+    return successResponse(SAL.CREATE_ORDER_SUCCESS, order);
+  } catch (err) {
+    logger.error({ err }, "Create POS order failed");
+    set.status = err.statusCode || 400;
+    const message = set.status === 500 ? "Internal Server Error" : err.message;
+    return errorResponse(SAL.CREATE_FAILED, message);
+  }
 }
 
 export async function getPosOrdersController({ query, store, set }) {
-    try {
-        const outletId = store.outletId || query.outletId;
-        const result = await salesService.getPosOrders({ ...query, outletId });
+  try {
+    const outletId = store.outletId || query.outletId;
+    const result = await salesService.getPosOrders({ ...query, outletId });
 
-        return successResponse(SAL.LIST_SUCCESS, result);
-    } catch (err) {
-        logger.error({ err }, 'Get POS orders failed');
-        set.status = err.statusCode || 500;
-        const message = set.status === 500 ? 'Internal Server Error' : err.message;
-        return errorResponse(SAL.LIST_FAILED, message);
-    }
+    return successResponse(SAL.LIST_SUCCESS, result);
+  } catch (err) {
+    logger.error({ err }, "Get POS orders failed");
+    set.status = err.statusCode || 500;
+    const message = set.status === 500 ? "Internal Server Error" : err.message;
+    return errorResponse(SAL.LIST_FAILED, message);
+  }
 }
 
 export async function getPosOrderByIdController({ params, set }) {
-    try {
-        const order = await salesService.getPosOrderById(params.id);
+  try {
+    const order = await salesService.getPosOrderById(params.id);
 
-        return successResponse(SAL.GET_SUCCESS, order);
-    } catch (err) {
-        logger.error({ err }, 'Get POS order failed');
-        set.status = err.message === 'Order not found' ? 404 : 500;
-        const code = err.message === 'Order not found' ? SAL.NOT_FOUND : SAL.LIST_FAILED;
-        const message = set.status === 500 ? 'Internal Server Error' : err.message;
-        return errorResponse(code, message);
-    }
+    return successResponse(SAL.GET_SUCCESS, order);
+  } catch (err) {
+    logger.error({ err }, "Get POS order failed");
+    set.status = err.message === "Order not found" ? 404 : 500;
+    const code =
+      err.message === "Order not found" ? SAL.NOT_FOUND : SAL.LIST_FAILED;
+    const message = set.status === 500 ? "Internal Server Error" : err.message;
+    return errorResponse(code, message);
+  }
 }
 
 export async function completePosOrderController({ params, store, set }) {
-    try {
-        const userId = store.user.id;
-        const order = await salesService.completePosOrder(params.id, userId);
+  try {
+    const userId = store.user.id;
+    const order = await salesService.completePosOrder(params.id, userId);
 
-        return successResponse(SAL.COMPLETE_SUCCESS, order);
-    } catch (err) {
-        logger.error({ err }, 'Complete POS order failed');
-        set.status = 400;
-        return errorResponse(SAL.COMPLETE_FAILED, err.message || 'Failed to complete order');
-    }
+    return successResponse(SAL.COMPLETE_SUCCESS, order);
+  } catch (err) {
+    logger.error({ err }, "Complete POS order failed");
+    set.status = 400;
+    return errorResponse(
+      SAL.COMPLETE_FAILED,
+      err.message || "Failed to complete order",
+    );
+  }
 }
 
 export async function cancelPosOrderController({ params, store, set }) {
-    try {
-        const userId = store.user.id;
-        const order = await salesService.cancelPosOrder(params.id, userId);
+  try {
+    const userId = store.user.id;
+    const order = await salesService.cancelPosOrder(params.id, userId);
 
-        return successResponse(SAL.CANCEL_SUCCESS, order);
-    } catch (err) {
-        logger.error({ err }, 'Cancel POS order failed');
-        set.status = 400;
-        return errorResponse(SAL.CANCEL_FAILED, err.message || 'Failed to cancel order');
-    }
+    return successResponse(SAL.CANCEL_SUCCESS, order);
+  } catch (err) {
+    logger.error({ err }, "Cancel POS order failed");
+    set.status = 400;
+    return errorResponse(
+      SAL.CANCEL_FAILED,
+      err.message || "Failed to cancel order",
+    );
+  }
 }
 
 export async function addPaymentController({ params, body, set }) {
-    try {
-        const result = await salesService.addPayment(params.id, body);
+  try {
+    const result = await salesService.addPayment(params.id, body);
 
-        set.status = 201;
-        return successResponse(SAL.ADD_PAYMENT_SUCCESS, result);
-    } catch (err) {
-        logger.error({ err }, 'Add payment failed');
-        set.status = 400;
-        return errorResponse(SAL.PAYMENT_FAILED, err.message || 'Failed to add payment');
-    }
+    set.status = 201;
+    return successResponse(SAL.ADD_PAYMENT_SUCCESS, result);
+  } catch (err) {
+    logger.error({ err }, "Add payment failed");
+    set.status = 400;
+    return errorResponse(
+      SAL.PAYMENT_FAILED,
+      err.message || "Failed to add payment",
+    );
+  }
 }

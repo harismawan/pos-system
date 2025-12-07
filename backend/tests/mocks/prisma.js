@@ -1,34 +1,37 @@
-import { createMockFn } from './mockFn.js';
+import { createMockFn } from "./mockFn.js";
 
 // Creates a Prisma client stub with lazy mock functions for any accessed model/method
 export function createPrismaMock() {
-    const client = {};
+  const client = {};
 
-    const proxy = new Proxy(client, {
-        get(target, prop) {
-            if (prop in target) {
-                return target[prop];
+  const proxy = new Proxy(client, {
+    get(target, prop) {
+      if (prop in target) {
+        return target[prop];
+      }
+
+      // Create a model proxy on first access
+      const modelProxy = new Proxy(
+        {},
+        {
+          get(modelTarget, method) {
+            if (!(method in modelTarget)) {
+              modelTarget[method] = createMockFn();
             }
-
-            // Create a model proxy on first access
-            const modelProxy = new Proxy({}, {
-                get(modelTarget, method) {
-                    if (!(method in modelTarget)) {
-                        modelTarget[method] = createMockFn();
-                    }
-                    return modelTarget[method];
-                },
-            });
-
-            target[prop] = modelProxy;
-            return modelProxy;
+            return modelTarget[method];
+          },
         },
-    });
+      );
 
-    client.$queryRaw = createMockFn();
-    client.$queryRawUnsafe = createMockFn();
-    client.$on = createMockFn();
-    client.$transaction = createMockFn(async (callback) => callback(proxy));
+      target[prop] = modelProxy;
+      return modelProxy;
+    },
+  });
 
-    return proxy;
+  client.$queryRaw = createMockFn();
+  client.$queryRawUnsafe = createMockFn();
+  client.$on = createMockFn();
+  client.$transaction = createMockFn(async (callback) => callback(proxy));
+
+  return proxy;
 }

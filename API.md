@@ -32,6 +32,7 @@ Complete API reference for the POS System backend.
 Login with username and password.
 
 **Request Body:**
+
 ```json
 {
   "username": "owner",
@@ -40,6 +41,7 @@ Login with username and password.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -71,6 +73,7 @@ Login with username and password.
 Refresh access token using refresh token.
 
 **Request Body:**
+
 ```json
 {
   "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
@@ -78,6 +81,7 @@ Refresh access token using refresh token.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -95,6 +99,7 @@ Logout (invalidate tokens on client side).
 **Headers:** `Authorization: Bearer <token>`
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -109,6 +114,7 @@ Get current user information.
 **Headers:** `Authorization: Bearer <token>`
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -134,6 +140,7 @@ List products with optional filters and pagination.
 **Headers:** `Authorization: Bearer <token>`
 
 **Query Parameters:**
+
 - `search` (string, optional) - Search by SKU, name, or barcode
 - `category` (string, optional) - Filter by category
 - `isActive` (boolean, optional) - Filter by active status
@@ -142,6 +149,7 @@ List products with optional filters and pagination.
 - `limit` (number, default: 50)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -189,6 +197,7 @@ Create a new product.
 **Headers:** `Authorization: Bearer <token>`
 
 **Request Body:**
+
 ```json
 {
   "sku": "PROD-004",
@@ -223,6 +232,7 @@ Soft delete a product (sets `isActive` to false).
 **Headers:** `Authorization: Bearer <token>`
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -243,11 +253,13 @@ Get price quote for a product based on outlet and customer.
 **Headers:** `Authorization: Bearer <token>`
 
 **Query Parameters:**
+
 - `productId` (string, required)
 - `outletId` (string, required)
 - `customerId` (string, optional)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -276,6 +288,7 @@ List all price tiers.
 **Headers:** `Authorization: Bearer <token>`
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -300,6 +313,7 @@ Create a new price tier.
 **Headers:** `Authorization: Bearer <token>`
 
 **Request Body:**
+
 ```json
 {
   "name": "VIP",
@@ -322,10 +336,11 @@ Get all price tier prices for a product.
 Set a price for a product in a specific tier.
 
 **Request Body:**
+
 ```json
 {
   "priceTierId": "clx...",
-  "outletId": "clx...",  // null for global
+  "outletId": "clx...", // null for global
   "price": 95000
 }
 ```
@@ -341,6 +356,7 @@ List customers with filters.
 **Headers:** `Authorization: Bearer <token>`
 
 **Query Parameters:**
+
 - `search` (string) - Search by name, email, or phone
 - `priceTierId` (string) - Filter by price tier
 - `isMember` (boolean) - Filter by membership status
@@ -355,6 +371,7 @@ Get customer by ID with order history.
 Create a new customer.
 
 **Request Body:**
+
 ```json
 {
   "name": "John Doe",
@@ -387,6 +404,7 @@ List all outlets.
 **Headers:** `Authorization: Bearer <token>`
 
 **Query Parameters:**
+
 - `isActive` (boolean)
 - `page`, `limit`
 
@@ -399,6 +417,7 @@ Get outlet by ID with users and warehouses.
 Create a new outlet.
 
 **Request Body:**
+
 ```json
 {
   "name": "Branch 2",
@@ -424,6 +443,7 @@ Delete outlet (fails if outlet has orders).
 Get users assigned to an outlet.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -451,6 +471,7 @@ Get users assigned to an outlet.
 Assign a user to an outlet.
 
 **Request Body:**
+
 ```json
 {
   "userId": "clx...",
@@ -472,6 +493,7 @@ Remove a user from an outlet.
 List warehouses.
 
 **Query Parameters:**
+
 - `outletId` (string) - Filter by outlet
 - `type` (enum: CENTRAL, OUTLET)
 - `isActive` (boolean)
@@ -486,6 +508,7 @@ Get warehouse by ID with inventory.
 Create a new warehouse.
 
 **Request Body:**
+
 ```json
 {
   "outletId": "clx...",
@@ -511,6 +534,7 @@ Delete warehouse (fails if warehouse has inventory).
 Get inventory for a specific warehouse.
 
 **Query Parameters:**
+
 - `lowStock` (boolean) - Filter low stock items
 - `page`, `limit`
 
@@ -525,6 +549,7 @@ Get inventory across warehouses.
 **Headers:** `Authorization: Bearer <token>`, `X-Outlet-Id: <outletId>`
 
 **Query Parameters:**
+
 - `productId` (string)
 - `warehouseId` (string)
 - `outletId` (string)
@@ -532,6 +557,7 @@ Get inventory across warehouses.
 - `page`, `limit`
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -558,12 +584,13 @@ Get inventory across warehouses.
 Adjust inventory quantity (in or out).
 
 **Request Body:**
+
 ```json
 {
   "productId": "clx...",
   "warehouseId": "clx...",
   "outletId": "clx...",
-  "type": "ADJUSTMENT_IN",  // or ADJUSTMENT_OUT
+  "type": "ADJUSTMENT_IN", // or ADJUSTMENT_OUT
   "quantity": 50,
   "notes": "Received damaged goods return"
 }
@@ -574,6 +601,7 @@ Adjust inventory quantity (in or out).
 Transfer inventory between warehouses.
 
 **Request Body:**
+
 ```json
 {
   "productId": "clx...",
@@ -586,6 +614,7 @@ Transfer inventory between warehouses.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -601,6 +630,7 @@ Transfer inventory between warehouses.
 Get stock movement history.
 
 **Query Parameters:**
+
 - `productId`, `warehouseId`, `outletId`
 - `type` (enum: PURCHASE, SALE, TRANSFER, ADJUSTMENT_IN, ADJUSTMENT_OUT)
 - `page`, `limit`
@@ -614,6 +644,7 @@ Get stock movement history.
 List suppliers.
 
 **Query Parameters:**
+
 - `search` (string) - Search by name, contact, or email
 - `isActive` (boolean)
 - `page`, `limit`
@@ -627,6 +658,7 @@ Get supplier by ID with purchase order history.
 Create a new supplier.
 
 **Request Body:**
+
 ```json
 {
   "name": "ABC Suppliers Inc.",
@@ -658,6 +690,7 @@ List purchase orders.
 **Headers:** `Authorization: Bearer <token>`, `X-Outlet-Id: <outletId>`
 
 **Query Parameters:**
+
 - `supplierId`, `warehouseId`, `outletId`
 - `status` (enum: DRAFT, ORDERED, RECEIVED, CANCELLED)
 - `page`, `limit`
@@ -671,6 +704,7 @@ Get purchase order by ID with full details.
 Create a new purchase order.
 
 **Request Body:**
+
 ```json
 {
   "supplierId": "clx...",
@@ -694,6 +728,7 @@ Create a new purchase order.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -718,6 +753,7 @@ Update a draft purchase order.
 Receive goods from a purchase order (updates inventory).
 
 **Request Body:**
+
 ```json
 {
   "receivedItems": [
@@ -736,6 +772,7 @@ Receive goods from a purchase order (updates inventory).
 **Response:** Updated purchase order with status RECEIVED.
 
 **Side Effects:**
+
 - Updates inventory quantities
 - Creates stock movements (type: PURCHASE)
 - Enqueues audit log job
@@ -757,6 +794,7 @@ Create a new POS order.
 **Headers:** `Authorization: Bearer <token>`, `X-Outlet-Id: <outletId>`
 
 **Request Body:**
+
 ```json
 {
   "outletId": "clx...",
@@ -781,6 +819,7 @@ Create a new POS order.
 List POS orders.
 
 **Query Parameters:**
+
 - `outletId`, `customerId`, `cashierId`
 - `status` (enum: OPEN, COMPLETED, CANCELLED)
 - `page`, `limit`
@@ -796,6 +835,7 @@ Complete a POS order (must be fully paid).
 **Response:** Completed order.
 
 **Side Effects:**
+
 - Updates order status to COMPLETED
 - Decreases inventory quantities
 - Creates stock movements (type: SALE)
@@ -811,15 +851,17 @@ Cancel a POS order.
 Add a payment to an order.
 
 **Request Body:**
+
 ```json
 {
-  "method": "CASH",  // CASH, CARD, E_WALLET, BANK_TRANSFER
+  "method": "CASH", // CASH, CARD, E_WALLET, BANK_TRANSFER
   "amount": 200000,
   "reference": "TXN-12345"
 }
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -846,6 +888,7 @@ All errors follow this format:
 ```
 
 **Common HTTP Status Codes:**
+
 - `400` - Bad Request (validation error, business logic error)
 - `401` - Unauthorized (missing or invalid token)
 - `403` - Forbidden (insufficient permissions)
@@ -859,11 +902,13 @@ All errors follow this format:
 All list endpoints support pagination:
 
 **Request:**
+
 ```
 GET /api/products?page=2&limit=20
 ```
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -884,14 +929,14 @@ GET /api/products?page=2&limit=20
 
 The following operations enqueue background jobs (non-blocking):
 
-| Operation | Job Type | Purpose |
-|-----------|----------|---------|
-| User login | `AUDIT_LOG` | Track login events |
-| Sale completed | `AUDIT_LOG` | Track sales |
-| Sale completed | `EMAIL_NOTIFICATION` | Send receipt to customer |
-| PO received | `AUDIT_LOG` | Track receiving |
-| Outlet created | `AUDIT_LOG` | Track outlet changes |
-| User assigned to outlet | `AUDIT_LOG` | Track permissions |
+| Operation               | Job Type             | Purpose                  |
+| ----------------------- | -------------------- | ------------------------ |
+| User login              | `AUDIT_LOG`          | Track login events       |
+| Sale completed          | `AUDIT_LOG`          | Track sales              |
+| Sale completed          | `EMAIL_NOTIFICATION` | Send receipt to customer |
+| PO received             | `AUDIT_LOG`          | Track receiving          |
+| Outlet created          | `AUDIT_LOG`          | Track outlet changes     |
+| User assigned to outlet | `AUDIT_LOG`          | Track permissions        |
 
 Jobs are processed asynchronously by the worker service.
 

@@ -6,7 +6,7 @@
  * Base email template with consistent styling
  */
 function baseTemplate(content) {
-    return `
+  return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -133,18 +133,29 @@ function baseTemplate(content) {
  * Order receipt template
  */
 export function orderReceiptTemplate(data) {
-    const { orderNumber, customerName, totalAmount, items, orderDate, paymentMethod } = data;
+  const {
+    orderNumber,
+    customerName,
+    totalAmount,
+    items,
+    orderDate,
+    paymentMethod,
+  } = data;
 
-    const itemsHtml = items.map(item => `
+  const itemsHtml = items
+    .map(
+      (item) => `
         <tr>
             <td>${item.product.name}</td>
             <td class="text-center">${item.quantity}</td>
             <td class="text-center">$${parseFloat(item.unitPrice).toFixed(2)}</td>
             <td class="text-center">$${parseFloat(item.lineTotal).toFixed(2)}</td>
         </tr>
-    `).join('');
+    `,
+    )
+    .join("");
 
-    const content = `
+  const content = `
         <div class="email-header">
             <h1>📧 Order Receipt</h1>
         </div>
@@ -155,7 +166,7 @@ export function orderReceiptTemplate(data) {
             <div class="info-box">
                 <p style="margin: 5px 0;"><strong>Order Number:</strong> ${orderNumber}</p>
                 <p style="margin: 5px 0;"><strong>Date:</strong> ${orderDate || new Date().toLocaleDateString()}</p>
-                <p style="margin: 5px 0;"><strong>Payment Method:</strong> ${paymentMethod || 'Cash'}</p>
+                <p style="margin: 5px 0;"><strong>Payment Method:</strong> ${paymentMethod || "Cash"}</p>
             </div>
 
             <table class="table">
@@ -180,20 +191,20 @@ export function orderReceiptTemplate(data) {
         </div>
     `;
 
-    return {
-        subject: `Receipt for Order #${orderNumber}`,
-        html: baseTemplate(content),
-        text: `Order Receipt\nOrder Number: ${orderNumber}\nTotal: $${totalAmount}\nThank you for your purchase!`,
-    };
+  return {
+    subject: `Receipt for Order #${orderNumber}`,
+    html: baseTemplate(content),
+    text: `Order Receipt\nOrder Number: ${orderNumber}\nTotal: $${totalAmount}\nThank you for your purchase!`,
+  };
 }
 
 /**
  * Welcome email template
  */
 export function welcomeTemplate(data) {
-    const { name, username } = data;
+  const { name, username } = data;
 
-    const content = `
+  const content = `
         <div class="email-header">
             <h1>👋 Welcome to POS System!</h1>
         </div>
@@ -218,20 +229,20 @@ export function welcomeTemplate(data) {
         </div>
     `;
 
-    return {
-        subject: 'Welcome to POS System!',
-        html: baseTemplate(content),
-        text: `Welcome to POS System!\n\nHi ${name}, we're excited to have you on board. Your username is: ${username}`,
-    };
+  return {
+    subject: "Welcome to POS System!",
+    html: baseTemplate(content),
+    text: `Welcome to POS System!\n\nHi ${name}, we're excited to have you on board. Your username is: ${username}`,
+  };
 }
 
 /**
  * Password reset template
  */
 export function passwordResetTemplate(data) {
-    const { name, resetLink, expiryMinutes = 30 } = data;
+  const { name, resetLink, expiryMinutes = 30 } = data;
 
-    const content = `
+  const content = `
         <div class="email-header">
             <h1>🔐 Reset Your Password</h1>
         </div>
@@ -251,29 +262,33 @@ export function passwordResetTemplate(data) {
         </div>
     `;
 
-    return {
-        subject: 'Reset Your Password - POS System',
-        html: baseTemplate(content),
-        text: `Reset Your Password\n\nHi ${name}, click this link to reset your password: ${resetLink}\nThis link expires in ${expiryMinutes} minutes.`,
-    };
+  return {
+    subject: "Reset Your Password - POS System",
+    html: baseTemplate(content),
+    text: `Reset Your Password\n\nHi ${name}, click this link to reset your password: ${resetLink}\nThis link expires in ${expiryMinutes} minutes.`,
+  };
 }
 
 /**
  * Low stock alert template
  */
 export function lowStockAlertTemplate(data) {
-    const { products } = data;
+  const { products } = data;
 
-    const productsHtml = products.map(product => `
+  const productsHtml = products
+    .map(
+      (product) => `
         <tr>
             <td>${product.name}</td>
             <td class="text-center">${product.sku}</td>
             <td class="text-center">${product.currentStock}</td>
             <td class="text-center">${product.minimumStock}</td>
         </tr>
-    `).join('');
+    `,
+    )
+    .join("");
 
-    const content = `
+  const content = `
         <div class="email-header">
             <h1>⚠️ Low Stock Alert</h1>
         </div>
@@ -300,61 +315,65 @@ export function lowStockAlertTemplate(data) {
         </div>
     `;
 
-    return {
-        subject: '⚠️ Low Stock Alert - Action Required',
-        html: baseTemplate(content),
-        text: `Low Stock Alert\n\n${products.map(p => `${p.name} (${p.sku}): ${p.currentStock} units (min: ${p.minimumStock})`).join('\n')}`,
-    };
+  return {
+    subject: "⚠️ Low Stock Alert - Action Required",
+    html: baseTemplate(content),
+    text: `Low Stock Alert\n\n${products.map((p) => `${p.name} (${p.sku}): ${p.currentStock} units (min: ${p.minimumStock})`).join("\n")}`,
+  };
 }
 
 /**
  * General notification template
  */
 export function generalNotificationTemplate(data) {
-    const { title, message, actionUrl, actionText } = data;
+  const { title, message, actionUrl, actionText } = data;
 
-    const content = `
+  const content = `
         <div class="email-header">
             <h1>${title}</h1>
         </div>
         <div class="email-body">
             <p>${message}</p>
             
-            ${actionUrl ? `
+            ${
+              actionUrl
+                ? `
                 <div class="text-center">
-                    <a href="${actionUrl}" class="button">${actionText || 'View Details'}</a>
+                    <a href="${actionUrl}" class="button">${actionText || "View Details"}</a>
                 </div>
-            ` : ''}
+            `
+                : ""
+            }
         </div>
     `;
 
-    return {
-        subject: title,
-        html: baseTemplate(content),
-        text: `${title}\n\n${message}${actionUrl ? `\n\nView details: ${actionUrl}` : ''}`,
-    };
+  return {
+    subject: title,
+    html: baseTemplate(content),
+    text: `${title}\n\n${message}${actionUrl ? `\n\nView details: ${actionUrl}` : ""}`,
+  };
 }
 
 /**
  * Render email template by name
  */
 export function renderTemplate(templateName, data) {
-    const templates = {
-        order_receipt: orderReceiptTemplate,
-        welcome: welcomeTemplate,
-        password_reset: passwordResetTemplate,
-        low_stock_alert: lowStockAlertTemplate,
-        general_notification: generalNotificationTemplate,
-    };
+  const templates = {
+    order_receipt: orderReceiptTemplate,
+    welcome: welcomeTemplate,
+    password_reset: passwordResetTemplate,
+    low_stock_alert: lowStockAlertTemplate,
+    general_notification: generalNotificationTemplate,
+  };
 
-    const templateFn = templates[templateName];
+  const templateFn = templates[templateName];
 
-    if (!templateFn) {
-        return generalNotificationTemplate({
-            title: 'Notification',
-            message: 'This is a notification from POS System.',
-        });
-    }
+  if (!templateFn) {
+    return generalNotificationTemplate({
+      title: "Notification",
+      message: "This is a notification from POS System.",
+    });
+  }
 
-    return templateFn(data);
+  return templateFn(data);
 }

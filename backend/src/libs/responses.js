@@ -10,11 +10,11 @@
  * @returns {Object} Formatted success response
  */
 export function successResponse(code, data) {
-    return {
-        success: true,
-        code,
-        data,
-    };
+  return {
+    success: true,
+    code,
+    data,
+  };
 }
 
 /**
@@ -25,13 +25,13 @@ export function successResponse(code, data) {
  * @returns {Object} Formatted error response
  */
 export function errorResponse(code, error, details = null) {
-    const response = {
-        success: false,
-        code,
-        error,
-    };
-    if (details) {
-        response.details = details;
-    }
-    return response;
+  const response = {
+    success: false,
+    code,
+    error,
+  };
+  if (details) {
+    response.details = details;
+  }
+  return response;
 }

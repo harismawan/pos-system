@@ -1,142 +1,188 @@
-import '../../testSetup.js';
-import { describe, it, expect, mock, beforeEach } from 'bun:test';
-import { createMockFn } from '../../mocks/mockFn.js';
+import "../../testSetup.js";
+import { describe, it, expect, mock, beforeEach } from "bun:test";
+import { createMockFn } from "../../mocks/mockFn.js";
 
 const serviceMock = {
-    getProductById: createMockFn(async () => ({ id: 'p1' })),
-    getProducts: createMockFn(async () => ({ products: [], pagination: {} })),
-    createProduct: createMockFn(async () => ({ id: 'p1' })),
-    updateProduct: createMockFn(async () => ({ id: 'p1', name: 'updated' })),
-    deleteProduct: createMockFn(async () => ({ deleted: true })),
+  getProductById: createMockFn(async () => ({ id: "p1" })),
+  getProducts: createMockFn(async () => ({ products: [], pagination: {} })),
+  createProduct: createMockFn(async () => ({ id: "p1" })),
+  updateProduct: createMockFn(async () => ({ id: "p1", name: "updated" })),
+  deleteProduct: createMockFn(async () => ({ deleted: true })),
 };
 
 const loggerMock = { error: createMockFn() };
 
-mock.module('../../../src/modules/products/products.service.js', () => serviceMock);
-mock.module('../../../src/libs/logger.js', () => ({ default: loggerMock }));
+mock.module(
+  "../../../src/modules/products/products.service.js",
+  () => serviceMock,
+);
+mock.module("../../../src/libs/logger.js", () => ({ default: loggerMock }));
 
-const controller = await import('../../../src/modules/products/products.controller.js');
+const controller =
+  await import("../../../src/modules/products/products.controller.js");
 
 const resetMocks = () => {
-    serviceMock.getProducts.mockReset();
-    serviceMock.getProducts.mockResolvedValue({ products: [], pagination: {} });
-    serviceMock.getProductById.mockReset();
-    serviceMock.getProductById.mockResolvedValue({ id: 'p1' });
-    serviceMock.createProduct.mockReset();
-    serviceMock.createProduct.mockResolvedValue({ id: 'p1' });
-    serviceMock.updateProduct.mockReset();
-    serviceMock.updateProduct.mockResolvedValue({ id: 'p1', name: 'updated' });
-    serviceMock.deleteProduct.mockReset();
-    serviceMock.deleteProduct.mockResolvedValue({ deleted: true });
-    loggerMock.error.mockReset();
+  serviceMock.getProducts.mockReset();
+  serviceMock.getProducts.mockResolvedValue({ products: [], pagination: {} });
+  serviceMock.getProductById.mockReset();
+  serviceMock.getProductById.mockResolvedValue({ id: "p1" });
+  serviceMock.createProduct.mockReset();
+  serviceMock.createProduct.mockResolvedValue({ id: "p1" });
+  serviceMock.updateProduct.mockReset();
+  serviceMock.updateProduct.mockResolvedValue({ id: "p1", name: "updated" });
+  serviceMock.deleteProduct.mockReset();
+  serviceMock.deleteProduct.mockResolvedValue({ deleted: true });
+  loggerMock.error.mockReset();
 };
 
-describe('modules/products/products.controller', () => {
-    beforeEach(resetMocks);
+describe("modules/products/products.controller", () => {
+  beforeEach(resetMocks);
 
-    it('returns products list and prefers outletId from store', async () => {
-        const set = {};
-        const res = await controller.getProductsController({
-            query: { search: 'abc', outletId: 'q-1' },
-            store: { outletId: 'store-1' },
-            set,
-        });
-
-        expect(res.success).toBe(true);
-        expect(serviceMock.getProducts.calls[0][0].outletId).toBe('store-1');
+  it("returns products list and prefers outletId from store", async () => {
+    const set = {};
+    const res = await controller.getProductsController({
+      query: { search: "abc", outletId: "q-1" },
+      store: { outletId: "store-1" },
+      set,
     });
 
-    it('returns error when get products fails', async () => {
-        const set = {};
-        serviceMock.getProducts.mockImplementation(async () => { throw new Error('fail'); });
+    expect(res.success).toBe(true);
+    expect(serviceMock.getProducts.calls[0][0].outletId).toBe("store-1");
+  });
 
-        const res = await controller.getProductsController({ query: {}, store: {}, set });
-        expect(set.status).toBe(500);
-        expect(res.success).toBe(false);
-        expect(res.error).toBe('Internal Server Error');
+  it("returns error when get products fails", async () => {
+    const set = {};
+    serviceMock.getProducts.mockImplementation(async () => {
+      throw new Error("fail");
     });
 
-    it('returns product by id', async () => {
-        const set = {};
-        const res = await controller.getProductByIdController({ params: { id: 'p1' }, set });
+    const res = await controller.getProductsController({
+      query: {},
+      store: {},
+      set,
+    });
+    expect(set.status).toBe(500);
+    expect(res.success).toBe(false);
+    expect(res.error).toBe("Internal Server Error");
+  });
 
-        expect(res.success).toBe(true);
-        expect(res.data.id).toBe('p1');
+  it("returns product by id", async () => {
+    const set = {};
+    const res = await controller.getProductByIdController({
+      params: { id: "p1" },
+      set,
     });
 
-    it('returns 404 when product is missing', async () => {
-        const set = {};
-        serviceMock.getProductById.mockImplementation(async () => { throw new Error('Product not found'); });
+    expect(res.success).toBe(true);
+    expect(res.data.id).toBe("p1");
+  });
 
-        const res = await controller.getProductByIdController({ params: { id: 'missing' }, set });
-
-        expect(set.status).toBe(404);
-        expect(res.success).toBe(false);
+  it("returns 404 when product is missing", async () => {
+    const set = {};
+    serviceMock.getProductById.mockImplementation(async () => {
+      throw new Error("Product not found");
     });
 
-    it('sets 201 on create', async () => {
-        const set = {};
-        const res = await controller.createProductController({ body: { name: 'Test' }, set });
-        expect(set.status).toBe(201);
-        expect(res.success).toBe(true);
-        expect(serviceMock.createProduct.calls.length).toBeGreaterThan(0);
+    const res = await controller.getProductByIdController({
+      params: { id: "missing" },
+      set,
     });
 
-    it('returns error when create fails', async () => {
-        const set = {};
-        serviceMock.createProduct.mockImplementation(async () => { throw new Error('boom'); });
+    expect(set.status).toBe(404);
+    expect(res.success).toBe(false);
+  });
 
-        const res = await controller.createProductController({ body: {}, set });
-        expect(set.status).toBe(400);
-        expect(res.success).toBe(false);
+  it("sets 201 on create", async () => {
+    const set = {};
+    const res = await controller.createProductController({
+      body: { name: "Test" },
+      set,
+    });
+    expect(set.status).toBe(201);
+    expect(res.success).toBe(true);
+    expect(serviceMock.createProduct.calls.length).toBeGreaterThan(0);
+  });
+
+  it("returns error when create fails", async () => {
+    const set = {};
+    serviceMock.createProduct.mockImplementation(async () => {
+      throw new Error("boom");
     });
 
-    it('uses provided status code when get product fails', async () => {
-        const set = {};
-        const error = new Error('boom');
-        error.statusCode = 418;
-        serviceMock.getProductById.mockImplementation(async () => { throw error; });
+    const res = await controller.createProductController({ body: {}, set });
+    expect(set.status).toBe(400);
+    expect(res.success).toBe(false);
+  });
 
-        const res = await controller.getProductByIdController({ params: { id: 'p1' }, set });
-        expect(set.status).toBe(418);
-        expect(res.success).toBe(false);
-        expect(res.error).toBe('boom');
+  it("uses provided status code when get product fails", async () => {
+    const set = {};
+    const error = new Error("boom");
+    error.statusCode = 418;
+    serviceMock.getProductById.mockImplementation(async () => {
+      throw error;
     });
 
-    it('updates product successfully', async () => {
-        const set = {};
-        const res = await controller.updateProductController({ params: { id: 'p1' }, body: { name: 'New' }, set });
+    const res = await controller.getProductByIdController({
+      params: { id: "p1" },
+      set,
+    });
+    expect(set.status).toBe(418);
+    expect(res.success).toBe(false);
+    expect(res.error).toBe("boom");
+  });
 
-        expect(res.success).toBe(true);
-        expect(serviceMock.updateProduct.calls.length).toBe(1);
+  it("updates product successfully", async () => {
+    const set = {};
+    const res = await controller.updateProductController({
+      params: { id: "p1" },
+      body: { name: "New" },
+      set,
     });
 
-    it('returns error when update fails', async () => {
-        const set = {};
-        serviceMock.updateProduct.mockImplementation(async () => { throw new Error('fail'); });
+    expect(res.success).toBe(true);
+    expect(serviceMock.updateProduct.calls.length).toBe(1);
+  });
 
-        const res = await controller.updateProductController({ params: { id: 'p1' }, body: {}, set });
-        expect(set.status).toBe(500);
-        expect(res.error).toBe('Internal Server Error');
+  it("returns error when update fails", async () => {
+    const set = {};
+    serviceMock.updateProduct.mockImplementation(async () => {
+      throw new Error("fail");
     });
 
-    it('deletes product successfully', async () => {
-        const set = {};
-        const res = await controller.deleteProductController({ params: { id: 'p1' }, set });
+    const res = await controller.updateProductController({
+      params: { id: "p1" },
+      body: {},
+      set,
+    });
+    expect(set.status).toBe(500);
+    expect(res.error).toBe("Internal Server Error");
+  });
 
-        expect(res.success).toBe(true);
-        expect(serviceMock.deleteProduct.calls.length).toBe(1);
+  it("deletes product successfully", async () => {
+    const set = {};
+    const res = await controller.deleteProductController({
+      params: { id: "p1" },
+      set,
     });
 
-    it('returns error when delete fails with custom status', async () => {
-        const set = {};
-        const err = new Error('conflict');
-        err.statusCode = 409;
-        serviceMock.deleteProduct.mockImplementation(async () => { throw err; });
+    expect(res.success).toBe(true);
+    expect(serviceMock.deleteProduct.calls.length).toBe(1);
+  });
 
-        const res = await controller.deleteProductController({ params: { id: 'p1' }, set });
-        expect(set.status).toBe(409);
-        expect(res.success).toBe(false);
-        expect(res.error).toBe('conflict');
+  it("returns error when delete fails with custom status", async () => {
+    const set = {};
+    const err = new Error("conflict");
+    err.statusCode = 409;
+    serviceMock.deleteProduct.mockImplementation(async () => {
+      throw err;
     });
+
+    const res = await controller.deleteProductController({
+      params: { id: "p1" },
+      set,
+    });
+    expect(set.status).toBe(409);
+    expect(res.success).toBe(false);
+    expect(res.error).toBe("conflict");
+  });
 });
