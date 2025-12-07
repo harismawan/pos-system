@@ -3,9 +3,13 @@
  */
 
 import prisma from '../../libs/prisma.js';
+import { normalizePagination, buildPaginationMeta } from '../../libs/pagination.js';
 
 export async function getProducts(filters = {}) {
-    const { search, category, isActive, page = 1, limit = 50, outletId } = filters;
+    const { search, category, isActive, page, limit, outletId } = filters;
+
+    // Normalize pagination with max limit enforcement
+    const { page: pageNum, limit: limitNum, skip } = normalizePagination({ page, limit });
 
     const where = {};
 
@@ -26,16 +30,11 @@ export async function getProducts(filters = {}) {
         where.isActive = isActive === 'true' || isActive === true;
     }
 
-    // Ensure page and limit are numbers
-    const pageNumber = Number(page) || 1;
-    const limitNumber = Number(limit) || 50;
-    const skip = (pageNumber - 1) * limitNumber;
-
     const [products, total] = await Promise.all([
         prisma.product.findMany({
             where,
             skip,
-            take: limitNumber,
+            take: limitNum,
             include: {
                 inventories: outletId ? {
                     where: {
@@ -55,12 +54,7 @@ export async function getProducts(filters = {}) {
 
     return {
         products,
-        pagination: {
-            total,
-            page: pageNumber,
-            limit: limitNumber,
-            totalPages: Math.ceil(total / limitNumber),
-        },
+        pagination: buildPaginationMeta(total, pageNum, limitNum),
     };
 }
 

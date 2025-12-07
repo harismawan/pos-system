@@ -5,11 +5,11 @@
     "scripts": {
         "dev": "bun --watch src/server.js",
         "start": "bun src/server.js",
-        "db:migrate": "npx prisma migrate dev",
-        "db:migrate:deploy": "npx prisma migrate deploy",
-        "db:seed": "npx prisma db seed",
-        "db:studio": "npx prisma studio",
-        "db:generate": "npx prisma generate"
+        "db:migrate": "bun prisma migrate dev",
+        "db:migrate:deploy": "bun prisma migrate deploy",
+        "db:seed": "bun prisma db seed",
+        "db:studio": "bun prisma studio",
+        "db:generate": "bun prisma generate"
     },
     "prisma": {
         "seed": "bun prisma/seed.js"

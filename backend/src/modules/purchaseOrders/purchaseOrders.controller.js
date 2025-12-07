@@ -14,9 +14,10 @@ export async function getPurchaseOrdersController({ query, store, set }) {
 
         return successResponse(POR.LIST_SUCCESS, result);
     } catch (err) {
-        logger.debug({ err }, 'Get purchase orders failed');
-        set.status = 500;
-        return errorResponse(POR.LIST_FAILED, err.message || 'Failed to retrieve purchase orders');
+        logger.error({ err }, 'Get purchase orders failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(POR.LIST_FAILED, message);
     }
 }
 
@@ -26,10 +27,11 @@ export async function getPurchaseOrderByIdController({ params, set }) {
 
         return successResponse(POR.GET_SUCCESS, order);
     } catch (err) {
-        logger.debug({ err }, 'Get purchase order failed');
-        set.status = err.message === 'Purchase order not found' ? 404 : 500;
-        const code = err.message === 'Purchase order not found' ? POR.NOT_FOUND : POR.LIST_FAILED;
-        return errorResponse(code, err.message || 'Failed to retrieve purchase order');
+        logger.error({ err }, 'Get purchase order failed');
+        set.status = err.statusCode || (err.message === 'Purchase order not found' ? 404 : 500);
+        const code = (set.status === 404) ? POR.NOT_FOUND : POR.LIST_FAILED;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(code, message);
     }
 }
 
@@ -41,9 +43,10 @@ export async function createPurchaseOrderController({ body, store, set }) {
         set.status = 201;
         return successResponse(POR.CREATE_SUCCESS, order);
     } catch (err) {
-        logger.debug({ err }, 'Create purchase order failed');
-        set.status = 400;
-        return errorResponse(POR.CREATE_FAILED, err.message || 'Failed to create purchase order');
+        logger.error({ err }, 'Create purchase order failed');
+        set.status = err.statusCode || 400;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(POR.CREATE_FAILED, message);
     }
 }
 
@@ -54,9 +57,10 @@ export async function updatePurchaseOrderController({ params, body, store, set }
 
         return successResponse(POR.UPDATE_SUCCESS, order);
     } catch (err) {
-        logger.debug({ err }, 'Update purchase order failed');
-        set.status = 400;
-        return errorResponse(POR.UPDATE_FAILED, err.message || 'Failed to update purchase order');
+        logger.error({ err }, 'Update purchase order failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(POR.UPDATE_FAILED, message);
     }
 }
 
@@ -71,9 +75,10 @@ export async function receivePurchaseOrderController({ params, body, store, set 
 
         return successResponse(POR.RECEIVE_SUCCESS, order);
     } catch (err) {
-        logger.debug({ err }, 'Receive purchase order failed');
-        set.status = 400;
-        return errorResponse(POR.RECEIVE_FAILED, err.message || 'Failed to receive purchase order');
+        logger.error({ err }, 'Receive purchase order failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(POR.RECEIVE_FAILED, message);
     }
 }
 
@@ -84,8 +89,9 @@ export async function cancelPurchaseOrderController({ params, store, set }) {
 
         return successResponse(POR.CANCEL_SUCCESS, order);
     } catch (err) {
-        logger.debug({ err }, 'Cancel purchase order failed');
-        set.status = 400;
-        return errorResponse(POR.CANCEL_FAILED, err.message || 'Failed to cancel purchase order');
+        logger.error({ err }, 'Cancel purchase order failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(POR.CANCEL_FAILED, message);
     }
 }

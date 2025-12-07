@@ -17,9 +17,15 @@ export async function loginController({ body, set }) {
 
         return successResponse(AUT.LOGIN_SUCCESS, result);
     } catch (err) {
-        logger.debug({ err }, 'Login failed');
-        set.status = 401;
-        return errorResponse(AUT.INVALID_CREDENTIALS, err.message || 'Authentication failed');
+        logger.error({ err }, 'Login failed');
+
+        if (err.message === 'Invalid credentials' || err.message === 'Account is inactive') {
+            set.status = 401;
+            return errorResponse(AUT.INVALID_CREDENTIALS, err.message);
+        }
+
+        set.status = 500;
+        return errorResponse(AUT.LOGIN_FAILED, 'Internal Server Error');
     }
 }
 
@@ -36,12 +42,23 @@ export async function refreshController({ body, set }) {
 
         return successResponse(AUT.REFRESH_SUCCESS, result);
     } catch (err) {
-        logger.debug({ err }, 'Token refresh failed');
-        set.status = 401;
-        if (err.code === 'REFRESH_TOKEN_EXPIRED') {
-            return errorResponse(AUT.REFRESH_TOKEN_EXPIRED, err.message);
+        logger.error({ err }, 'Token refresh failed');
+
+        // Handle known errors
+        if (err.message === 'Invalid refresh token' ||
+            err.message === 'Refresh token has been revoked or expired' ||
+            err.name === 'JsonWebTokenError' ||
+            err.name === 'TokenExpiredError') {
+
+            set.status = 401;
+            if (err.name === 'TokenExpiredError' || err.message.includes('expired')) {
+                return errorResponse(AUT.REFRESH_TOKEN_EXPIRED, 'Refresh token expired');
+            }
+            return errorResponse(AUT.INVALID_REFRESH_TOKEN, 'Invalid refresh token');
         }
-        return errorResponse(AUT.INVALID_REFRESH_TOKEN, err.message || 'Invalid refresh token');
+
+        set.status = 500;
+        return errorResponse(AUT.INVALID_REFRESH_TOKEN, 'Internal Server Error');
     }
 }
 
@@ -54,9 +71,9 @@ export async function getMeController({ store, set }) {
         }
         return successResponse(AUT.GET_ME_SUCCESS, { user: store.user });
     } catch (err) {
-        logger.debug({ err }, 'Get user info failed');
+        logger.error({ err }, 'Get user info failed');
         set.status = 500;
-        return errorResponse(AUT.GET_ME_FAILED, err.message || 'Failed to get user info');
+        return errorResponse(AUT.GET_ME_FAILED, 'Internal Server Error');
     }
 }
 
@@ -78,7 +95,7 @@ export async function logoutController({ headers, body, store }) {
 
         return successResponse(AUT.LOGOUT_SUCCESS, { message: 'Logged out successfully' });
     } catch (err) {
-        logger.debug({ err, userId: store.user?.id }, 'Logout failed');
+        logger.error({ err, userId: store.user?.id }, 'Logout failed');
         // Still return success as logout is best-effort
         return successResponse(AUT.LOGOUT_SUCCESS, { message: 'Logged out successfully' });
     }

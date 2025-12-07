@@ -21,9 +21,10 @@ export async function getPriceQuoteController({ query, store, set }) {
 
         return successResponse(PRC.QUOTE_SUCCESS, quote);
     } catch (err) {
-        logger.debug({ err }, 'Get price quote failed');
-        set.status = 500;
-        return errorResponse(PRC.QUOTE_FAILED, err.message || 'Failed to get price quote');
+        logger.error({ err }, 'Get price quote failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(PRC.QUOTE_FAILED, message);
     }
 }
 
@@ -33,9 +34,10 @@ export async function getPriceTiersController({ set }) {
 
         return successResponse(PRC.LIST_TIERS_SUCCESS, tiers);
     } catch (err) {
-        logger.debug({ err }, 'Get price tiers failed');
-        set.status = 500;
-        return errorResponse(PRC.LIST_TIERS_FAILED, err.message || 'Failed to get price tiers');
+        logger.error({ err }, 'Get price tiers failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(PRC.LIST_TIERS_FAILED, message);
     }
 }
 
@@ -46,9 +48,10 @@ export async function createPriceTierController({ body, set }) {
         set.status = 201;
         return successResponse(PRC.CREATE_TIER_SUCCESS, tier);
     } catch (err) {
-        logger.debug({ err }, 'Create price tier failed');
-        set.status = 400;
-        return errorResponse(PRC.CREATE_TIER_FAILED, err.message || 'Failed to create price tier');
+        logger.error({ err }, 'Create price tier failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(PRC.CREATE_TIER_FAILED, message);
     }
 }
 
@@ -58,9 +61,10 @@ export async function updatePriceTierController({ params, body, set }) {
 
         return successResponse(PRC.UPDATE_TIER_SUCCESS, tier);
     } catch (err) {
-        logger.debug({ err }, 'Update price tier failed');
-        set.status = 400;
-        return errorResponse(PRC.UPDATE_TIER_FAILED, err.message || 'Failed to update price tier');
+        logger.error({ err }, 'Update price tier failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(PRC.UPDATE_TIER_FAILED, message);
     }
 }
 
@@ -70,9 +74,10 @@ export async function getProductPricesController({ params, set }) {
 
         return successResponse(PRC.GET_PRICES_SUCCESS, prices);
     } catch (err) {
-        logger.debug({ err }, 'Get product prices failed');
-        set.status = 500;
-        return errorResponse(PRC.GET_PRICES_FAILED, err.message || 'Failed to get product prices');
+        logger.error({ err }, 'Get product prices failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(PRC.GET_PRICES_FAILED, message);
     }
 }
 
@@ -85,8 +90,9 @@ export async function setProductPriceController({ params, body, set }) {
 
         return successResponse(PRC.SET_PRICE_SUCCESS, price);
     } catch (err) {
-        logger.debug({ err }, 'Set product price failed');
-        set.status = 400;
-        return errorResponse(PRC.SET_PRICE_FAILED, err.message || 'Failed to set product price');
+        logger.error({ err }, 'Set product price failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(PRC.SET_PRICE_FAILED, message);
     }
 }

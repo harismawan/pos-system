@@ -52,8 +52,9 @@ function formatRequestBodyForLogging(body, contentType) {
 export const withRequestLogger = () => (app) => {
     // Initialize request metadata
     app.onBeforeHandle(({ request, store }) => {
-        // Generate unique request ID and track start time
-        store.requestId = randomUUID();
+        // Use client-provided X-Request-ID or generate new one
+        const clientRequestId = request.headers.get('x-request-id');
+        store.requestId = clientRequestId || randomUUID();
         store.requestStartTime = Date.now();
     });
 
@@ -61,6 +62,10 @@ export const withRequestLogger = () => (app) => {
     app.onAfterHandle(({ request, body, response, set, store }) => {
         const requestId = store.requestId;
         const duration = Date.now() - (store.requestStartTime || Date.now());
+
+        // Add X-Request-ID to response headers for correlation
+        if (!set.headers) set.headers = {};
+        set.headers['x-request-id'] = requestId;
 
         // Build combined log data
         const logData = {
@@ -78,6 +83,7 @@ export const withRequestLogger = () => (app) => {
             // Log only specific headers
             logData.headers = {
                 'x-outlet-id': request.headers.get('x-outlet-id'),
+                'x-request-id': requestId,
             };
         }
 

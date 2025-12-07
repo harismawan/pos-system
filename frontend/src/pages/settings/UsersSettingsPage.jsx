@@ -8,7 +8,13 @@ import { useDebounce } from '../../hooks/useDebounce.js';
 import { useFormValidation, validators } from '../../hooks/useFormValidation.js';
 import { usePermissions, PERMISSIONS } from '../../hooks/usePermissions.js';
 
+// Custom styles matching project design
 const customStyles = {
+    table: {
+        style: {
+            backgroundColor: 'transparent',
+        },
+    },
     headRow: {
         style: {
             backgroundColor: 'var(--gray-50)',
@@ -23,15 +29,30 @@ const customStyles = {
             color: 'var(--gray-600)',
             textTransform: 'uppercase',
             letterSpacing: '0.05em',
+            paddingLeft: '16px',
+            paddingRight: '16px',
         },
     },
     rows: {
         style: {
-            minHeight: '56px',
+            minHeight: '60px',
             fontSize: '14px',
+            color: 'var(--gray-800)',
             '&:hover': {
                 backgroundColor: 'var(--gray-50)',
             },
+        },
+    },
+    cells: {
+        style: {
+            paddingLeft: '16px',
+            paddingRight: '16px',
+        },
+    },
+    pagination: {
+        style: {
+            borderTop: '1px solid var(--gray-200)',
+            minHeight: '56px',
         },
     },
 };
@@ -99,8 +120,8 @@ function UsersSettingsPage() {
     }, userValidationRules);
 
     const getInputClassName = (fieldName) => {
-        if (!formTouched[fieldName]) return '';
-        return formErrors[fieldName] ? 'input-error' : 'input-valid';
+        if (!formTouched[fieldName]) return 'form-control';
+        return formErrors[fieldName] ? 'form-control input-error' : 'form-control input-valid';
     };
 
     useEffect(() => {
@@ -205,13 +226,13 @@ function UsersSettingsPage() {
             sortable: true,
             cell: row => (
                 <div>
-                    <div style={{ fontWeight: 500 }}>{row.name}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--gray-500)' }}>@{row.username}</div>
+                    <div style={{ fontWeight: 600, color: 'var(--gray-900)' }}>{row.name}</div>
+                    <div style={{ fontSize: '13px', color: 'var(--gray-500)', fontFamily: 'monospace' }}>@{row.username}</div>
                 </div>
             ),
         },
-        { name: 'Email', selector: row => row.email || '-', width: '200px' },
-        { name: 'Phone', selector: row => row.phone || '-', width: '140px' },
+        { name: 'Email', selector: row => row.email || '-', width: '200px', cell: row => <span style={{ color: 'var(--gray-700)' }}>{row.email || '-'}</span> },
+        { name: 'Phone', selector: row => row.phone || '-', width: '140px', cell: row => <span style={{ color: 'var(--gray-700)' }}>{row.phone || '-'}</span> },
         {
             name: 'Role',
             width: '130px',
@@ -224,7 +245,7 @@ function UsersSettingsPage() {
             name: 'Outlets',
             width: '120px',
             cell: row => (
-                <span style={{ color: 'var(--gray-500)', fontSize: '13px' }}>
+                <span style={{ color: 'var(--gray-600)', fontSize: '13px' }}>
                     {row.outletUsers?.length || 0} outlet{row.outletUsers?.length !== 1 ? 's' : ''}
                 </span>
             ),
@@ -240,7 +261,7 @@ function UsersSettingsPage() {
         },
         {
             name: 'Actions',
-            width: '140px',
+            width: '160px',
             cell: row => (
                 <div className="action-buttons">
                     {can(PERMISSIONS.USERS_EDIT) && row.id !== currentUser?.id && (
@@ -251,6 +272,7 @@ function UsersSettingsPage() {
                     )}
                 </div>
             ),
+            right: true,
         },
     ], [currentUser, can]);
 
@@ -262,25 +284,43 @@ function UsersSettingsPage() {
                     <p className="page-subtitle">Manage staff accounts and permissions</p>
                 </div>
                 {can(PERMISSIONS.USERS_CREATE) && (
-                    <button className="btn-primary" onClick={() => openModal()}>
-                        + Add User
+                    <button className="btn-primary btn-lg" onClick={() => openModal()}>
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ marginRight: '8px' }}>
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add User
                     </button>
                 )}
             </div>
 
             {/* Filters */}
-            <div className="card" style={{ marginBottom: '24px', padding: '16px' }}>
-                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                    <input
-                        type="text"
-                        placeholder="Search users..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{ flex: 1, minWidth: '200px' }}
-                    />
+            <div className="filter-bar" style={{ marginBottom: '24px' }}>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div style={{ position: 'relative', flex: 1, minWidth: '240px', maxWidth: '400px' }}>
+                        <svg
+                            width="20"
+                            height="20"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--gray-400)' }}
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input
+                            type="text"
+                            placeholder="Search users..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="search-input"
+                            style={{ width: '100%', paddingLeft: '40px' }}
+                        />
+                    </div>
+
                     <select
                         value={roleFilter}
                         onChange={(e) => setRoleFilter(e.target.value)}
+                        className="form-select"
                         style={{ width: '160px' }}
                     >
                         <option value="">All Roles</option>
@@ -305,6 +345,7 @@ function UsersSettingsPage() {
                     onChangeRowsPerPage={handlePerRowsChange}
                     onChangePage={handlePageChange}
                     paginationPerPage={perPage}
+                    responsive
                     noDataComponent={
                         <div className="empty-state">
                             <div className="empty-state-icon">👥</div>
@@ -321,7 +362,7 @@ function UsersSettingsPage() {
                     <div className="modal" style={{ maxWidth: '500px' }} onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h2 className="modal-title">{editingUser ? 'Edit User' : 'New User'}</h2>
-                            <button onClick={() => setShowModal(false)} style={{ background: 'none', fontSize: '24px', color: 'var(--gray-400)' }}>×</button>
+                            <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
                         </div>
                         <form onSubmit={handleSubmit}>
                             <div className="modal-body">
@@ -378,6 +419,7 @@ function UsersSettingsPage() {
                                             value={formData.phone}
                                             onChange={handleFormChange}
                                             placeholder="Phone number"
+                                            className="form-control"
                                         />
                                     </div>
                                 </div>
@@ -412,7 +454,7 @@ function UsersSettingsPage() {
 
                                 {editingUser && (
                                     <div className="form-group">
-                                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none' }}>
                                             <input
                                                 type="checkbox"
                                                 name="isActive"
@@ -420,7 +462,7 @@ function UsersSettingsPage() {
                                                 onChange={handleFormChange}
                                                 style={{ width: '16px', height: '16px', accentColor: 'var(--primary-500)' }}
                                             />
-                                            Active user
+                                            <span style={{ fontSize: '14px', fontWeight: 500 }}>Active user</span>
                                         </label>
                                     </div>
                                 )}
@@ -428,7 +470,7 @@ function UsersSettingsPage() {
                             <div className="modal-footer">
                                 <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
                                 <button type="submit" className="btn-primary" disabled={saving}>
-                                    {saving ? 'Saving...' : 'Save'}
+                                    {saving ? 'Saving...' : 'Save User'}
                                 </button>
                             </div>
                         </form>

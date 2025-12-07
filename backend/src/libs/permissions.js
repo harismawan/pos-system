@@ -3,6 +3,9 @@
  * Defines permissions and role mappings for the POS system
  */
 
+import { AUT } from './responseCodes.js';
+import { errorResponse } from './responses.js';
+
 // Available permissions in the system
 export const PERMISSIONS = {
     // Users
@@ -42,6 +45,7 @@ export const PERMISSIONS = {
     SETTINGS_CUSTOMERS: 'settings.customers',
     SETTINGS_SUPPLIERS: 'settings.suppliers',
     SETTINGS_WAREHOUSES: 'settings.warehouses',
+    SETTINGS_AUDIT: 'settings.audit',
 };
 
 // Role to permissions mapping
@@ -76,7 +80,7 @@ export const ROLE_PERMISSIONS = {
         // Reports - full
         PERMISSIONS.REPORTS_VIEW,
         PERMISSIONS.REPORTS_EXPORT,
-        // Settings - full
+        // Settings - full excluding audit
         PERMISSIONS.SETTINGS_OUTLETS,
         PERMISSIONS.SETTINGS_PRICING,
         PERMISSIONS.SETTINGS_CUSTOMERS,
@@ -166,20 +170,13 @@ export function requirePermission(permission) {
     return ({ store, set }) => {
         if (!store.user) {
             set.status = 401;
-            return {
-                success: false,
-                code: 'AUT-401-001',
-                error: 'Authentication required',
-            };
+            return errorResponse(AUT.NOT_AUTHENTICATED, 'Authentication required');
         }
 
         if (!hasPermission(store.user.role, permission)) {
             set.status = 403;
-            return {
-                success: false,
-                code: 'AUT-403-002',
-                error: `Permission denied: ${permission} required`,
-            };
+            // set.headers needs to be handled by Elysia context usually, but here we return body
+            return errorResponse(AUT.PERMISSION_DENIED, `Permission denied: ${permission} required`);
         }
     };
 }
@@ -193,21 +190,13 @@ export function requireAnyPermission(permissions) {
     return ({ store, set }) => {
         if (!store.user) {
             set.status = 401;
-            return {
-                success: false,
-                code: 'AUT-401-001',
-                error: 'Authentication required',
-            };
+            return errorResponse(AUT.NOT_AUTHENTICATED, 'Authentication required');
         }
 
         const hasAny = permissions.some(p => hasPermission(store.user.role, p));
         if (!hasAny) {
             set.status = 403;
-            return {
-                success: false,
-                code: 'AUT-403-002',
-                error: `Permission denied: one of [${permissions.join(', ')}] required`,
-            };
+            return errorResponse(AUT.PERMISSION_DENIED, `Permission denied: one of [${permissions.join(', ')}] required`);
         }
     };
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DataTable from 'react-data-table-component';
-import { format } from 'date-fns';
 import * as suppliersApi from '../../api/suppliersApi.js';
+import { formatDateOnly } from '../../utils/dateUtils.js';
 
 const customStyles = {
     headRow: {
@@ -70,7 +70,7 @@ function SupplierDetailModal({ isOpen, onClose, supplier: initialSupplier }) {
         {
             name: 'Date',
             selector: row => row.createdAt,
-            format: row => format(new Date(row.createdAt), 'MMM d, yyyy')
+            format: row => formatDateOnly(row.createdAt)
         },
         { name: 'Warehouse', selector: row => row.warehouse.name },
         {

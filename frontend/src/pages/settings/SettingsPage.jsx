@@ -1,14 +1,18 @@
 import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
+import { usePermissions } from '../../hooks/usePermissions.js';
 
 const settingsNav = [
-    { path: '/settings/customers', label: 'Customers', icon: '👥' },
-    { path: '/settings/outlets', label: 'Outlets', icon: '🏪' },
-    { path: '/settings/suppliers', label: 'Suppliers', icon: '🚚' },
+    { path: '/settings/customers', label: 'Customers', icon: '👥', permission: 'settings.customers' },
+    { path: '/settings/outlets', label: 'Outlets', icon: '🏪', permission: 'settings.outlets' },
+    { path: '/settings/suppliers', label: 'Suppliers', icon: '🚚', permission: 'settings.suppliers' },
+    { path: '/settings/users', label: 'Users', icon: '👤', permission: 'users.view' },
+    { path: '/settings/audit-logs', label: 'Audit Logs', icon: '📋', permission: 'settings.audit' },
 ];
 
 function SettingsPage() {
     const location = useLocation();
+    const { can } = usePermissions();
     const isSubpage = settingsNav.some(item => location.pathname.startsWith(item.path));
 
     if (isSubpage) {
@@ -29,7 +33,7 @@ function SettingsPage() {
                 gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
                 gap: '20px'
             }}>
-                {settingsNav.map(item => (
+                {settingsNav.filter(item => !item.permission || can(item.permission)).map(item => (
                     <Link
                         key={item.path}
                         to={item.path}

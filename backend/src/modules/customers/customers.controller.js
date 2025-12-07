@@ -13,9 +13,10 @@ export async function getCustomersController({ query, set }) {
 
         return successResponse(CUS.LIST_SUCCESS, result);
     } catch (err) {
-        logger.debug({ err }, 'Get customers failed');
-        set.status = 500;
-        return errorResponse(CUS.LIST_FAILED, err.message || 'Failed to retrieve customers');
+        logger.error({ err }, 'Get customers failed');
+        set.status = err.statusCode || 500;
+        const message = err.statusCode ? err.message : 'Internal Server Error';
+        return errorResponse(CUS.LIST_FAILED, message);
     }
 }
 
@@ -25,10 +26,11 @@ export async function getCustomerByIdController({ params, set }) {
 
         return successResponse(CUS.GET_SUCCESS, customer);
     } catch (err) {
-        logger.debug({ err }, 'Get customer failed');
-        set.status = err.message === 'Customer not found' ? 404 : 500;
-        const code = err.message === 'Customer not found' ? CUS.NOT_FOUND : CUS.LIST_FAILED;
-        return errorResponse(code, err.message || 'Failed to retrieve customer');
+        logger.error({ err }, 'Get customer failed');
+        set.status = err.statusCode || (err.message === 'Customer not found' ? 404 : 500);
+        const code = (set.status === 404) ? CUS.NOT_FOUND : CUS.LIST_FAILED;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(code, message);
     }
 }
 
@@ -39,9 +41,23 @@ export async function createCustomerController({ body, set }) {
         set.status = 201;
         return successResponse(CUS.CREATE_SUCCESS, customer);
     } catch (err) {
-        logger.debug({ err }, 'Create customer failed');
-        set.status = 400;
-        return errorResponse(CUS.CREATE_FAILED, err.message || 'Failed to create customer');
+        logger.error({ err }, 'Create customer failed');
+        set.status = err.statusCode || 400;
+        const message = err.statusCode ? err.message : (set.status === 500 ? 'Internal Server Error' : err.message);
+        // Note: Defaulting to 400 for create/update failures if not 500, but service might throw generic error.
+        // If service throws generic error without statusCode, assuming it's validation/constraint unless it's system error. 
+        // Strict safe: set.status = err.statusCode || 500;
+        // But previously it was hardcoded 400.
+        // Let's stick to safe pattern: 
+        // If no statusCode, and we treated it as 400 before, we risk leaking info if we don't treat it as 500.
+        // However, unique constraint errors usually have no statusCode but are client errors?
+        // Prisma P2002 is client error. 
+        // Let's force statusCode || 500 generally.
+        // But for existing code that hardcoded 400, I should probably keep it 400 IF I'm sure it's validation? No, explicit better.
+        // I will use err.statusCode || 500.
+        set.status = err.statusCode || 500;
+        const safeMessage = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(CUS.CREATE_FAILED, safeMessage);
     }
 }
 
@@ -51,9 +67,10 @@ export async function updateCustomerController({ params, body, set }) {
 
         return successResponse(CUS.UPDATE_SUCCESS, customer);
     } catch (err) {
-        logger.debug({ err }, 'Update customer failed');
-        set.status = 400;
-        return errorResponse(CUS.UPDATE_FAILED, err.message || 'Failed to update customer');
+        logger.error({ err }, 'Update customer failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(CUS.UPDATE_FAILED, message);
     }
 }
 
@@ -63,8 +80,9 @@ export async function deleteCustomerController({ params, set }) {
 
         return successResponse(CUS.DELETE_SUCCESS, result);
     } catch (err) {
-        logger.debug({ err }, 'Delete customer failed');
-        set.status = 400;
-        return errorResponse(CUS.DELETE_FAILED, err.message || 'Failed to delete customer');
+        logger.error({ err }, 'Delete customer failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(CUS.DELETE_FAILED, message);
     }
 }

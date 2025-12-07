@@ -13,9 +13,10 @@ export async function getSuppliersController({ query, set }) {
 
         return successResponse(SUP.LIST_SUCCESS, result);
     } catch (err) {
-        logger.debug({ err }, 'Get suppliers failed');
-        set.status = 500;
-        return errorResponse(SUP.LIST_FAILED, err.message || 'Failed to retrieve suppliers');
+        logger.error({ err }, 'Get suppliers failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(SUP.LIST_FAILED, message);
     }
 }
 
@@ -25,10 +26,11 @@ export async function getSupplierByIdController({ params, set }) {
 
         return successResponse(SUP.GET_SUCCESS, supplier);
     } catch (err) {
-        logger.debug({ err }, 'Get supplier failed');
-        set.status = err.message === 'Supplier not found' ? 404 : 500;
-        const code = err.message === 'Supplier not found' ? SUP.NOT_FOUND : SUP.LIST_FAILED;
-        return errorResponse(code, err.message || 'Failed to retrieve supplier');
+        logger.error({ err }, 'Get supplier failed');
+        set.status = err.statusCode || (err.message === 'Supplier not found' ? 404 : 500);
+        const code = (set.status === 404) ? SUP.NOT_FOUND : SUP.LIST_FAILED;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(code, message);
     }
 }
 
@@ -39,9 +41,10 @@ export async function createSupplierController({ body, set }) {
         set.status = 201;
         return successResponse(SUP.CREATE_SUCCESS, supplier);
     } catch (err) {
-        logger.debug({ err }, 'Create supplier failed');
-        set.status = 400;
-        return errorResponse(SUP.CREATE_FAILED, err.message || 'Failed to create supplier');
+        logger.error({ err }, 'Create supplier failed');
+        set.status = err.statusCode || 400;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(SUP.CREATE_FAILED, message);
     }
 }
 
@@ -51,9 +54,10 @@ export async function updateSupplierController({ params, body, set }) {
 
         return successResponse(SUP.UPDATE_SUCCESS, supplier);
     } catch (err) {
-        logger.debug({ err }, 'Update supplier failed');
-        set.status = 400;
-        return errorResponse(SUP.UPDATE_FAILED, err.message || 'Failed to update supplier');
+        logger.error({ err }, 'Update supplier failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(SUP.UPDATE_FAILED, message);
     }
 }
 
@@ -63,8 +67,9 @@ export async function deleteSupplierController({ params, set }) {
 
         return successResponse(SUP.DELETE_SUCCESS, result);
     } catch (err) {
-        logger.debug({ err }, 'Delete supplier failed');
-        set.status = 400;
-        return errorResponse(SUP.DELETE_FAILED, err.message || 'Failed to delete supplier');
+        logger.error({ err }, 'Delete supplier failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(SUP.DELETE_FAILED, message);
     }
 }

@@ -14,9 +14,10 @@ export async function getInventoryController({ query, store, set }) {
 
         return successResponse(INV.GET_SUCCESS, result);
     } catch (err) {
-        logger.debug({ err }, 'Get inventory failed');
-        set.status = 500;
-        return errorResponse(INV.GET_FAILED, err.message || 'Failed to retrieve inventory');
+        logger.error({ err }, 'Get inventory failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(INV.GET_FAILED, message);
     }
 }
 
@@ -32,9 +33,10 @@ export async function adjustInventoryController({ body, store, set }) {
 
         return successResponse(INV.ADJUST_SUCCESS, result);
     } catch (err) {
-        logger.debug({ err }, 'Adjust inventory failed');
-        set.status = 400;
-        return errorResponse(INV.ADJUST_FAILED, err.message || 'Failed to adjust inventory');
+        logger.error({ err }, 'Adjust inventory failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(INV.ADJUST_FAILED, message);
     }
 }
 
@@ -50,9 +52,10 @@ export async function transferInventoryController({ body, store, set }) {
 
         return successResponse(INV.TRANSFER_SUCCESS, result);
     } catch (err) {
-        logger.debug({ err }, 'Transfer inventory failed');
-        set.status = 400;
-        return errorResponse(INV.TRANSFER_FAILED, err.message || 'Failed to transfer inventory');
+        logger.error({ err }, 'Transfer inventory failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(INV.TRANSFER_FAILED, message);
     }
 }
 
@@ -63,8 +66,9 @@ export async function getStockMovementsController({ query, store, set }) {
 
         return successResponse(INV.MOVEMENTS_SUCCESS, result);
     } catch (err) {
-        logger.debug({ err }, 'Get stock movements failed');
-        set.status = 500;
-        return errorResponse(INV.MOVEMENTS_FAILED, err.message || 'Failed to retrieve stock movements');
+        logger.error({ err }, 'Get stock movements failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(INV.MOVEMENTS_FAILED, message);
     }
 }

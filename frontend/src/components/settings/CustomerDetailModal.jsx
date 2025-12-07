@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DataTable from 'react-data-table-component';
-import { format } from 'date-fns';
 import * as customersApi from '../../api/customersApi.js';
+import { formatDateTime } from '../../utils/dateUtils.js';
 
 const customStyles = {
     headRow: {
@@ -71,7 +71,7 @@ function CustomerDetailModal({ isOpen, onClose, customer: initialCustomer }) {
         {
             name: 'Date',
             selector: row => row.createdAt,
-            format: row => format(new Date(row.createdAt), 'MMM d, yyyy HH:mm'),
+            format: row => formatDateTime(row.createdAt),
             width: '160px'
         },
         {

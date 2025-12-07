@@ -7,6 +7,7 @@ import { Elysia } from 'elysia';
 import { cors } from '@elysiajs/cors';
 import config from './config/index.js';
 import { globalErrorHandler } from './libs/errorHandler.js';
+import { compression } from './libs/compression.js';
 import redis from './libs/redis.js';
 import prisma from './libs/prisma.js';
 
@@ -23,15 +24,20 @@ import { suppliersRoutes } from './modules/suppliers/suppliers.routes.js';
 import { purchaseOrdersRoutes } from './modules/purchaseOrders/purchaseOrders.routes.js';
 import { reportsRoutes } from './modules/reports/reports.routes.js';
 import { usersRoutes } from './modules/users/users.routes.js';
+import { auditLogsRoutes } from './modules/auditLogs/auditLogs.routes.js';
 
 const app = new Elysia();
+
+// Response compression (gzip/deflate)
+app.use(compression);
 
 // CORS middleware
 app.use(cors({
     origin: config.cors.origin,
     credentials: config.cors.credentials,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Outlet-Id'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Outlet-Id', 'X-Request-ID'],
+    exposeHeaders: ['X-Request-ID'],
 }));
 
 // Global error handler
@@ -85,6 +91,7 @@ app.group('/api', (app) =>
         .use(purchaseOrdersRoutes)
         .use(reportsRoutes)
         .use(usersRoutes)
+        .use(auditLogsRoutes)
 );
 
 export default app;

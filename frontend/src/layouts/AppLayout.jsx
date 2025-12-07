@@ -41,6 +41,7 @@ function AppLayout() {
                 can(PERMISSIONS.SETTINGS_CUSTOMERS) && { path: '/settings/customers', label: 'Customers' },
                 can(PERMISSIONS.SETTINGS_SUPPLIERS) && { path: '/settings/suppliers', label: 'Suppliers' },
                 can(PERMISSIONS.USERS_VIEW) && { path: '/settings/users', label: 'Users' },
+                can(PERMISSIONS.SETTINGS_AUDIT) && { path: '/settings/audit-logs', label: 'Audit Logs' },
             ].filter(Boolean)
         },
     ].filter(Boolean);

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useUiStore } from '../../store/uiStore.js';
 import * as purchaseOrdersApi from '../../api/purchaseOrdersApi.js';
 import ConfirmModal from '../../components/ConfirmModal.jsx';
+import { formatDateOnly } from '../../utils/dateUtils.js';
 
 const statusBadgeMap = {
     DRAFT: 'badge-neutral',
@@ -84,15 +85,6 @@ function PurchaseOrderDetailPage() {
         }
     };
 
-    const formatDate = (dateStr) => {
-        if (!dateStr) return '-';
-        return new Date(dateStr).toLocaleDateString('id-ID', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-        });
-    };
-
     if (loading) {
         return (
             <div className="page-container">
@@ -119,7 +111,7 @@ function PurchaseOrderDetailPage() {
                             {order.status?.replace('_', ' ')}
                         </span>
                     </h1>
-                    <p className="page-subtitle">Created on {formatDate(order.createdAt)}</p>
+                    <p className="page-subtitle">Created on {formatDateOnly(order.createdAt)}</p>
                 </div>
                 <div className="flex gap-3">
                     {canCancel && (

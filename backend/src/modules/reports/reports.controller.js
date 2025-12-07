@@ -15,8 +15,9 @@ export async function getSalesSummaryController({ query, store, set }) {
         return successResponse(REP.SALES_SUMMARY_SUCCESS, result);
     } catch (err) {
         logger.error({ err }, 'Get sales summary failed');
-        set.status = 500;
-        return errorResponse(REP.REPORT_FAILED, err.message || 'Failed to get sales summary');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(REP.REPORT_FAILED, message);
     }
 }
 
@@ -28,8 +29,9 @@ export async function getTopProductsController({ query, store, set }) {
         return successResponse(REP.TOP_PRODUCTS_SUCCESS, result);
     } catch (err) {
         logger.error({ err }, 'Get top products failed');
-        set.status = 500;
-        return errorResponse(REP.REPORT_FAILED, err.message || 'Failed to get top products');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(REP.REPORT_FAILED, message);
     }
 }
 
@@ -40,8 +42,9 @@ export async function getInventoryValuationController({ query, set }) {
         return successResponse(REP.INVENTORY_VALUATION_SUCCESS, result);
     } catch (err) {
         logger.error({ err }, 'Get inventory valuation failed');
-        set.status = 500;
-        return errorResponse(REP.REPORT_FAILED, err.message || 'Failed to get inventory valuation');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(REP.REPORT_FAILED, message);
     }
 }
 
@@ -53,8 +56,9 @@ export async function getStockMovementsController({ query, store, set }) {
         return successResponse(REP.STOCK_MOVEMENTS_SUCCESS, result);
     } catch (err) {
         logger.error({ err }, 'Get stock movements failed');
-        set.status = 500;
-        return errorResponse(REP.REPORT_FAILED, err.message || 'Failed to get stock movements');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(REP.REPORT_FAILED, message);
     }
 }
 
@@ -66,7 +70,8 @@ export async function getOrderHistoryController({ query, store, set }) {
         return successResponse(REP.ORDER_HISTORY_SUCCESS, result);
     } catch (err) {
         logger.error({ err }, 'Get order history failed');
-        set.status = 500;
-        return errorResponse(REP.REPORT_FAILED, err.message || 'Failed to get order history');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(REP.REPORT_FAILED, message);
     }
 }

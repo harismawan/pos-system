@@ -13,9 +13,10 @@ export async function getOutletsController({ query, set }) {
 
         return successResponse(OUT.LIST_SUCCESS, result);
     } catch (err) {
-        logger.debug({ err }, 'Get outlets failed');
-        set.status = 500;
-        return errorResponse(OUT.LIST_FAILED, err.message || 'Failed to retrieve outlets');
+        logger.error({ err }, 'Get outlets failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(OUT.LIST_FAILED, message);
     }
 }
 
@@ -25,10 +26,11 @@ export async function getOutletByIdController({ params, set }) {
 
         return successResponse(OUT.GET_SUCCESS, outlet);
     } catch (err) {
-        logger.debug({ err }, 'Get outlet failed');
-        set.status = err.message === 'Outlet not found' ? 404 : 500;
-        const code = err.message === 'Outlet not found' ? OUT.NOT_FOUND : OUT.LIST_FAILED;
-        return errorResponse(code, err.message || 'Failed to retrieve outlet');
+        logger.error({ err }, 'Get outlet failed');
+        set.status = err.statusCode || (err.message === 'Outlet not found' ? 404 : 500);
+        const code = (set.status === 404) ? OUT.NOT_FOUND : OUT.LIST_FAILED;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(code, message);
     }
 }
 
@@ -40,9 +42,10 @@ export async function createOutletController({ body, store, set }) {
         set.status = 201;
         return successResponse(OUT.CREATE_SUCCESS, outlet);
     } catch (err) {
-        logger.debug({ err }, 'Create outlet failed');
-        set.status = 400;
-        return errorResponse(OUT.CREATE_FAILED, err.message || 'Failed to create outlet');
+        logger.error({ err }, 'Create outlet failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(OUT.CREATE_FAILED, message);
     }
 }
 
@@ -53,9 +56,10 @@ export async function updateOutletController({ params, body, store, set }) {
 
         return successResponse(OUT.UPDATE_SUCCESS, outlet);
     } catch (err) {
-        logger.debug({ err }, 'Update outlet failed');
-        set.status = 400;
-        return errorResponse(OUT.UPDATE_FAILED, err.message || 'Failed to update outlet');
+        logger.error({ err }, 'Update outlet failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(OUT.UPDATE_FAILED, message);
     }
 }
 
@@ -65,9 +69,10 @@ export async function deleteOutletController({ params, set }) {
 
         return successResponse(OUT.DELETE_SUCCESS, result);
     } catch (err) {
-        logger.debug({ err }, 'Delete outlet failed');
-        set.status = 400;
-        return errorResponse(OUT.DELETE_FAILED, err.message || 'Failed to delete outlet');
+        logger.error({ err }, 'Delete outlet failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(OUT.DELETE_FAILED, message);
     }
 }
 
@@ -77,9 +82,10 @@ export async function getOutletUsersController({ params, set }) {
 
         return successResponse(OUT.GET_USERS_SUCCESS, users);
     } catch (err) {
-        logger.debug({ err }, 'Get outlet users failed');
-        set.status = 500;
-        return errorResponse(OUT.GET_USERS_FAILED, err.message || 'Failed to retrieve outlet users');
+        logger.error({ err }, 'Get outlet users failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(OUT.GET_USERS_FAILED, message);
     }
 }
 
@@ -94,9 +100,10 @@ export async function assignUserToOutletController({ params, body, store, set })
         set.status = 201;
         return successResponse(OUT.ASSIGN_USER_SUCCESS, outletUser);
     } catch (err) {
-        logger.debug({ err }, 'Assign user to outlet failed');
-        set.status = 400;
-        return errorResponse(OUT.ASSIGN_FAILED, err.message || 'Failed to assign user to outlet');
+        logger.error({ err }, 'Assign user to outlet failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(OUT.ASSIGN_FAILED, message);
     }
 }
 
@@ -111,8 +118,9 @@ export async function removeUserFromOutletController({ params, store, set }) {
 
         return successResponse(OUT.REMOVE_USER_SUCCESS, result);
     } catch (err) {
-        logger.debug({ err }, 'Remove user from outlet failed');
-        set.status = 400;
-        return errorResponse(OUT.REMOVE_FAILED, err.message || 'Failed to remove user from outlet');
+        logger.error({ err }, 'Remove user from outlet failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(OUT.REMOVE_FAILED, message);
     }
 }

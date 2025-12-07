@@ -33,6 +33,7 @@ const CustomersSettingsPage = lazy(() => import('../pages/settings/CustomersSett
 const OutletsSettingsPage = lazy(() => import('../pages/settings/OutletsSettingsPage.jsx'));
 const SuppliersSettingsPage = lazy(() => import('../pages/settings/SuppliersSettingsPage.jsx'));
 const UsersSettingsPage = lazy(() => import('../pages/settings/UsersSettingsPage.jsx'));
+const AuditLogsSettingsPage = lazy(() => import('../pages/settings/AuditLogsSettingsPage.jsx'));
 
 // Lazy-loaded Reports
 const ReportsPage = lazy(() => import('../pages/reports/ReportsPage.jsx'));
@@ -112,6 +113,7 @@ function AppRoutes() {
                         <Route path="outlets" element={<OutletsSettingsPage />} />
                         <Route path="suppliers" element={<SuppliersSettingsPage />} />
                         <Route path="users" element={<UsersSettingsPage />} />
+                        <Route path="audit-logs" element={<AuditLogsSettingsPage />} />
                     </Route>
 
                     {/* Reports */}

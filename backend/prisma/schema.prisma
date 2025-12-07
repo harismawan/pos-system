@@ -40,6 +40,8 @@ model User {
   posOrders              PosOrder[]
   stockMovements         StockMovement[]
 
+  @@index([role])
+  @@index([isActive])
   @@map("users")
 }
 
@@ -205,6 +207,7 @@ model Product {
 
   @@index([isActive])
   @@index([category])
+  @@index([name])
   @@map("products")
 }
 
@@ -255,6 +258,8 @@ model Customer {
   posOrders PosOrder[]
 
   @@index([email])
+  @@index([phone])
+  @@index([name])
   @@index([priceTierId])
   @@map("customers")
 }
@@ -309,6 +314,7 @@ model Supplier {
   purchaseOrders PurchaseOrder[]
 
   @@index([isActive])
+  @@index([name])
   @@map("suppliers")
 }
 
@@ -455,8 +461,10 @@ model PosOrder {
 
   @@index([outletId, createdAt])
   @@index([status])
+  @@index([paymentStatus])
   @@index([customerId])
   @@index([cashierId])
+  @@index([closedAt])
   @@map("pos_orders")
 }
 
@@ -524,5 +532,6 @@ model AuditLog {
   @@index([eventType, createdAt])
   @@index([outletId, createdAt])
   @@index([userId])
+  @@index([entityType, entityId])
   @@map("audit_logs")
 }

@@ -2,21 +2,13 @@
  * Users API client
  */
 
-import apiClient from './apiClient.js';
+import apiClient from './client.js';
 
 /**
  * Get users with pagination and filters
  */
 export async function getUsers(params = {}) {
-    const searchParams = new URLSearchParams();
-    if (params.page) searchParams.append('page', params.page);
-    if (params.limit) searchParams.append('limit', params.limit);
-    if (params.search) searchParams.append('search', params.search);
-    if (params.role) searchParams.append('role', params.role);
-    if (params.isActive !== undefined) searchParams.append('isActive', params.isActive);
-
-    const query = searchParams.toString();
-    const response = await apiClient.get(`/users${query ? `?${query}` : ''}`);
+    const response = await apiClient.get('/users', params);
     return response.data;
 }
 

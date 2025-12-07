@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import DataTable from 'react-data-table-component';
 import { useUiStore } from '../../store/uiStore.js';
 import * as purchaseOrdersApi from '../../api/purchaseOrdersApi.js';
+import { formatDateOnly } from '../../utils/dateUtils.js';
 
 const customStyles = {
     headRow: {
@@ -83,15 +84,6 @@ function PurchaseOrdersListPage() {
         }
     };
 
-    const formatDate = (dateStr) => {
-        if (!dateStr) return '-';
-        return new Date(dateStr).toLocaleDateString('id-ID', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-        });
-    };
-
     const columns = useMemo(() => [
         {
             name: 'PO Number',
@@ -124,7 +116,7 @@ function PurchaseOrdersListPage() {
             selector: row => row.orderDate,
             sortable: true,
             width: '120px',
-            cell: row => formatDate(row.orderDate),
+            cell: row => formatDateOnly(row.orderDate),
         },
         {
             name: 'Total',

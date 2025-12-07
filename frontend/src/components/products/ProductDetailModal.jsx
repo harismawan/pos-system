@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import DataTable from 'react-data-table-component';
-import { format } from 'date-fns';
 import * as inventoryApi from '../../api/inventoryApi.js';
 import * as productsApi from '../../api/productsApi.js';
+import { formatDateTime } from '../../utils/dateUtils.js';
 
 const customStyles = {
     headRow: {
@@ -109,7 +109,7 @@ function ProductDetailModal({ isOpen, onClose, product: initialProduct }) {
         {
             name: 'Date',
             selector: row => row.createdAt,
-            format: row => format(new Date(row.createdAt), 'MMM d, HH:mm'),
+            format: row => formatDateTime(row.createdAt),
             width: '120px',
         },
         {

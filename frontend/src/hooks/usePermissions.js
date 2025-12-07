@@ -43,6 +43,7 @@ export const PERMISSIONS = {
     SETTINGS_CUSTOMERS: 'settings.customers',
     SETTINGS_SUPPLIERS: 'settings.suppliers',
     SETTINGS_WAREHOUSES: 'settings.warehouses',
+    SETTINGS_AUDIT: 'settings.audit',
 };
 
 // Role to permissions mapping

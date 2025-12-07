@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import DataTable from 'react-data-table-component';
 import * as reportsApi from '../../api/reportsApi.js';
 import { useUiStore } from '../../store/uiStore.js';
+import { formatDateOnly, formatTimeOnly, formatDateTime } from '../../utils/dateUtils.js';
 
 const customStyles = {
     headRow: {
@@ -105,9 +106,9 @@ function OrderHistoryPage() {
             width: '180px',
             cell: row => (
                 <div>
-                    <div>{new Date(row.createdAt).toLocaleDateString()}</div>
+                    <div>{formatDateOnly(row.createdAt)}</div>
                     <div style={{ fontSize: '12px', color: 'var(--gray-400)' }}>
-                        {new Date(row.createdAt).toLocaleTimeString()}
+                        {formatTimeOnly(row.createdAt)}
                     </div>
                 </div>
             ),
@@ -232,7 +233,7 @@ function OrderHistoryPage() {
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
                                 <div>
                                     <div style={{ fontSize: '12px', color: 'var(--gray-500)', marginBottom: '4px' }}>Date</div>
-                                    <div style={{ fontWeight: 500 }}>{new Date(selectedOrder.createdAt).toLocaleString('id-ID')}</div>
+                                    <div style={{ fontWeight: 500 }}>{formatDateTime(selectedOrder.createdAt)}</div>
                                 </div>
                                 <div>
                                     <div style={{ fontSize: '12px', color: 'var(--gray-500)', marginBottom: '4px' }}>Status</div>

@@ -5,13 +5,17 @@
 import prisma from '../../libs/prisma.js';
 import bcrypt from 'bcryptjs';
 import logger from '../../libs/logger.js';
+import { normalizePagination, buildPaginationMeta } from '../../libs/pagination.js';
 
 const SALT_ROUNDS = 12;
 
 /**
  * Get users with pagination and filters
  */
-export async function getUsers({ page = 1, limit = 10, search, role, isActive }) {
+export async function getUsers({ page, limit, search, role, isActive }) {
+    // Normalize pagination with max limit enforcement
+    const { page: pageNum, limit: limitNum, skip } = normalizePagination({ page, limit });
+
     const where = {};
 
     if (search) {
@@ -52,20 +56,15 @@ export async function getUsers({ page = 1, limit = 10, search, role, isActive })
                 },
             },
             orderBy: { createdAt: 'desc' },
-            skip: (page - 1) * limit,
-            take: limit,
+            skip,
+            take: limitNum,
         }),
         prisma.user.count({ where }),
     ]);
 
     return {
         users,
-        pagination: {
-            page,
-            limit,
-            total,
-            totalPages: Math.ceil(total / limit),
-        },
+        pagination: buildPaginationMeta(total, pageNum, limitNum),
     };
 }
 

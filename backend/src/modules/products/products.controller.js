@@ -14,9 +14,10 @@ export async function getProductsController({ query, store, set }) {
 
         return successResponse(PRD.LIST_SUCCESS, result);
     } catch (err) {
-        logger.debug({ err }, 'Get products failed');
-        set.status = 500;
-        return errorResponse(PRD.LIST_FAILED, err.message || 'Failed to retrieve products');
+        logger.error({ err }, 'Get products failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(PRD.LIST_FAILED, message);
     }
 }
 
@@ -26,10 +27,11 @@ export async function getProductByIdController({ params, set }) {
 
         return successResponse(PRD.GET_SUCCESS, product);
     } catch (err) {
-        logger.debug({ err }, 'Get product failed');
-        set.status = err.message === 'Product not found' ? 404 : 500;
-        const code = err.message === 'Product not found' ? PRD.NOT_FOUND : PRD.LIST_FAILED;
-        return errorResponse(code, err.message || 'Failed to retrieve product');
+        logger.error({ err }, 'Get product failed');
+        set.status = err.statusCode || (err.message === 'Product not found' ? 404 : 500);
+        const code = (set.status === 404) ? PRD.NOT_FOUND : PRD.LIST_FAILED;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(code, message);
     }
 }
 
@@ -40,9 +42,10 @@ export async function createProductController({ body, set }) {
         set.status = 201;
         return successResponse(PRD.CREATE_SUCCESS, product);
     } catch (err) {
-        logger.debug({ err }, 'Create product failed');
-        set.status = 400;
-        return errorResponse(PRD.CREATE_FAILED, err.message || 'Failed to create product');
+        logger.error({ err }, 'Create product failed');
+        set.status = err.statusCode || 400;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(PRD.CREATE_FAILED, message);
     }
 }
 
@@ -52,9 +55,10 @@ export async function updateProductController({ params, body, set }) {
 
         return successResponse(PRD.UPDATE_SUCCESS, product);
     } catch (err) {
-        logger.debug({ err }, 'Update product failed');
-        set.status = 400;
-        return errorResponse(PRD.UPDATE_FAILED, err.message || 'Failed to update product');
+        logger.error({ err }, 'Update product failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(PRD.UPDATE_FAILED, message);
     }
 }
 
@@ -64,8 +68,9 @@ export async function deleteProductController({ params, set }) {
 
         return successResponse(PRD.DELETE_SUCCESS, result);
     } catch (err) {
-        logger.debug({ err }, 'Delete product failed');
-        set.status = 400;
-        return errorResponse(PRD.DELETE_FAILED, err.message || 'Failed to delete product');
+        logger.error({ err }, 'Delete product failed');
+        set.status = err.statusCode || 500;
+        const message = set.status === 500 ? 'Internal Server Error' : err.message;
+        return errorResponse(PRD.DELETE_FAILED, message);
     }
 }
