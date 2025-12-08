@@ -114,7 +114,7 @@ function InventoryOverviewPage() {
       setInventory(result.inventories || []);
       setTotalRows(result.pagination?.total || 0);
     } catch (err) {
-      showNotification("Failed to load inventory", "error");
+      // Error handled centrally
     } finally {
       setLoading(false);
     }
@@ -175,7 +175,7 @@ function InventoryOverviewPage() {
                 parseFloat(row.quantityOnHand) <= 0
                   ? "var(--error-500)"
                   : parseFloat(row.quantityOnHand) <=
-                      parseFloat(row.minimumStock || 10)
+                    parseFloat(row.minimumStock || 10)
                     ? "var(--warning-500)"
                     : "var(--gray-800)",
             }}

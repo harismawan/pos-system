@@ -79,7 +79,7 @@ function OrderHistoryPage() {
       setOrders(result.orders || []);
       setTotalRows(result.pagination?.total || 0);
     } catch (err) {
-      showNotification(err.message || "Failed to load orders", "error");
+      // Error handled centrally
     } finally {
       setLoading(false);
     }

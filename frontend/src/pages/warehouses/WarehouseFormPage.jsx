@@ -78,7 +78,14 @@ function WarehouseFormPage() {
         isActive: warehouse.isActive ?? true,
       });
     } catch (err) {
-      showNotification("Failed to load warehouse", "error");
+      // Show notification only if we're redirecting or if it's specific logic not covered
+      // In this case, since we redirect, we might want to keep a notification OR let central handler do it
+      // optimize: let central handler show "Not Found" etc, but if we redirect we might miss it if page reload?
+      // No, SPA navigation keeps state.
+      // But wait: if fetch failed, we throw.
+      // Central handler shows toast.
+      // Then we navigate.
+      // So removing redundant toast is correct.
       navigate("/warehouses");
     } finally {
       setLoading(false);
@@ -113,7 +120,7 @@ function WarehouseFormPage() {
       }
       navigate("/warehouses");
     } catch (err) {
-      showNotification(err.message || "Failed to save warehouse", "error");
+      // Error handled centrally
     } finally {
       setSaving(false);
     }

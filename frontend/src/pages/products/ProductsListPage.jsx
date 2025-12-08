@@ -102,7 +102,7 @@ function ProductsListPage() {
       setProducts(data.products || []);
       setTotalRows(data.pagination?.total || 0);
     } catch (err) {
-      showNotification("Failed to load products", "error");
+      // Error handled centrally
     } finally {
       setLoading(false);
     }
@@ -150,7 +150,7 @@ function ProductsListPage() {
         filterStatus,
       );
     } catch (err) {
-      showNotification(err.message || "Failed to delete product", "error");
+      // Error handled centrally
     } finally {
       setDeleting(false);
     }

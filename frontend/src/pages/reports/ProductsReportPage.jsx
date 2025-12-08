@@ -60,7 +60,7 @@ function ProductsReportPage() {
       });
       setProducts(result.products || []);
     } catch (err) {
-      showNotification(err.message || "Failed to load report", "error");
+      // Error handled centrally
     } finally {
       setLoading(false);
     }

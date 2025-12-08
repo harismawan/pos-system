@@ -17,8 +17,8 @@ export const useAuthStore = create(
       outlets: [],
       isAuthenticated: false,
 
-      login: async (username, password) => {
-        const data = await authApi.login(username, password);
+      login: async (username, password, options = {}) => {
+        const data = await authApi.login(username, password, options);
 
         apiClient.setToken(data.accessToken);
 

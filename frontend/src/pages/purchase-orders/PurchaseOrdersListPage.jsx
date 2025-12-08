@@ -78,7 +78,7 @@ function PurchaseOrdersListPage() {
       setOrders(result.purchaseOrders || []);
       setTotalRows(result.pagination?.total || 0);
     } catch (err) {
-      showNotification("Failed to load purchase orders", "error");
+      // Error handled centrally
     } finally {
       setLoading(false);
     }

@@ -108,7 +108,7 @@ function CustomersSettingsPage() {
       setCustomers(result.customers || []);
       setTotalRows(result.pagination?.total || 0);
     } catch (err) {
-      showNotification("Failed to load customers", "error");
+      // Error handled centrally
     } finally {
       setLoading(false);
     }
@@ -119,12 +119,12 @@ function CustomersSettingsPage() {
     resetForm(
       customer
         ? {
-            name: customer.name || "",
-            email: customer.email || "",
-            phone: customer.phone || "",
-            code: customer.code || "",
-            priceTierId: customer.priceTierId || "",
-          }
+          name: customer.name || "",
+          email: customer.email || "",
+          phone: customer.phone || "",
+          code: customer.code || "",
+          priceTierId: customer.priceTierId || "",
+        }
         : { name: "", email: "", phone: "", code: "", priceTierId: "" },
     );
     setShowModal(true);
@@ -153,7 +153,7 @@ function CustomersSettingsPage() {
       setShowModal(false);
       loadCustomers();
     } catch (err) {
-      showNotification(err.message || "Failed to save", "error");
+      // Error handled centrally
     } finally {
       setSaving(false);
     }
@@ -171,7 +171,7 @@ function CustomersSettingsPage() {
       setDeleteModal({ open: false, id: null, name: "" });
       loadCustomers();
     } catch (err) {
-      showNotification(err.message || "Failed to delete", "error");
+      // Error handled centrally
     } finally {
       setDeleting(false);
     }

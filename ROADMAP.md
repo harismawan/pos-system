@@ -12,15 +12,15 @@ Improvement recommendations for features, performance, and system architecture.
 | -------- | ----------------------------------- | ------------------------------------ |
 | ✅ Done  | Add unit tests for backend services | Catch bugs early, enable refactoring |
 | 🔴 High  | Add E2E tests with Playwright       | Ensure critical flows work           |
-| 🟡 Med   | Setup ESLint + Prettier             | Consistent code style                |
-| 🟡 Med   | Add Husky pre-commit hooks          | Prevent bad commits                  |
+| ✅ Done  | Setup ESLint + Prettier             | Consistent code style                |
+| ✅ Done  | Add Husky pre-commit hooks          | Prevent bad commits                  |
 
 ### Error Handling & Monitoring
 
 | Priority | Task                                            | Impact                         |
 | -------- | ----------------------------------------------- | ------------------------------ |
 | ✅ Done  | Add global error boundary in React              | Graceful error recovery        |
-| 🔴 High  | Implement proper API error handling in frontend | Better user feedback           |
+| ✅ Done  | Implement proper API error handling in frontend | Better user feedback           |
 | 🟡 Med   | Add Sentry or similar for error tracking        | Production debugging           |
 | ✅ Done  | Add request ID correlation                      | Trace requests across services |
 

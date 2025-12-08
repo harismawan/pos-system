@@ -73,7 +73,6 @@ function ProductFormPage() {
         isActive: product.isActive ?? true,
       });
     } catch (err) {
-      showNotification("Failed to load product", "error");
       navigate("/products");
     } finally {
       setLoading(false);
@@ -113,7 +112,7 @@ function ProductFormPage() {
       }
       navigate("/products");
     } catch (err) {
-      showNotification(err.message || "Failed to save product", "error");
+      // Error handled centrally
     } finally {
       setSaving(false);
     }

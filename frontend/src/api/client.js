@@ -4,6 +4,7 @@
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import { useUiStore } from "../store/uiStore.js";
 
 class ApiClient {
   constructor() {
@@ -112,8 +113,32 @@ class ApiClient {
       },
     };
 
+    // Extract skipErrorHandling from options (not part of fetch config)
+    const { skipErrorHandling = false, ...fetchOptions } = options;
+    // Update config to use fetchOptions which doesn't include custom flags
+    Object.assign(config, fetchOptions);
+    delete config.skipErrorHandling;
+
     try {
-      const response = await fetch(url, config);
+      // Check for network connectivity first
+      if (!navigator.onLine) {
+        throw new Error("No internet connection");
+      }
+
+      let response;
+      try {
+        response = await fetch(url, config);
+      } catch (networkError) {
+        // Handle network errors (server down, CORS, etc)
+        const errorMessage = "Unable to connect to the server. Please check your connection.";
+
+        if (!skipErrorHandling) {
+          useUiStore.getState().showNotification(errorMessage, "error");
+        }
+
+        throw new Error(errorMessage);
+      }
+
       const data = await response.json();
 
       if (!response.ok) {
@@ -155,12 +180,25 @@ class ApiClient {
           }
         }
 
-        throw new Error(data.error || "Request failed");
+        const errorMessage = data.error || "Request failed";
+
+        if (!skipErrorHandling) {
+          // Don't show toast for 401/403 if we're handling it or it's just auth check
+          if (response.status !== 401) {
+            useUiStore.getState().showNotification(errorMessage, "error");
+          } else if (!isTokenExpired) {
+            // Show error for other 401s (like invalid credentials)
+            useUiStore.getState().showNotification(errorMessage, "error");
+          }
+        }
+
+        throw new Error(errorMessage);
       }
 
       return data;
     } catch (err) {
-      console.error("API Error:", err);
+      // Re-throw so caller can still handle it if needed
+      // The toast is already handled above for API errors and network errors
       throw err;
     }
   }
@@ -183,8 +221,9 @@ class ApiClient {
     return this.request(url, { method: "GET" });
   }
 
-  post(endpoint, body) {
+  post(endpoint, body, options = {}) {
     return this.request(endpoint, {
+      ...options,
       method: "POST",
       body: JSON.stringify(body),
     });

@@ -34,7 +34,7 @@ function SalesReportPage() {
       setSummary(result.summary);
       setChartData(result.chartData || []);
     } catch (err) {
-      showNotification(err.message || "Failed to load report", "error");
+      // Error handled centrally
     } finally {
       setLoading(false);
     }

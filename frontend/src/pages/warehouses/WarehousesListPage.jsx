@@ -90,7 +90,7 @@ function WarehousesListPage() {
       setWarehouses(result.warehouses || []);
       setTotalRows(result.pagination?.total || 0);
     } catch (err) {
-      showNotification("Failed to load warehouses", "error");
+      // Error handled centrally
     } finally {
       setLoading(false);
     }
@@ -108,7 +108,7 @@ function WarehousesListPage() {
       setDeleteModal({ open: false, id: null, name: "" });
       loadWarehouses();
     } catch (err) {
-      showNotification(err.message || "Failed to delete warehouse", "error");
+      // Error handled centrally
     } finally {
       setDeleting(false);
     }

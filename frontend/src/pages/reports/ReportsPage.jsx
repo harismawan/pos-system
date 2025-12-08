@@ -39,7 +39,7 @@ function ReportsPage() {
       setSalesSummary(summaryData.summary);
       setTopProducts(productsData.products || []);
     } catch (err) {
-      showNotification(err.message || "Failed to load reports", "error");
+      // Error handled centrally
     } finally {
       setLoading(false);
     }
@@ -250,8 +250,8 @@ function ReportsPage() {
                       }}
                       onClick={() => handleProductClick(item.product)}
                       onMouseEnter={(e) =>
-                        (e.currentTarget.style.backgroundColor =
-                          "var(--gray-50)")
+                      (e.currentTarget.style.backgroundColor =
+                        "var(--gray-50)")
                       }
                       onMouseLeave={(e) =>
                         (e.currentTarget.style.backgroundColor = "transparent")

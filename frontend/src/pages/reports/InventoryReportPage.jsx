@@ -79,7 +79,7 @@ function InventoryReportPage() {
       setSummary(result.summary);
       setItems(result.items || []);
     } catch (err) {
-      showNotification(err.message || "Failed to load report", "error");
+      // Error handled centrally
     } finally {
       setLoading(false);
     }

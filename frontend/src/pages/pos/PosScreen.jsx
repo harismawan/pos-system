@@ -90,7 +90,7 @@ function PosScreen() {
       });
       setProducts(data.products || []);
     } catch (err) {
-      showNotification("Failed to load products", "error");
+      // Error handled centrally
     } finally {
       setLoading(false);
     }
@@ -153,7 +153,7 @@ function PosScreen() {
       setShowCheckoutModal(false);
       setOrderNote("");
     } catch (err) {
-      showNotification(err.message || "Checkout failed", "error");
+      // Error handled centrally
     } finally {
       setProcessing(false);
     }

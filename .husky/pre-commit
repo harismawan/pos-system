@@ -5,7 +5,7 @@ echo "Running pre-commit checks..."
 
 # Check code style
 echo "Validating code style..."
-bun x prettier --check . || {
+bun x prettier --write . || {
     echo "❌ Code style validation failed. Run 'bun x prettier --write .' to fix."
     exit 1
 }

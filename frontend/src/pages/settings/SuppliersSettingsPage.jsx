@@ -104,7 +104,7 @@ function SuppliersSettingsPage() {
       setSuppliers(result.suppliers || []);
       setTotalRows(result.pagination?.total || 0);
     } catch (err) {
-      showNotification("Failed to load suppliers", "error");
+      // Error handled centrally
     } finally {
       setLoading(false);
     }
@@ -131,21 +131,21 @@ function SuppliersSettingsPage() {
     resetForm(
       supplier
         ? {
-            name: supplier.name || "",
-            code: supplier.code || "",
-            contactName: supplier.contactName || "",
-            email: supplier.email || "",
-            phone: supplier.phone || "",
-            isActive: supplier.isActive ?? true,
-          }
+          name: supplier.name || "",
+          code: supplier.code || "",
+          contactName: supplier.contactName || "",
+          email: supplier.email || "",
+          phone: supplier.phone || "",
+          isActive: supplier.isActive ?? true,
+        }
         : {
-            name: "",
-            code: "",
-            contactName: "",
-            email: "",
-            phone: "",
-            isActive: true,
-          },
+          name: "",
+          code: "",
+          contactName: "",
+          email: "",
+          phone: "",
+          isActive: true,
+        },
     );
     setShowModal(true);
   };
@@ -168,7 +168,7 @@ function SuppliersSettingsPage() {
       setShowModal(false);
       loadSuppliers();
     } catch (err) {
-      showNotification(err.message || "Failed to save", "error");
+      // Error handled centrally
     } finally {
       setSaving(false);
     }
@@ -186,7 +186,7 @@ function SuppliersSettingsPage() {
       setDeleteModal({ open: false, id: null, name: "" });
       loadSuppliers();
     } catch (err) {
-      showNotification(err.message || "Failed to delete", "error");
+      // Error handled centrally
     } finally {
       setDeleting(false);
     }
