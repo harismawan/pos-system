@@ -49,7 +49,9 @@ function LoginPage() {
     setLoading(true);
 
     try {
-      const data = await login(formData.username, formData.password, { skipErrorHandling: true });
+      const data = await login(formData.username, formData.password, {
+        skipErrorHandling: true,
+      });
 
       if (data.outlets && data.outlets.length > 0) {
         const defaultOutlet =

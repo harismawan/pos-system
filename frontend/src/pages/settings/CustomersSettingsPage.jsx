@@ -119,12 +119,12 @@ function CustomersSettingsPage() {
     resetForm(
       customer
         ? {
-          name: customer.name || "",
-          email: customer.email || "",
-          phone: customer.phone || "",
-          code: customer.code || "",
-          priceTierId: customer.priceTierId || "",
-        }
+            name: customer.name || "",
+            email: customer.email || "",
+            phone: customer.phone || "",
+            code: customer.code || "",
+            priceTierId: customer.priceTierId || "",
+          }
         : { name: "", email: "", phone: "", code: "", priceTierId: "" },
     );
     setShowModal(true);

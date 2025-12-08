@@ -175,7 +175,7 @@ function InventoryOverviewPage() {
                 parseFloat(row.quantityOnHand) <= 0
                   ? "var(--error-500)"
                   : parseFloat(row.quantityOnHand) <=
-                    parseFloat(row.minimumStock || 10)
+                      parseFloat(row.minimumStock || 10)
                     ? "var(--warning-500)"
                     : "var(--gray-800)",
             }}

@@ -250,8 +250,8 @@ function ReportsPage() {
                       }}
                       onClick={() => handleProductClick(item.product)}
                       onMouseEnter={(e) =>
-                      (e.currentTarget.style.backgroundColor =
-                        "var(--gray-50)")
+                        (e.currentTarget.style.backgroundColor =
+                          "var(--gray-50)")
                       }
                       onMouseLeave={(e) =>
                         (e.currentTarget.style.backgroundColor = "transparent")

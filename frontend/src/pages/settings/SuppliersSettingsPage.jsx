@@ -131,21 +131,21 @@ function SuppliersSettingsPage() {
     resetForm(
       supplier
         ? {
-          name: supplier.name || "",
-          code: supplier.code || "",
-          contactName: supplier.contactName || "",
-          email: supplier.email || "",
-          phone: supplier.phone || "",
-          isActive: supplier.isActive ?? true,
-        }
+            name: supplier.name || "",
+            code: supplier.code || "",
+            contactName: supplier.contactName || "",
+            email: supplier.email || "",
+            phone: supplier.phone || "",
+            isActive: supplier.isActive ?? true,
+          }
         : {
-          name: "",
-          code: "",
-          contactName: "",
-          email: "",
-          phone: "",
-          isActive: true,
-        },
+            name: "",
+            code: "",
+            contactName: "",
+            email: "",
+            phone: "",
+            isActive: true,
+          },
     );
     setShowModal(true);
   };

@@ -130,7 +130,8 @@ class ApiClient {
         response = await fetch(url, config);
       } catch (networkError) {
         // Handle network errors (server down, CORS, etc)
-        const errorMessage = "Unable to connect to the server. Please check your connection.";
+        const errorMessage =
+          "Unable to connect to the server. Please check your connection.";
 
         if (!skipErrorHandling) {
           useUiStore.getState().showNotification(errorMessage, "error");

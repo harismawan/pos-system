@@ -1,7 +1,11 @@
 import apiClient from "./client.js";
 
 export async function login(username, password, options = {}) {
-  const response = await apiClient.post("/auth/login", { username, password }, options);
+  const response = await apiClient.post(
+    "/auth/login",
+    { username, password },
+    options,
+  );
   return response.data;
 }
 
