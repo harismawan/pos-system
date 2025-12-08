@@ -10,6 +10,10 @@ bun x prettier --write . || {
     exit 1
 }
 
+# staging after code changes
+echo "Staging changes after code style..."
+git add .
+
 # Run tests
 echo "Running tests..."
 bun test || {
