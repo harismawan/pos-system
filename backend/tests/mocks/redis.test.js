@@ -27,4 +27,10 @@ describe("tests/mocks/redis", () => {
     redis.ping.mockReset();
     expect(redis.ping.calls.length).toBe(0);
   });
+
+  it("get returns null by default", async () => {
+    const redis = createRedisMock();
+    const result = await redis.get("key");
+    expect(result).toBeNull();
+  });
 });

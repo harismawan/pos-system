@@ -43,27 +43,9 @@ export async function createCustomerController({ body, set }) {
     return successResponse(CUS.CREATE_SUCCESS, customer);
   } catch (err) {
     logger.error({ err }, "Create customer failed");
-    set.status = err.statusCode || 400;
-    const message = err.statusCode
-      ? err.message
-      : set.status === 500
-        ? "Internal Server Error"
-        : err.message;
-    // Note: Defaulting to 400 for create/update failures if not 500, but service might throw generic error.
-    // If service throws generic error without statusCode, assuming it's validation/constraint unless it's system error.
-    // Strict safe: set.status = err.statusCode || 500;
-    // But previously it was hardcoded 400.
-    // Let's stick to safe pattern:
-    // If no statusCode, and we treated it as 400 before, we risk leaking info if we don't treat it as 500.
-    // However, unique constraint errors usually have no statusCode but are client errors?
-    // Prisma P2002 is client error.
-    // Let's force statusCode || 500 generally.
-    // But for existing code that hardcoded 400, I should probably keep it 400 IF I'm sure it's validation? No, explicit better.
-    // I will use err.statusCode || 500.
     set.status = err.statusCode || 500;
-    const safeMessage =
-      set.status === 500 ? "Internal Server Error" : err.message;
-    return errorResponse(CUS.CREATE_FAILED, safeMessage);
+    const message = set.status === 500 ? "Internal Server Error" : err.message;
+    return errorResponse(CUS.CREATE_FAILED, message);
   }
 }
 

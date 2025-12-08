@@ -18,6 +18,12 @@ export function createMockFn(impl = () => undefined) {
     impl = async () => value;
   };
 
+  fn.mockRejectedValue = (error) => {
+    impl = async () => {
+      throw error;
+    };
+  };
+
   fn.mockReset = () => {
     fn.calls = [];
     impl = () => undefined;
