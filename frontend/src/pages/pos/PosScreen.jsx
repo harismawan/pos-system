@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { usePosStore } from "../../store/posStore.js";
 import { useOutletStore } from "../../store/outletStore.js";
 import { useAuthStore } from "../../store/authStore.js";
@@ -7,6 +7,7 @@ import * as productsApi from "../../api/productsApi.js";
 import * as posApi from "../../api/posApi.js";
 import * as warehousesApi from "../../api/warehousesApi.js";
 import * as outletsApi from "../../api/outletsApi.js";
+import ProductDetailModal from "../../components/products/ProductDetailModal.jsx";
 
 function PosScreen() {
   const activeOutlet = useOutletStore((state) => state.activeOutlet);
@@ -35,6 +36,12 @@ function PosScreen() {
   const [staffList, setStaffList] = useState([]);
   const [orderNote, setOrderNote] = useState("");
   const [processing, setProcessing] = useState(false);
+
+  // Product detail modal state (long-press)
+  const [showProductDetail, setShowProductDetail] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const longPressTimer = useRef(null);
+  const isLongPress = useRef(false);
 
   useEffect(() => {
     if (activeOutlet) {
@@ -99,6 +106,30 @@ function PosScreen() {
   const handleAddProduct = (product) => {
     addItem(product, 1);
   };
+
+  // Long-press handlers for product detail
+  const handlePressStart = useCallback((product) => {
+    isLongPress.current = false;
+    longPressTimer.current = setTimeout(() => {
+      isLongPress.current = true;
+      setSelectedProduct(product);
+      setShowProductDetail(true);
+    }, 200); // 200ms for long press
+  }, []);
+
+  const handlePressEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
+  const handleProductClick = useCallback((product) => {
+    // Only add to cart if it wasn't a long press
+    if (!isLongPress.current) {
+      handleAddProduct(product);
+    }
+  }, []);
 
   const openCheckoutModal = () => {
     if (orderItems.length === 0) {
@@ -250,7 +281,12 @@ function PosScreen() {
             {filteredProducts.map((product) => (
               <div
                 key={product.id}
-                onClick={() => handleAddProduct(product)}
+                onClick={() => handleProductClick(product)}
+                onMouseDown={() => handlePressStart(product)}
+                onMouseUp={handlePressEnd}
+                onTouchStart={() => handlePressStart(product)}
+                onTouchEnd={handlePressEnd}
+                onTouchCancel={handlePressEnd}
                 style={{
                   background: "white",
                   padding: "16px",
@@ -259,12 +295,15 @@ function PosScreen() {
                   boxShadow: "var(--shadow-sm)",
                   border: "1px solid var(--gray-100)",
                   transition: "all var(--transition-fast)",
+                  userSelect: "none",
+                  WebkitUserSelect: "none",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "translateY(-2px)";
                   e.currentTarget.style.boxShadow = "var(--shadow-md)";
                 }}
                 onMouseLeave={(e) => {
+                  handlePressEnd();
                   e.currentTarget.style.transform = "translateY(0)";
                   e.currentTarget.style.boxShadow = "var(--shadow-sm)";
                 }}
@@ -757,6 +796,16 @@ function PosScreen() {
           </div>
         </div>
       )}
+
+      {/* Product Detail Modal (long-press) */}
+      <ProductDetailModal
+        isOpen={showProductDetail}
+        onClose={() => {
+          setShowProductDetail(false);
+          setSelectedProduct(null);
+        }}
+        product={selectedProduct}
+      />
     </div>
   );
 }
