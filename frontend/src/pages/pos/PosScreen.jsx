@@ -3,11 +3,19 @@ import { usePosStore } from "../../store/posStore.js";
 import { useOutletStore } from "../../store/outletStore.js";
 import { useAuthStore } from "../../store/authStore.js";
 import { useUiStore } from "../../store/uiStore.js";
+import { usePrinterStore } from "../../store/printerStore.js";
 import * as productsApi from "../../api/productsApi.js";
 import * as posApi from "../../api/posApi.js";
 import * as warehousesApi from "../../api/warehousesApi.js";
 import * as outletsApi from "../../api/outletsApi.js";
 import ProductDetailModal from "../../components/products/ProductDetailModal.jsx";
+import ReceiptPreview from "../../components/receipt/ReceiptPreview.jsx";
+import PrinterSettingsModal from "../../components/receipt/PrinterSettingsModal.jsx";
+import { buildReceiptData } from "../../utils/receiptBuilder.js";
+import {
+  printerService,
+  printReceiptBrowser,
+} from "../../utils/printerService.js";
 
 function PosScreen() {
   const activeOutlet = useOutletStore((state) => state.activeOutlet);
@@ -36,6 +44,14 @@ function PosScreen() {
   const [staffList, setStaffList] = useState([]);
   const [orderNote, setOrderNote] = useState("");
   const [processing, setProcessing] = useState(false);
+
+  // Order success state
+  const [completedOrder, setCompletedOrder] = useState(null);
+  const [receiptData, setReceiptData] = useState(null);
+  const [showPrinterSettings, setShowPrinterSettings] = useState(false);
+
+  // Printer store
+  const { autoPrint, isConnected, getPrintOptions } = usePrinterStore();
 
   // Product detail modal state (long-press)
   const [showProductDetail, setShowProductDetail] = useState(false);
@@ -174,20 +190,60 @@ function PosScreen() {
         amount: totals.total,
       });
 
-      await posApi.completePosOrder(order.id);
+      const finalOrder = await posApi.completePosOrder(order.id);
+
+      // Build receipt data
+      const receipt = buildReceiptData(finalOrder, activeOutlet, {
+        cashReceived: paymentMethod === "CASH" ? totals.total : null,
+      });
+
+      setCompletedOrder(finalOrder);
+      setReceiptData(receipt);
+      setShowCheckoutModal(false);
+      clearOrder();
+      setOrderNote("");
+
+      // Auto-print if enabled and printer connected
+      if (autoPrint && isConnected) {
+        const printOptions = getPrintOptions();
+        await printerService.printReceipt(receipt, printOptions);
+      }
 
       showNotification(
         `Order ${order.orderNumber} completed successfully!`,
         "success",
       );
-      clearOrder();
-      setShowCheckoutModal(false);
-      setOrderNote("");
     } catch (err) {
       // Error handled centrally
     } finally {
       setProcessing(false);
     }
+  };
+
+  const handlePrintReceipt = async () => {
+    if (!receiptData) return;
+
+    const printOptions = getPrintOptions();
+
+    if (isConnected) {
+      const result = await printerService.printReceipt(
+        receiptData,
+        printOptions,
+      );
+      if (result.success) {
+        showNotification("Receipt printed successfully!", "success");
+      } else {
+        showNotification(`Print failed: ${result.error}`, "error");
+      }
+    } else {
+      // Use browser print fallback
+      printReceiptBrowser(receiptData, printOptions);
+    }
+  };
+
+  const handleNewOrder = () => {
+    setCompletedOrder(null);
+    setReceiptData(null);
   };
 
   const totals = getTotals();
@@ -806,6 +862,92 @@ function PosScreen() {
         }}
         product={selectedProduct}
       />
+
+      {/* Printer Settings Modal */}
+      <PrinterSettingsModal
+        isOpen={showPrinterSettings}
+        onClose={() => setShowPrinterSettings(false)}
+      />
+
+      {/* Order Success Modal */}
+      {completedOrder && (
+        <div className="modal-overlay" onClick={handleNewOrder}>
+          <div
+            className="modal"
+            style={{ maxWidth: "420px" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="modal-header"
+              style={{
+                background:
+                  "linear-gradient(135deg, var(--success-500), var(--success-600))",
+                color: "white",
+              }}
+            >
+              <h2 className="modal-title">✓ Order Complete</h2>
+              <button
+                onClick={handleNewOrder}
+                style={{
+                  background: "rgba(255,255,255,0.2)",
+                  fontSize: "18px",
+                  color: "white",
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "var(--radius-full)",
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body" style={{ padding: "24px" }}>
+              <div className="order-success">
+                <div className="order-success-title">
+                  Order <br />#{completedOrder.orderNumber}
+                </div>
+                <div className="order-success-subtitle">
+                  Successfully completed
+                </div>
+              </div>
+
+              {/* Receipt Preview */}
+              <ReceiptPreview receiptData={receiptData} />
+            </div>
+            <div
+              className="modal-footer"
+              style={{
+                background: "var(--gray-50)",
+                flexDirection: "column",
+                gap: "12px",
+              }}
+            >
+              <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+                <button
+                  className="btn-secondary"
+                  onClick={() => setShowPrinterSettings(true)}
+                  style={{ flex: 1 }}
+                >
+                  ⚙️ Printer Settings
+                </button>
+                <button
+                  className="btn-primary"
+                  onClick={handlePrintReceipt}
+                  style={{ flex: 1 }}
+                >
+                  🖨️ Print Receipt
+                </button>
+              </div>
+              <button
+                className="btn-success btn-lg"
+                onClick={handleNewOrder}
+                style={{ width: "100%" }}
+              >
+                Start New Order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

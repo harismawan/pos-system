@@ -53,6 +53,7 @@ function AppLayout() {
       label: "Settings",
       icon: "⚙️",
       children: [
+        { path: "/settings", label: "Overview" },
         can(PERMISSIONS.SETTINGS_OUTLETS) && {
           path: "/settings/outlets",
           label: "Outlets",

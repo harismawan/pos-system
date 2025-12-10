@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { usePermissions } from "../../hooks/usePermissions.js";
+import PrinterSettingsModal from "../../components/receipt/PrinterSettingsModal.jsx";
 
 const settingsNav = [
   {
@@ -38,6 +39,8 @@ const settingsNav = [
 function SettingsPage() {
   const location = useLocation();
   const { can } = usePermissions();
+  const [showPrinterSettings, setShowPrinterSettings] = useState(false);
+
   const isSubpage = settingsNav.some((item) =>
     location.pathname.startsWith(item.path),
   );
@@ -104,7 +107,51 @@ function SettingsPage() {
               </p>
             </Link>
           ))}
+
+        {/* Printer Settings Card */}
+        <div
+          onClick={() => setShowPrinterSettings(true)}
+          style={{
+            display: "block",
+            padding: "24px",
+            background: "white",
+            borderRadius: "var(--radius-xl)",
+            boxShadow: "var(--shadow-md)",
+            textDecoration: "none",
+            color: "inherit",
+            transition: "all var(--transition-normal)",
+            cursor: "pointer",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-2px)";
+            e.currentTarget.style.boxShadow = "var(--shadow-lg)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "var(--shadow-md)";
+          }}
+        >
+          <div style={{ fontSize: "32px", marginBottom: "12px" }}>🖨️</div>
+          <h3
+            style={{
+              fontSize: "18px",
+              fontWeight: 600,
+              marginBottom: "8px",
+            }}
+          >
+            Printer
+          </h3>
+          <p style={{ fontSize: "14px", color: "var(--gray-500)" }}>
+            Configure receipt printer settings
+          </p>
+        </div>
       </div>
+
+      {/* Printer Settings Modal */}
+      <PrinterSettingsModal
+        isOpen={showPrinterSettings}
+        onClose={() => setShowPrinterSettings(false)}
+      />
     </div>
   );
 }

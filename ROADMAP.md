@@ -66,7 +66,7 @@ Improvement recommendations for features, performance, and system architecture.
 
 | Priority | Task                                       | Impact               |
 | -------- | ------------------------------------------ | -------------------- |
-| 🔴 High  | Receipt printing (thermal printer support) | Physical receipts    |
+| ✅ Done  | Receipt printing (thermal printer support) | Physical receipts    |
 | 🔴 High  | Barcode scanner integration                | Faster checkout      |
 | 🟡 Med   | Hold/resume orders                         | Customer flexibility |
 | 🟡 Med   | Split payment (cash + card)                | Payment flexibility  |
@@ -114,18 +114,18 @@ Improvement recommendations for features, performance, and system architecture.
 
 | Priority | Task                             | Impact              |
 | -------- | -------------------------------- | ------------------- |
-| 🔴 High  | Rate limiting on auth endpoints  | Prevent brute force |
+| ✅ Done  | Rate limiting on auth endpoints  | Prevent brute force |
 | 🔴 High  | HTTPS enforcement                | Data encryption     |
 | 🟡 Med   | API key support for integrations | Third-party access  |
-| 🟡 Med   | Audit log for sensitive actions  | Compliance          |
+| ✅ Done  | Audit log for sensitive actions  | Compliance          |
 | 🟢 Low   | Two-factor authentication        | Extra security      |
 
 ### Scalability
 
 | Priority | Task                       | Impact                  |
 | -------- | -------------------------- | ----------------------- |
-| 🟡 Med   | Move sessions to Redis     | Stateless API servers   |
-| 🟡 Med   | Add health check endpoints | Load balancer readiness |
+| ✅ Done  | Move sessions to Redis     | Stateless API servers   |
+| ✅ Done  | Add health check endpoints | Load balancer readiness |
 | 🟡 Med   | Database read replicas     | Scale reads             |
 | 🟢 Low   | GraphQL API (optional)     | Flexible data fetching  |
 
@@ -133,7 +133,7 @@ Improvement recommendations for features, performance, and system architecture.
 
 | Priority | Task                            | Impact                  |
 | -------- | ------------------------------- | ----------------------- |
-| 🔴 High  | Docker production configs       | Consistent deploys      |
+| ✅ Done  | Docker production configs       | Consistent deploys      |
 | 🔴 High  | CI/CD pipeline (GitHub Actions) | Automated testing       |
 | 🟡 Med   | Environment-based configs       | Dev/staging/prod        |
 | 🟡 Med   | Database backup automation      | Data safety             |
