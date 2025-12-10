@@ -1,0 +1,39 @@
+# Ingress for POS System Backend
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pos-backend-ingress
+  namespace: pos-system
+  labels:
+    app: pos-backend
+    app.kubernetes.io/name: pos-backend
+    app.kubernetes.io/component: backend
+  annotations:
+    # Nginx Ingress Controller annotations
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    # Rate limiting (adjust as needed)
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    nginx.ingress.kubernetes.io/limit-connections: "50"
+    # CORS headers (if needed at ingress level)
+    # nginx.ingress.kubernetes.io/enable-cors: "true"
+    # nginx.ingress.kubernetes.io/cors-allow-origin: "https://pos.example.com"
+    # TLS with cert-manager (uncomment if using cert-manager)
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: api-pos.harismawan.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pos-backend-svc
+                port:
+                  number: 80

@@ -1,0 +1,20 @@
+# Service for POS Frontend
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: pos-frontend-svc
+  namespace: pos-system
+  labels:
+    app: pos-frontend
+    app.kubernetes.io/name: pos-frontend
+    app.kubernetes.io/component: frontend
+spec:
+  type: ClusterIP
+  selector:
+    app: pos-frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP

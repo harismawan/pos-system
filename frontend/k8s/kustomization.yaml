@@ -1,0 +1,23 @@
+# Kustomization for POS Frontend
+# Usage: kubectl apply -k k8s/
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: pos-system
+
+resources:
+  - configmap.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: pos-system
+  app.kubernetes.io/managed-by: kustomize
+
+# Image tag transformer (update newTag for each release)
+images:
+  - name: pos-frontend
+    newName: ghcr.io/harismawan/pos-frontend
+    newTag: latest

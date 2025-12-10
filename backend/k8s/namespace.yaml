@@ -1,0 +1,9 @@
+# Namespace for POS System
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pos-system
+  labels:
+    app.kubernetes.io/name: pos-system
+    app.kubernetes.io/part-of: pos-system

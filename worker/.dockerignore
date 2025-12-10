@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+
+# Git
+.git/
+.gitignore
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Tests
+tests/
+*.test.js
+coverage/
+
+# IDE and Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Build artifacts
+dist/
+build/
+
+# Kubernetes manifests (not needed in image)
+k8s/
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Documentation
+*.md
+!README.md
+
+# Lockfiles (we use bun.lock)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml

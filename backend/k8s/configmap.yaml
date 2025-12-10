@@ -1,0 +1,40 @@
+# ConfigMap for POS System Backend
+# Non-sensitive configuration values
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pos-backend-config
+  namespace: pos-system
+  labels:
+    app: pos-backend
+    app.kubernetes.io/name: pos-backend
+    app.kubernetes.io/component: backend
+data:
+  # Server Configuration
+  NODE_ENV: "production"
+  PORT: "3000"
+
+  # Database Connection Pool
+  DATABASE_POOL_MIN: "2"
+  DATABASE_POOL_MAX: "20"
+  DATABASE_IDLE_TIMEOUT: "30000"
+  DATABASE_CONNECTION_TIMEOUT: "10000"
+
+  # Redis Configuration
+  REDIS_HOST: "redis-svc"
+  REDIS_PORT: "6379"
+
+  # JWT Token Expiration
+  JWT_EXPIRES_IN: "15m"
+  REFRESH_TOKEN_EXPIRES_IN: "7d"
+
+  # CORS Configuration
+  CORS_ORIGIN: "https://pos.example.com"
+  CORS_CREDENTIALS: "true"
+
+  # Logging Configuration
+  LOG_LEVEL: "info"
+  LOG_REQUEST_BODY: "false"
+  LOG_RESPONSE_BODY: "false"
+  LOG_FULL_HEADERS: "false"

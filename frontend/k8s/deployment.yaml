@@ -1,0 +1,101 @@
+# Deployment for POS Frontend
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pos-frontend
+  namespace: pos-system
+  labels:
+    app: pos-frontend
+    app.kubernetes.io/name: pos-frontend
+    app.kubernetes.io/component: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pos-frontend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: pos-frontend
+        app.kubernetes.io/name: pos-frontend
+        app.kubernetes.io/component: frontend
+    spec:
+      serviceAccountName: pos-frontend
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      containers:
+        - name: frontend
+          image: pos-frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false # Nginx needs write access to some dirs
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: cache
+              mountPath: /var/cache/nginx
+            - name: run
+              mountPath: /var/run
+      volumes:
+        - name: cache
+          emptyDir: {}
+        - name: run
+          emptyDir: {}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: pos-frontend
+                topologyKey: kubernetes.io/hostname
+---
+# ServiceAccount for the frontend
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pos-frontend
+  namespace: pos-system
+  labels:
+    app: pos-frontend
+    app.kubernetes.io/name: pos-frontend
+    app.kubernetes.io/component: frontend

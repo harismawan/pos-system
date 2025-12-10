@@ -1,0 +1,31 @@
+# Ingress for POS Frontend
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pos-frontend-ingress
+  namespace: pos-system
+  labels:
+    app: pos-frontend
+    app.kubernetes.io/name: pos-frontend
+    app.kubernetes.io/component: frontend
+  annotations:
+    # Nginx Ingress Controller annotations
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    # Rate limiting
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    nginx.ingress.kubernetes.io/limit-connections: "50"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: pos.harismawan.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pos-frontend-svc
+                port:
+                  number: 80

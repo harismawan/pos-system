@@ -1,0 +1,15 @@
+# ConfigMap for POS Frontend
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pos-frontend-config
+  namespace: pos-system
+  labels:
+    app: pos-frontend
+    app.kubernetes.io/name: pos-frontend
+    app.kubernetes.io/component: frontend
+data:
+  # Note: Frontend environment variables are baked into the build
+  # This ConfigMap is for reference and nginx configuration overrides if needed
+  VITE_API_URL: "https://api.pos.example.com"
