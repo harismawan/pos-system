@@ -123,3 +123,46 @@ export async function logoutController({ headers, body, store }) {
     });
   }
 }
+
+export async function forgotPasswordController({ body, set }) {
+  try {
+    const { email } = body;
+    const result = await authService.requestPasswordReset(email);
+    return successResponse(AUT.FORGOT_PASSWORD_SUCCESS, result);
+  } catch (err) {
+    logger.error({ err }, "Forgot password failed");
+    set.status = err.statusCode || 500;
+    const message = err.statusCode ? err.message : "Internal Server Error";
+    return errorResponse(AUT.FORGOT_PASSWORD_FAILED, message);
+  }
+}
+
+export async function resetPasswordController({ body, set }) {
+  try {
+    const { token, newPassword } = body;
+    const result = await authService.resetPassword(token, newPassword);
+    return successResponse(AUT.RESET_PASSWORD_SUCCESS, result);
+  } catch (err) {
+    logger.error({ err }, "Reset password failed");
+    set.status = err.statusCode || 500;
+    const message = err.statusCode ? err.message : "Internal Server Error";
+    return errorResponse(AUT.RESET_PASSWORD_FAILED, message);
+  }
+}
+
+export async function changePasswordController({ body, store, set }) {
+  try {
+    const { currentPassword, newPassword } = body;
+    const result = await authService.changePassword(
+      store.user.id,
+      currentPassword,
+      newPassword,
+    );
+    return successResponse(AUT.CHANGE_PASSWORD_SUCCESS, result);
+  } catch (err) {
+    logger.error({ err, userId: store.user?.id }, "Change password failed");
+    set.status = err.statusCode || 500;
+    const message = err.statusCode ? err.message : "Internal Server Error";
+    return errorResponse(AUT.CHANGE_PASSWORD_FAILED, message);
+  }
+}

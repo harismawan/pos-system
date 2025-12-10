@@ -6,6 +6,12 @@ import AppLayout from "../layouts/AppLayout.jsx";
 
 // Lazy-loaded Auth pages
 const LoginPage = lazy(() => import("../pages/auth/LoginPage.jsx"));
+const ForgotPasswordPage = lazy(
+  () => import("../pages/auth/ForgotPasswordPage.jsx"),
+);
+const ResetPasswordPage = lazy(
+  () => import("../pages/auth/ResetPasswordPage.jsx"),
+);
 
 // Lazy-loaded Main pages
 const DashboardPage = lazy(
@@ -113,6 +119,8 @@ function AppRoutes() {
       <Routes>
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
         </Route>
 
         <Route

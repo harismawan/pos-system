@@ -12,9 +12,23 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
   .use(withRequestLogger())
   .post("/login", authController.loginController, authSchemas.loginSchema)
   .post("/refresh", authController.refreshController, authSchemas.refreshSchema)
+  .post(
+    "/forgot-password",
+    authController.forgotPasswordController,
+    authSchemas.forgotPasswordSchema,
+  )
+  .post(
+    "/reset-password",
+    authController.resetPasswordController,
+    authSchemas.resetPasswordSchema,
+  )
   .post("/logout", authController.logoutController, {
     beforeHandle: authMiddleware,
   })
   .get("/me", authController.getMeController, {
+    beforeHandle: authMiddleware,
+  })
+  .post("/change-password", authController.changePasswordController, {
+    ...authSchemas.changePasswordSchema,
     beforeHandle: authMiddleware,
   });

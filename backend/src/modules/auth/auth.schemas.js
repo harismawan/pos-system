@@ -17,3 +17,23 @@ export const refreshSchema = {
     refreshToken: t.String({ minLength: 1 }),
   }),
 };
+
+export const forgotPasswordSchema = {
+  body: t.Object({
+    email: t.String({ format: "email" }),
+  }),
+};
+
+export const resetPasswordSchema = {
+  body: t.Object({
+    token: t.String({ minLength: 1 }),
+    newPassword: t.String({ minLength: 6 }),
+  }),
+};
+
+export const changePasswordSchema = {
+  body: t.Object({
+    currentPassword: t.String({ minLength: 1 }),
+    newPassword: t.String({ minLength: 6 }),
+  }),
+};

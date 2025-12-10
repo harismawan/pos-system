@@ -16,7 +16,16 @@ import {
   validateRefreshToken,
   revokeRefreshToken,
 } from "../../libs/tokenStore.js";
-import { enqueueAuditLogJob } from "../../libs/jobs.js";
+import {
+  generateResetToken,
+  storeResetToken,
+  verifyResetToken,
+  deleteResetToken,
+} from "../../libs/otpStore.js";
+import {
+  enqueueAuditLogJob,
+  enqueueEmailNotificationJob,
+} from "../../libs/jobs.js";
 import logger from "../../libs/logger.js";
 import config from "../../config/index.js";
 
@@ -181,4 +190,157 @@ export async function getMe(userId) {
     role: user.role,
     outlets,
   };
+}
+
+/**
+ * Request password reset - generates token and sends email link
+ * @param {string} email - User email
+ * @param {string} frontendUrl - Frontend URL for reset link
+ * @returns {Object} success message
+ */
+export async function requestPasswordReset(
+  email,
+  frontendUrl = "http://localhost:5173",
+) {
+  const user = await prisma.user.findUnique({
+    where: { email: email.toLowerCase() },
+  });
+
+  if (!user) {
+    const error = new Error("Email not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (!user.isActive) {
+    const error = new Error("Account is inactive");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const token = generateResetToken();
+  await storeResetToken(token, user.id);
+
+  const resetLink = `${frontendUrl}/reset-password?token=${token}`;
+
+  // Send email via worker
+  enqueueEmailNotificationJob({
+    toEmail: email,
+    templateName: "password_reset",
+    templateData: {
+      name: user.name,
+      resetLink: resetLink,
+      expiryMinutes: 60,
+    },
+  });
+
+  logger.info({ userId: user.id, email }, "Password reset link sent");
+
+  return { message: "Password reset link has been sent to your email" };
+}
+
+/**
+ * Reset password using token
+ * @param {string} token - Reset token from email link
+ * @param {string} newPassword - New password
+ * @returns {Object} success message
+ */
+export async function resetPassword(token, newPassword) {
+  const userId = await verifyResetToken(token);
+
+  if (!userId) {
+    const error = new Error("Invalid or expired reset link");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    const error = new Error("Invalid or expired reset link");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordHash },
+  });
+
+  // Delete token after successful reset
+  await deleteResetToken(token);
+
+  // Audit log
+  enqueueAuditLogJob({
+    eventType: "PASSWORD_RESET",
+    userId: user.id,
+    outletId: null,
+    entityType: "User",
+    entityId: user.id,
+    payload: {
+      method: "email_link",
+      timestamp: new Date().toISOString(),
+    },
+  });
+
+  logger.info({ userId: user.id }, "Password reset successful");
+
+  return { message: "Password has been reset successfully" };
+}
+
+/**
+ * Change password (authenticated user)
+ * @param {string} userId - User ID
+ * @param {string} currentPassword - Current password
+ * @param {string} newPassword - New password
+ * @returns {Object} success message
+ */
+export async function changePassword(userId, currentPassword, newPassword) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    const error = new Error("User not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const isValidPassword = await bcrypt.compare(
+    currentPassword,
+    user.passwordHash,
+  );
+
+  if (!isValidPassword) {
+    const error = new Error("Current password is incorrect");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash },
+  });
+
+  // Audit log
+  enqueueAuditLogJob({
+    eventType: "PASSWORD_CHANGED",
+    userId: user.id,
+    outletId: null,
+    entityType: "User",
+    entityId: user.id,
+    payload: {
+      timestamp: new Date().toISOString(),
+    },
+  });
+
+  logger.info({ userId }, "Password changed successfully");
+
+  return { message: "Password has been changed successfully" };
 }

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore.js";
 import { useOutletStore } from "../../store/outletStore.js";
 import {
@@ -177,6 +177,15 @@ function LoginPage() {
               "Sign In"
             )}
           </button>
+
+          <div style={{ textAlign: "center", marginTop: "16px" }}>
+            <Link
+              to="/forgot-password"
+              style={{ color: "var(--primary-600)", fontSize: "14px" }}
+            >
+              Forgot your password?
+            </Link>
+          </div>
         </form>
       </div>
 

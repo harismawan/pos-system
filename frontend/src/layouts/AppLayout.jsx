@@ -3,6 +3,7 @@ import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/authStore.js";
 import { useOutletStore } from "../store/outletStore.js";
 import { usePermissions, PERMISSIONS } from "../hooks/usePermissions.js";
+import ProfileModal from "../components/auth/ProfileModal.jsx";
 
 function AppLayout() {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ function AppLayout() {
   const { activeOutlet, setActiveOutlet } = useOutletStore();
   const { can } = usePermissions();
   const [expandedMenu, setExpandedMenu] = useState(null);
+  const [showProfile, setShowProfile] = useState(false);
 
   // Build dynamic nav items based on permissions
   const navItems = [
@@ -231,14 +233,25 @@ function AppLayout() {
             background: "rgba(0,0,0,0.2)",
           }}
         >
-          <div
+          <button
+            onClick={() => setShowProfile(true)}
             style={{
+              width: "100%",
               display: "flex",
               alignItems: "center",
               gap: "12px",
               padding: "8px",
               background: "rgba(255,255,255,0.05)",
               borderRadius: "8px",
+              border: "none",
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(255,255,255,0.05)";
             }}
           >
             <div
@@ -251,11 +264,12 @@ function AppLayout() {
                 alignItems: "center",
                 justifyContent: "center",
                 fontWeight: 600,
+                color: "white",
               }}
             >
               {user?.name?.[0]?.toUpperCase() || "U"}
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
               <div
                 style={{
                   fontWeight: 500,
@@ -263,6 +277,7 @@ function AppLayout() {
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
+                  color: "white",
                 }}
               >
                 {user?.name}
@@ -271,9 +286,14 @@ function AppLayout() {
                 {user?.role}
               </div>
             </div>
-          </div>
+          </button>
         </div>
       </aside>
+
+      <ProfileModal
+        isOpen={showProfile}
+        onClose={() => setShowProfile(false)}
+      />
 
       {/* Main content */}
       <div

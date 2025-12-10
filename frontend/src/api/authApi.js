@@ -23,3 +23,38 @@ export async function getMe() {
   const response = await apiClient.get("/auth/me");
   return response.data;
 }
+
+export async function forgotPassword(email, options = {}) {
+  const response = await apiClient.post(
+    "/auth/forgot-password",
+    { email },
+    options,
+  );
+  return response.data;
+}
+
+export async function resetPassword(token, newPassword) {
+  const response = await apiClient.post("/auth/reset-password", {
+    token,
+    newPassword,
+  });
+  return response.data;
+}
+
+export async function changePassword(currentPassword, newPassword) {
+  const response = await apiClient.post("/auth/change-password", {
+    currentPassword,
+    newPassword,
+  });
+  return response.data;
+}
+
+export const authApi = {
+  login,
+  refresh,
+  logout,
+  getMe,
+  forgotPassword,
+  resetPassword,
+  changePassword,
+};
