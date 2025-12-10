@@ -30,6 +30,10 @@
     "deploy:k8s:frontend": "kubectl apply -k frontend/k8s",
     "deploy:k8s:worker": "kubectl apply -k worker/k8s",
     "deploy:k8s": "bun run deploy:k8s:backend && bun run deploy:k8s:frontend && bun run deploy:k8s:worker",
+    "deploy:microk8s:backend": "microk8s kubectl apply -k backend/k8s",
+    "deploy:microk8s:frontend": "microk8s kubectl apply -k frontend/k8s",
+    "deploy:microk8s:worker": "microk8s kubectl apply -k worker/k8s",
+    "deploy:microk8s": "bun run deploy:microk8s:backend && bun run deploy:microk8s:frontend && bun run deploy:microk8s:worker",
     "prepare": "husky"
   },
   "devDependencies": {
