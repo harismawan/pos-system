@@ -91,10 +91,10 @@ Improvement recommendations for features, performance, and system architecture.
 
 | Priority | Task                                     | Impact              |
 | -------- | ---------------------------------------- | ------------------- |
-| 🔴 High  | Sales trend chart (line/bar)             | Visual analytics    |
-| 🔴 High  | Compare periods (this week vs last week) | Trend analysis      |
-| 🟡 Med   | Hourly sales heatmap                     | Peak hours insights |
-| 🟡 Med   | Product performance widget               | Quick insights      |
+| ✅ Done  | Sales trend chart (line/bar)             | Visual analytics    |
+| ✅ Done  | Compare periods (this week vs last week) | Trend analysis      |
+| ✅ Done  | Hourly sales heatmap                     | Peak hours insights |
+| ✅ Done  | Product performance widget               | Quick insights      |
 
 ### Advanced Reports
 

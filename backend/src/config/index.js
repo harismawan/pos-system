@@ -112,6 +112,19 @@ export function buildConfig(env = process.env) {
             "responseBody.secret",
           ],
     },
+
+    // Cache TTLs (in seconds)
+    cache: {
+      productDetail: parseInt(env.CACHE_TTL_PRODUCT_DETAIL || "300", 10),
+      productList: parseInt(env.CACHE_TTL_PRODUCT_LIST || "60", 10),
+      reportSummary: parseInt(env.CACHE_TTL_REPORT_SUMMARY || "300", 10),
+      reportTrend: parseInt(env.CACHE_TTL_REPORT_TREND || "600", 10),
+      reportHeatmap: parseInt(env.CACHE_TTL_REPORT_HEATMAP || "900", 10),
+      reportTopProducts: parseInt(
+        env.CACHE_TTL_REPORT_TOP_PRODUCTS || "300",
+        10,
+      ),
+    },
   };
 }
 

@@ -8,6 +8,15 @@ const serviceMock = {
     accessToken: "na",
     refreshToken: "nr",
   })),
+  requestPasswordReset: createMockFn(async () => ({
+    message: "Reset email sent",
+  })),
+  resetPassword: createMockFn(async () => ({
+    message: "Password reset successfully",
+  })),
+  changePassword: createMockFn(async () => ({
+    message: "Password changed successfully",
+  })),
 };
 const tokenStoreMock = {
   revokeAccessToken: createMockFn(async () => {}),
@@ -199,5 +208,172 @@ describe("modules/auth/auth.controller", () => {
     });
     expect(res.success).toBe(true);
     expect(loggerMock.error.calls.length).toBeGreaterThan(0);
+  });
+
+  describe("forgotPasswordController", () => {
+    beforeEach(() => {
+      serviceMock.requestPasswordReset.mockReset();
+      serviceMock.requestPasswordReset.mockResolvedValue({
+        message: "Reset email sent",
+      });
+    });
+
+    it("returns success on forgot password request", async () => {
+      const set = {};
+      const res = await controller.forgotPasswordController({
+        body: { email: "test@example.com" },
+        set,
+      });
+
+      expect(res.success).toBe(true);
+      expect(serviceMock.requestPasswordReset.calls[0][0]).toBe(
+        "test@example.com",
+      );
+    });
+
+    it("returns error with custom status code", async () => {
+      const set = {};
+      const err = new Error("User not found");
+      err.statusCode = 404;
+      serviceMock.requestPasswordReset.mockImplementation(async () => {
+        throw err;
+      });
+
+      const res = await controller.forgotPasswordController({
+        body: { email: "notfound@example.com" },
+        set,
+      });
+
+      expect(set.status).toBe(404);
+      expect(res.error).toBe("User not found");
+    });
+
+    it("returns 500 on unexpected error", async () => {
+      const set = {};
+      serviceMock.requestPasswordReset.mockImplementation(async () => {
+        throw new Error("Database error");
+      });
+
+      const res = await controller.forgotPasswordController({
+        body: { email: "test@example.com" },
+        set,
+      });
+
+      expect(set.status).toBe(500);
+      expect(res.error).toBe("Internal Server Error");
+    });
+  });
+
+  describe("resetPasswordController", () => {
+    beforeEach(() => {
+      serviceMock.resetPassword.mockReset();
+      serviceMock.resetPassword.mockResolvedValue({
+        message: "Password reset successfully",
+      });
+    });
+
+    it("returns success on password reset", async () => {
+      const set = {};
+      const res = await controller.resetPasswordController({
+        body: { token: "valid-token", newPassword: "newpass123" },
+        set,
+      });
+
+      expect(res.success).toBe(true);
+      expect(serviceMock.resetPassword.calls[0][0]).toBe("valid-token");
+      expect(serviceMock.resetPassword.calls[0][1]).toBe("newpass123");
+    });
+
+    it("returns error with custom status code for invalid token", async () => {
+      const set = {};
+      const err = new Error("Invalid or expired token");
+      err.statusCode = 400;
+      serviceMock.resetPassword.mockImplementation(async () => {
+        throw err;
+      });
+
+      const res = await controller.resetPasswordController({
+        body: { token: "invalid-token", newPassword: "newpass123" },
+        set,
+      });
+
+      expect(set.status).toBe(400);
+      expect(res.error).toBe("Invalid or expired token");
+    });
+
+    it("returns 500 on unexpected error", async () => {
+      const set = {};
+      serviceMock.resetPassword.mockImplementation(async () => {
+        throw new Error("Database error");
+      });
+
+      const res = await controller.resetPasswordController({
+        body: { token: "valid-token", newPassword: "newpass123" },
+        set,
+      });
+
+      expect(set.status).toBe(500);
+      expect(res.error).toBe("Internal Server Error");
+    });
+  });
+
+  describe("changePasswordController", () => {
+    beforeEach(() => {
+      serviceMock.changePassword.mockReset();
+      serviceMock.changePassword.mockResolvedValue({
+        message: "Password changed successfully",
+      });
+    });
+
+    it("returns success on password change", async () => {
+      const set = {};
+      const store = { user: { id: "user-123" } };
+      const res = await controller.changePasswordController({
+        body: { currentPassword: "oldpass", newPassword: "newpass123" },
+        store,
+        set,
+      });
+
+      expect(res.success).toBe(true);
+      expect(serviceMock.changePassword.calls[0][0]).toBe("user-123");
+      expect(serviceMock.changePassword.calls[0][1]).toBe("oldpass");
+      expect(serviceMock.changePassword.calls[0][2]).toBe("newpass123");
+    });
+
+    it("returns error with custom status code for wrong current password", async () => {
+      const set = {};
+      const store = { user: { id: "user-123" } };
+      const err = new Error("Current password is incorrect");
+      err.statusCode = 400;
+      serviceMock.changePassword.mockImplementation(async () => {
+        throw err;
+      });
+
+      const res = await controller.changePasswordController({
+        body: { currentPassword: "wrongpass", newPassword: "newpass123" },
+        store,
+        set,
+      });
+
+      expect(set.status).toBe(400);
+      expect(res.error).toBe("Current password is incorrect");
+    });
+
+    it("returns 500 on unexpected error", async () => {
+      const set = {};
+      const store = { user: { id: "user-123" } };
+      serviceMock.changePassword.mockImplementation(async () => {
+        throw new Error("Database error");
+      });
+
+      const res = await controller.changePasswordController({
+        body: { currentPassword: "oldpass", newPassword: "newpass123" },
+        store,
+        set,
+      });
+
+      expect(set.status).toBe(500);
+      expect(res.error).toBe("Internal Server Error");
+    });
   });
 });

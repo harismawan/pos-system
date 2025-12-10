@@ -1,111 +1,32 @@
 /**
  * Reports service
  * Handles business logic for generating reports
+ * All report functions are cached using Redis
  */
 
 import prisma from "../../libs/prisma.js";
+import {
+  wrapWithCache,
+  hashObject,
+  CACHE_KEYS,
+  CACHE_TTL,
+} from "../../libs/cache.js";
 
 /**
- * Get sales summary report
+ * Get top selling products (cached)
  */
-export async function getSalesSummary(filters = {}) {
-  const { startDate, endDate, outletId, groupBy = "day" } = filters;
+export async function getTopProducts(filters = {}) {
+  const cacheKey = CACHE_KEYS.REPORT_TOP_PRODUCTS(hashObject(filters));
 
-  const where = {
-    status: "COMPLETED",
-  };
-
-  if (outletId) where.outletId = outletId;
-  if (startDate || endDate) {
-    where.createdAt = {};
-    if (startDate) where.createdAt.gte = new Date(startDate);
-    if (endDate) where.createdAt.lte = new Date(endDate);
-  }
-
-  // Get all completed orders
-  const orders = await prisma.posOrder.findMany({
-    where,
-    select: {
-      id: true,
-      totalAmount: true,
-      totalDiscountAmount: true,
-      totalTaxAmount: true,
-      createdAt: true,
-      items: {
-        select: {
-          quantity: true,
-        },
-      },
-    },
-    orderBy: { createdAt: "asc" },
+  return wrapWithCache(cacheKey, CACHE_TTL.REPORT_TOP_PRODUCTS, async () => {
+    return fetchTopProducts(filters);
   });
-
-  // Calculate totals
-  const totalRevenue = orders.reduce(
-    (sum, o) => sum + parseFloat(o.totalAmount),
-    0,
-  );
-  const totalOrders = orders.length;
-  const totalItems = orders.reduce(
-    (sum, o) =>
-      sum +
-      o.items.reduce((itemSum, item) => itemSum + parseFloat(item.quantity), 0),
-    0,
-  );
-  const totalDiscount = orders.reduce(
-    (sum, o) => sum + parseFloat(o.totalDiscountAmount),
-    0,
-  );
-  const totalTax = orders.reduce(
-    (sum, o) => sum + parseFloat(o.totalTaxAmount),
-    0,
-  );
-  const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-
-  // Group by period
-  const groupedData = {};
-  orders.forEach((order) => {
-    let key;
-    const date = new Date(order.createdAt);
-
-    if (groupBy === "day") {
-      key = date.toISOString().split("T")[0];
-    } else if (groupBy === "week") {
-      const weekStart = new Date(date);
-      weekStart.setDate(date.getDate() - date.getDay());
-      key = weekStart.toISOString().split("T")[0];
-    } else if (groupBy === "month") {
-      key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-    }
-
-    if (!groupedData[key]) {
-      groupedData[key] = { date: key, revenue: 0, orders: 0, items: 0 };
-    }
-    groupedData[key].revenue += parseFloat(order.totalAmount);
-    groupedData[key].orders += 1;
-    groupedData[key].items += order.items.reduce(
-      (sum, item) => sum + parseFloat(item.quantity),
-      0,
-    );
-  });
-
-  return {
-    summary: {
-      totalRevenue,
-      totalOrders,
-      totalItems,
-      totalDiscount,
-      totalTax,
-      averageOrderValue,
-    },
-    chartData: Object.values(groupedData),
-  };
 }
 
 /**
- * Get top selling products
+ * Internal: Fetch top products from DB
  */
-export async function getTopProducts(filters = {}) {
+async function fetchTopProducts(filters = {}) {
   const {
     startDate,
     endDate,
@@ -173,9 +94,20 @@ export async function getTopProducts(filters = {}) {
 }
 
 /**
- * Get inventory valuation report
+ * Get inventory valuation report (cached)
  */
 export async function getInventoryValuation(filters = {}) {
+  const cacheKey = CACHE_KEYS.REPORT_INVENTORY(hashObject(filters));
+
+  return wrapWithCache(cacheKey, CACHE_TTL.REPORT_SUMMARY, async () => {
+    return fetchInventoryValuation(filters);
+  });
+}
+
+/**
+ * Internal: Fetch inventory valuation from DB
+ */
+async function fetchInventoryValuation(filters = {}) {
   const { warehouseId, category } = filters;
 
   const where = {};
@@ -247,9 +179,20 @@ export async function getInventoryValuation(filters = {}) {
 }
 
 /**
- * Get stock movement report
+ * Get stock movement report (cached)
  */
 export async function getStockMovementReport(filters = {}) {
+  const cacheKey = CACHE_KEYS.REPORT_STOCK_MOVEMENTS(hashObject(filters));
+
+  return wrapWithCache(cacheKey, CACHE_TTL.REPORT_SUMMARY, async () => {
+    return fetchStockMovementReport(filters);
+  });
+}
+
+/**
+ * Internal: Fetch stock movement report from DB
+ */
+async function fetchStockMovementReport(filters = {}) {
   const {
     startDate,
     endDate,
@@ -393,4 +336,297 @@ export async function getOrderHistory(filters = {}) {
       totalPages: Math.ceil(total / limit),
     },
   };
+}
+
+/**
+ * Get sales trend with period comparison (cached)
+ * Compares current period with previous period (e.g., this week vs last week)
+ */
+export async function getSalesTrend(filters = {}) {
+  const cacheKey = CACHE_KEYS.REPORT_SALES_TREND(hashObject(filters));
+
+  return wrapWithCache(cacheKey, CACHE_TTL.REPORT_TREND, async () => {
+    return fetchSalesTrend(filters);
+  });
+}
+
+/**
+ * Internal: Fetch sales trend with comparison from DB
+ */
+async function fetchSalesTrend(filters = {}) {
+  const {
+    startDate,
+    endDate,
+    outletId,
+    compareWithPrevious = true,
+    groupBy = "day",
+  } = filters;
+
+  // Set proper time boundaries for current period
+  const currentStart = new Date(startDate);
+  currentStart.setHours(0, 0, 0, 0);
+
+  const currentEnd = new Date(endDate);
+  currentEnd.setHours(23, 59, 59, 999);
+
+  const periodDays = Math.ceil(
+    (currentEnd - currentStart) / (1000 * 60 * 60 * 24),
+  );
+
+  // Build where clause for current period
+  const currentWhere = {
+    status: "COMPLETED",
+    createdAt: {
+      gte: currentStart,
+      lte: currentEnd,
+    },
+  };
+  if (outletId) currentWhere.outletId = outletId;
+
+  // Fetch current period orders with additional fields for tax/discount
+  const currentOrders = await prisma.posOrder.findMany({
+    where: currentWhere,
+    select: {
+      totalAmount: true,
+      totalDiscountAmount: true,
+      totalTaxAmount: true,
+      createdAt: true,
+      items: {
+        select: { quantity: true },
+      },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+
+  // Group current data by date with groupBy support
+  const currentData = groupOrdersByDate(currentOrders, groupBy);
+
+  // Calculate current period totals (includes tax/discount)
+  const currentTotals = calculatePeriodTotals(currentOrders);
+
+  let previousData = [];
+  let previousTotals = null;
+  let comparison = null;
+
+  // Fetch previous period if requested
+  if (compareWithPrevious) {
+    // Previous period should be the same duration, immediately before current period
+    // e.g., if current is Jan 15-21 (7 days), previous should be Jan 8-14 (7 days)
+    const previousEnd = new Date(currentStart);
+    previousEnd.setDate(previousEnd.getDate() - 1); // Day before current start
+    previousEnd.setHours(23, 59, 59, 999);
+
+    const previousStart = new Date(previousEnd);
+    previousStart.setDate(previousStart.getDate() - periodDays + 1); // Same duration
+    previousStart.setHours(0, 0, 0, 0);
+
+    const previousWhere = {
+      status: "COMPLETED",
+      createdAt: {
+        gte: previousStart,
+        lte: previousEnd,
+      },
+    };
+    if (outletId) previousWhere.outletId = outletId;
+
+    const previousOrders = await prisma.posOrder.findMany({
+      where: previousWhere,
+      select: {
+        totalAmount: true,
+        createdAt: true,
+        items: {
+          select: { quantity: true },
+        },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    previousData = groupOrdersByDate(previousOrders);
+    previousTotals = calculatePeriodTotals(previousOrders);
+
+    // Calculate comparison percentages
+    comparison = {
+      revenueChange: calculatePercentChange(
+        previousTotals.revenue,
+        currentTotals.revenue,
+      ),
+      ordersChange: calculatePercentChange(
+        previousTotals.orders,
+        currentTotals.orders,
+      ),
+      itemsChange: calculatePercentChange(
+        previousTotals.items,
+        currentTotals.items,
+      ),
+      avgOrderValueChange: calculatePercentChange(
+        previousTotals.avgOrderValue,
+        currentTotals.avgOrderValue,
+      ),
+    };
+  }
+
+  return {
+    current: {
+      data: currentData,
+      totals: currentTotals,
+    },
+    previous: compareWithPrevious
+      ? {
+          data: previousData,
+          totals: previousTotals,
+        }
+      : null,
+    comparison,
+  };
+}
+
+/**
+ * Get hourly sales heatmap (cached)
+ * Returns sales data grouped by hour and day of week
+ */
+export async function getHourlySalesHeatmap(filters = {}) {
+  const cacheKey = CACHE_KEYS.REPORT_HEATMAP(hashObject(filters));
+
+  return wrapWithCache(cacheKey, CACHE_TTL.REPORT_HEATMAP, async () => {
+    return fetchHourlySalesHeatmap(filters);
+  });
+}
+
+/**
+ * Internal: Fetch hourly sales heatmap from DB
+ */
+async function fetchHourlySalesHeatmap(filters = {}) {
+  const { startDate, endDate, outletId } = filters;
+
+  const where = {
+    status: "COMPLETED",
+  };
+  if (outletId) where.outletId = outletId;
+  if (startDate || endDate) {
+    where.createdAt = {};
+    if (startDate) where.createdAt.gte = new Date(startDate);
+    if (endDate) where.createdAt.lte = new Date(endDate);
+  }
+
+  const orders = await prisma.posOrder.findMany({
+    where,
+    select: {
+      totalAmount: true,
+      createdAt: true,
+    },
+  });
+
+  // Initialize heatmap grid (7 days x 24 hours)
+  // Days: 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  const heatmap = Array(7)
+    .fill(null)
+    .map(() =>
+      Array(24)
+        .fill(null)
+        .map(() => ({ orders: 0, revenue: 0 })),
+    );
+
+  // Aggregate data
+  orders.forEach((order) => {
+    const date = new Date(order.createdAt);
+    const dayOfWeek = date.getDay();
+    const hour = date.getHours();
+
+    heatmap[dayOfWeek][hour].orders += 1;
+    heatmap[dayOfWeek][hour].revenue += parseFloat(order.totalAmount);
+  });
+
+  // Find peak hours
+  let maxOrders = 0;
+  let peakHour = { day: 0, hour: 0 };
+
+  heatmap.forEach((day, dayIndex) => {
+    day.forEach((slot, hourIndex) => {
+      if (slot.orders > maxOrders) {
+        maxOrders = slot.orders;
+        peakHour = { day: dayIndex, hour: hourIndex };
+      }
+    });
+  });
+
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  return {
+    heatmap,
+    dayNames,
+    peakHour: {
+      day: dayNames[peakHour.day],
+      hour: peakHour.hour,
+      orders: maxOrders,
+    },
+    totalOrders: orders.length,
+  };
+}
+
+// Helper functions for analytics
+
+function groupOrdersByDate(orders, groupBy = "day") {
+  const grouped = {};
+  orders.forEach((order) => {
+    const date = new Date(order.createdAt);
+    let key;
+
+    if (groupBy === "day") {
+      key = date.toISOString().split("T")[0];
+    } else if (groupBy === "week") {
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() - date.getDay());
+      key = weekStart.toISOString().split("T")[0];
+    } else if (groupBy === "month") {
+      key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    } else {
+      key = date.toISOString().split("T")[0];
+    }
+
+    if (!grouped[key]) {
+      grouped[key] = { date: key, revenue: 0, orders: 0, items: 0 };
+    }
+    grouped[key].revenue += parseFloat(order.totalAmount);
+    grouped[key].orders += 1;
+    grouped[key].items += order.items.reduce(
+      (sum, item) => sum + parseFloat(item.quantity),
+      0,
+    );
+  });
+  return Object.values(grouped).sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function calculatePeriodTotals(orders) {
+  const revenue = orders.reduce((sum, o) => sum + parseFloat(o.totalAmount), 0);
+  const orderCount = orders.length;
+  const items = orders.reduce(
+    (sum, o) =>
+      sum +
+      o.items.reduce((itemSum, item) => itemSum + parseFloat(item.quantity), 0),
+    0,
+  );
+  const totalTax = orders.reduce(
+    (sum, o) => sum + parseFloat(o.totalTaxAmount || 0),
+    0,
+  );
+  const totalDiscount = orders.reduce(
+    (sum, o) => sum + parseFloat(o.totalDiscountAmount || 0),
+    0,
+  );
+
+  return {
+    revenue,
+    orders: orderCount,
+    items,
+    avgOrderValue: orderCount > 0 ? revenue / orderCount : 0,
+    totalTax,
+    totalDiscount,
+    netRevenue: revenue - totalDiscount,
+    avgItemsPerOrder: orderCount > 0 ? items / orderCount : 0,
+  };
+}
+
+function calculatePercentChange(previous, current) {
+  if (previous === 0) return current > 0 ? 100 : 0;
+  return Math.round(((current - previous) / previous) * 100);
 }

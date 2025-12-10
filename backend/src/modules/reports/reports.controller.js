@@ -7,20 +7,6 @@ import { REP } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
 import logger from "../../libs/logger.js";
 
-export async function getSalesSummaryController({ query, store, set }) {
-  try {
-    const outletId = store.outletId || query.outletId;
-    const result = await reportsService.getSalesSummary({ ...query, outletId });
-
-    return successResponse(REP.SALES_SUMMARY_SUCCESS, result);
-  } catch (err) {
-    logger.error({ err }, "Get sales summary failed");
-    set.status = err.statusCode || 500;
-    const message = set.status === 500 ? "Internal Server Error" : err.message;
-    return errorResponse(REP.REPORT_FAILED, message);
-  }
-}
-
 export async function getTopProductsController({ query, store, set }) {
   try {
     const outletId = store.outletId || query.outletId;
@@ -73,6 +59,37 @@ export async function getOrderHistoryController({ query, store, set }) {
     return successResponse(REP.ORDER_HISTORY_SUCCESS, result);
   } catch (err) {
     logger.error({ err }, "Get order history failed");
+    set.status = err.statusCode || 500;
+    const message = set.status === 500 ? "Internal Server Error" : err.message;
+    return errorResponse(REP.REPORT_FAILED, message);
+  }
+}
+
+export async function getSalesTrendController({ query, store, set }) {
+  try {
+    const outletId = store.outletId || query.outletId;
+    const result = await reportsService.getSalesTrend({ ...query, outletId });
+
+    return successResponse(REP.SALES_TREND_SUCCESS, result);
+  } catch (err) {
+    logger.error({ err }, "Get sales trend failed");
+    set.status = err.statusCode || 500;
+    const message = set.status === 500 ? "Internal Server Error" : err.message;
+    return errorResponse(REP.REPORT_FAILED, message);
+  }
+}
+
+export async function getHourlySalesHeatmapController({ query, store, set }) {
+  try {
+    const outletId = store.outletId || query.outletId;
+    const result = await reportsService.getHourlySalesHeatmap({
+      ...query,
+      outletId,
+    });
+
+    return successResponse(REP.HEATMAP_SUCCESS, result);
+  } catch (err) {
+    logger.error({ err }, "Get hourly sales heatmap failed");
     set.status = err.statusCode || 500;
     const message = set.status === 500 ? "Internal Server Error" : err.message;
     return errorResponse(REP.REPORT_FAILED, message);

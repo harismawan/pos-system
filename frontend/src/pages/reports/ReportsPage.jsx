@@ -3,12 +3,17 @@ import { Link } from "react-router-dom";
 import * as reportsApi from "../../api/reportsApi.js";
 import { useUiStore } from "../../store/uiStore.js";
 import ProductDetailModal from "../../components/products/ProductDetailModal.jsx";
+import {
+  HourlyHeatmap,
+  PeriodComparison,
+} from "../../components/charts/index.js";
 
 function ReportsPage() {
   const showNotification = useUiStore((state) => state.showNotification);
   const [loading, setLoading] = useState(true);
-  const [salesSummary, setSalesSummary] = useState(null);
+  const [salesData, setSalesData] = useState(null);
   const [topProducts, setTopProducts] = useState([]);
+  const [heatmapData, setHeatmapData] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
@@ -31,13 +36,20 @@ function ReportsPage() {
         Date.now() - 30 * 24 * 60 * 60 * 1000,
       ).toISOString();
 
-      const [summaryData, productsData] = await Promise.all([
-        reportsApi.getSalesSummary({ startDate, endDate, groupBy: "day" }),
+      const [trendData, productsData, heatmap] = await Promise.all([
+        reportsApi.getSalesTrend({
+          startDate,
+          endDate,
+          groupBy: "day",
+          compareWithPrevious: true,
+        }),
         reportsApi.getTopProducts({ startDate, endDate, limit: 5 }),
+        reportsApi.getHourlySalesHeatmap({ startDate, endDate }),
       ]);
 
-      setSalesSummary(summaryData.summary);
+      setSalesData(trendData);
       setTopProducts(productsData.products || []);
+      setHeatmapData(heatmap);
     } catch (err) {
       // Error handled centrally
     } finally {
@@ -76,6 +88,9 @@ function ReportsPage() {
     },
   ];
 
+  const currentTotals = salesData?.current?.totals;
+  const comparison = salesData?.comparison;
+
   return (
     <div className="page-container">
       <div className="page-header">
@@ -93,43 +108,14 @@ function ReportsPage() {
         </div>
       ) : (
         <>
-          <div className="stats-grid" style={{ marginBottom: "32px" }}>
-            <div className="stat-card">
-              <div className="stat-label">Total Revenue (30 days)</div>
-              <div className="stat-value">
-                Rp {(salesSummary?.totalRevenue || 0).toLocaleString("id-ID")}
-              </div>
-              <div
-                className="stat-change"
-                style={{ color: "var(--success-500)" }}
-              >
-                {salesSummary?.totalOrders || 0} orders
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Items Sold</div>
-              <div className="stat-value">
-                {Math.round(salesSummary?.totalItems || 0)}
-              </div>
-              <div className="stat-change" style={{ color: "var(--gray-400)" }}>
-                Last 30 days
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Avg Order Value</div>
-              <div className="stat-value">
-                Rp{" "}
-                {Math.round(
-                  salesSummary?.averageOrderValue || 0,
-                ).toLocaleString("id-ID")}
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Total Discount</div>
-              <div className="stat-value">
-                Rp {(salesSummary?.totalDiscount || 0).toLocaleString("id-ID")}
-              </div>
-            </div>
+          {/* Stats Cards - same style as SalesReportPage */}
+          <div style={{ marginBottom: "32px" }}>
+            <PeriodComparison
+              current={currentTotals}
+              previous={salesData?.previous?.totals}
+              comparison={comparison}
+              showComparison={!!comparison}
+            />
           </div>
 
           {/* Report Navigation */}
@@ -138,56 +124,18 @@ function ReportsPage() {
           >
             Detailed Reports
           </h2>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-              gap: "16px",
-              marginBottom: "32px",
-            }}
-          >
-            {reportCards.map((card) => (
-              <Link
-                key={card.path}
-                to={card.path}
-                style={{
-                  display: "block",
-                  padding: "24px",
-                  background: "white",
-                  borderRadius: "var(--radius-xl)",
-                  boxShadow: "var(--shadow-sm)",
-                  border: "1px solid var(--gray-100)",
-                  textDecoration: "none",
-                  color: "inherit",
-                  transition: "all var(--transition-fast)",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = "var(--shadow-md)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "var(--shadow-sm)";
-                }}
-              >
-                <div style={{ fontSize: "32px", marginBottom: "12px" }}>
-                  {card.icon}
-                </div>
-                <h3
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: 600,
-                    marginBottom: "4px",
-                  }}
-                >
-                  {card.label}
-                </h3>
-                <p style={{ fontSize: "13px", color: "var(--gray-500)" }}>
-                  {card.description}
-                </p>
-              </Link>
-            ))}
-          </div>
+
+          {/* Sales Heatmap */}
+          {heatmapData && (
+            <div className="card" style={{ marginBottom: "24px" }}>
+              <div className="card-header">
+                <h2 className="card-title">Sales by Hour (30 days)</h2>
+              </div>
+              <div style={{ padding: "16px" }}>
+                <HourlyHeatmap data={heatmapData} />
+              </div>
+            </div>
+          )}
 
           {/* Top Products */}
           {topProducts.length > 0 && (

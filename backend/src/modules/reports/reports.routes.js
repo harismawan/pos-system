@@ -11,10 +11,6 @@ import { withRequestLogger } from "../../libs/requestLogger.js";
 
 export const reportsRoutes = new Elysia({ prefix: "/reports" })
   .use(withRequestLogger())
-  .get("/sales-summary", reportsController.getSalesSummaryController, {
-    beforeHandle: [authMiddleware, requirePermission(PERMISSIONS.REPORTS_VIEW)],
-    ...reportsSchemas.salesSummarySchema,
-  })
   .get("/top-products", reportsController.getTopProductsController, {
     beforeHandle: [authMiddleware, requirePermission(PERMISSIONS.REPORTS_VIEW)],
     ...reportsSchemas.topProductsSchema,
@@ -37,4 +33,12 @@ export const reportsRoutes = new Elysia({ prefix: "/reports" })
   .get("/order-history", reportsController.getOrderHistoryController, {
     beforeHandle: [authMiddleware, requirePermission(PERMISSIONS.REPORTS_VIEW)],
     ...reportsSchemas.orderHistorySchema,
+  })
+  .get("/sales-trend", reportsController.getSalesTrendController, {
+    beforeHandle: [authMiddleware, requirePermission(PERMISSIONS.REPORTS_VIEW)],
+    ...reportsSchemas.salesTrendSchema,
+  })
+  .get("/hourly-heatmap", reportsController.getHourlySalesHeatmapController, {
+    beforeHandle: [authMiddleware, requirePermission(PERMISSIONS.REPORTS_VIEW)],
+    ...reportsSchemas.heatmapSchema,
   });

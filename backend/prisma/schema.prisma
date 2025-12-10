@@ -461,6 +461,8 @@ model PosOrder {
 
   @@index([outletId, createdAt])
   @@index([status])
+  @@index([status, createdAt]) // Analytics: getSalesTrend, getHourlySalesHeatmap
+  @@index([status, outletId, createdAt]) // Analytics: filtered by outlet
   @@index([paymentStatus])
   @@index([customerId])
   @@index([cashierId])

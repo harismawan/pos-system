@@ -3,11 +3,12 @@ import { describe, it, expect, mock, beforeEach } from "bun:test";
 import { createMockFn } from "../../mocks/mockFn.js";
 
 const serviceMock = {
-  getSalesSummary: createMockFn(async () => ({ summary: {} })),
   getTopProducts: createMockFn(async () => ({ products: [] })),
   getStockMovementReport: createMockFn(async () => ({ movements: [] })),
   getInventoryValuation: createMockFn(async () => ({ totalValue: 0 })),
   getOrderHistory: createMockFn(async () => ({ orders: [] })),
+  getSalesTrend: createMockFn(async () => ({ current: {}, previous: {} })),
+  getHourlySalesHeatmap: createMockFn(async () => ({ heatmap: [] })),
 };
 
 const loggerMock = { error: createMockFn() };
@@ -23,8 +24,6 @@ const controller =
 
 describe("modules/reports/reports.controller", () => {
   beforeEach(() => {
-    serviceMock.getSalesSummary.mockReset();
-    serviceMock.getSalesSummary.mockResolvedValue({ summary: {} });
     serviceMock.getTopProducts.mockReset();
     serviceMock.getTopProducts.mockResolvedValue({ products: [] });
     serviceMock.getStockMovementReport.mockReset();
@@ -33,37 +32,11 @@ describe("modules/reports/reports.controller", () => {
     serviceMock.getInventoryValuation.mockResolvedValue({ totalValue: 0 });
     serviceMock.getOrderHistory.mockReset();
     serviceMock.getOrderHistory.mockResolvedValue({ orders: [] });
+    serviceMock.getSalesTrend.mockReset();
+    serviceMock.getSalesTrend.mockResolvedValue({ current: {}, previous: {} });
+    serviceMock.getHourlySalesHeatmap.mockReset();
+    serviceMock.getHourlySalesHeatmap.mockResolvedValue({ heatmap: [] });
     loggerMock.error.mockReset();
-  });
-
-  it("passes outletId from store for sales summary", async () => {
-    const set = {};
-    const store = { outletId: "out-1" };
-    const res = await controller.getSalesSummaryController({
-      query: {},
-      store,
-      set,
-    });
-
-    expect(res.success).toBe(true);
-    expect(serviceMock.getSalesSummary.calls[0][0].outletId).toBe("out-1");
-  });
-
-  it("returns error when sales summary fails with status code", async () => {
-    const set = {};
-    const err = new Error("bad");
-    err.statusCode = 400;
-    serviceMock.getSalesSummary.mockImplementation(async () => {
-      throw err;
-    });
-
-    const res = await controller.getSalesSummaryController({
-      query: {},
-      store: {},
-      set,
-    });
-    expect(set.status).toBe(400);
-    expect(res.error).toBe("bad");
   });
 
   it("passes outletId from query for top products", async () => {
@@ -178,6 +151,100 @@ describe("modules/reports/reports.controller", () => {
       store: {},
       set,
     });
+    expect(set.status).toBe(500);
+    expect(res.error).toBe("Internal Server Error");
+  });
+
+  it("returns sales trend successfully", async () => {
+    const set = {};
+    const res = await controller.getSalesTrendController({
+      query: { startDate: "2024-01-01", endDate: "2024-01-31" },
+      store: { outletId: "store-1" },
+      set,
+    });
+
+    expect(res.success).toBe(true);
+    expect(serviceMock.getSalesTrend.calls[0][0].outletId).toBe("store-1");
+  });
+
+  it("returns error when sales trend fails with custom status", async () => {
+    const set = {};
+    const err = new Error("Invalid date range");
+    err.statusCode = 400;
+    serviceMock.getSalesTrend.mockImplementation(async () => {
+      throw err;
+    });
+
+    const res = await controller.getSalesTrendController({
+      query: {},
+      store: {},
+      set,
+    });
+
+    expect(set.status).toBe(400);
+    expect(res.error).toBe("Invalid date range");
+  });
+
+  it("returns error when sales trend fails with 500", async () => {
+    const set = {};
+    serviceMock.getSalesTrend.mockImplementation(async () => {
+      throw new Error("Database error");
+    });
+
+    const res = await controller.getSalesTrendController({
+      query: {},
+      store: {},
+      set,
+    });
+
+    expect(set.status).toBe(500);
+    expect(res.error).toBe("Internal Server Error");
+  });
+
+  it("returns hourly sales heatmap successfully", async () => {
+    const set = {};
+    const res = await controller.getHourlySalesHeatmapController({
+      query: { startDate: "2024-01-01" },
+      store: { outletId: "store-2" },
+      set,
+    });
+
+    expect(res.success).toBe(true);
+    expect(serviceMock.getHourlySalesHeatmap.calls[0][0].outletId).toBe(
+      "store-2",
+    );
+  });
+
+  it("returns error when hourly heatmap fails with custom status", async () => {
+    const set = {};
+    const err = new Error("Invalid parameters");
+    err.statusCode = 400;
+    serviceMock.getHourlySalesHeatmap.mockImplementation(async () => {
+      throw err;
+    });
+
+    const res = await controller.getHourlySalesHeatmapController({
+      query: {},
+      store: {},
+      set,
+    });
+
+    expect(set.status).toBe(400);
+    expect(res.error).toBe("Invalid parameters");
+  });
+
+  it("returns error when hourly heatmap fails with 500", async () => {
+    const set = {};
+    serviceMock.getHourlySalesHeatmap.mockImplementation(async () => {
+      throw new Error("Database error");
+    });
+
+    const res = await controller.getHourlySalesHeatmapController({
+      query: {},
+      store: {},
+      set,
+    });
+
     expect(set.status).toBe(500);
     expect(res.error).toBe("Internal Server Error");
   });

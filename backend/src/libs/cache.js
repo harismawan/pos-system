@@ -6,17 +6,27 @@
 import crypto from "crypto";
 import redis from "./redis.js";
 import logger from "./logger.js";
+import config from "../config/index.js";
 
-// Default TTL values in seconds
+// TTL values from config (in seconds)
 export const CACHE_TTL = {
-  PRODUCT_DETAIL: 300, // 5 minutes for single product
-  PRODUCT_LIST: 60, // 1 minute for product lists
+  PRODUCT_DETAIL: config.cache.productDetail,
+  PRODUCT_LIST: config.cache.productList,
+  REPORT_SUMMARY: config.cache.reportSummary,
+  REPORT_TREND: config.cache.reportTrend,
+  REPORT_HEATMAP: config.cache.reportHeatmap,
+  REPORT_TOP_PRODUCTS: config.cache.reportTopProducts,
 };
 
 // Cache key patterns
 export const CACHE_KEYS = {
   PRODUCT_BY_ID: (id) => `cache:product:${id}`,
   PRODUCTS_LIST: (hash) => `cache:products:list:${hash}`,
+  REPORT_SALES_TREND: (hash) => `cache:report:trend:${hash}`,
+  REPORT_HEATMAP: (hash) => `cache:report:heatmap:${hash}`,
+  REPORT_TOP_PRODUCTS: (hash) => `cache:report:topproducts:${hash}`,
+  REPORT_INVENTORY: (hash) => `cache:report:inventory:${hash}`,
+  REPORT_STOCK_MOVEMENTS: (hash) => `cache:report:stockmovements:${hash}`,
 };
 
 /**

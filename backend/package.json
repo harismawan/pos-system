@@ -6,11 +6,11 @@
     "dev": "bun --watch src/server.js",
     "start": "bun src/server.js",
     "test": "bun test",
-    "db:migrate": "bun prisma migrate dev",
-    "db:migrate:deploy": "bun prisma migrate deploy",
-    "db:seed": "bun prisma db seed",
-    "db:studio": "bun prisma studio",
-    "db:generate": "bun prisma generate"
+    "db:migrate": "bun prisma migrate dev --config prisma/prisma.config.js",
+    "db:migrate:deploy": "bun prisma migrate deploy --config prisma/prisma.config.js",
+    "db:seed": "bun prisma db seed --config prisma/prisma.config.js",
+    "db:studio": "bun prisma studio --config prisma/prisma.config.js",
+    "db:generate": "bun prisma generate --config prisma/prisma.config.js"
   },
   "prisma": {
     "seed": "bun prisma/seed.js"

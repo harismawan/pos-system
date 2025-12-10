@@ -32,6 +32,10 @@ describe("libs/cache", () => {
     it("has correct TTL values", () => {
       expect(CACHE_TTL.PRODUCT_DETAIL).toBe(300);
       expect(CACHE_TTL.PRODUCT_LIST).toBe(60);
+      expect(CACHE_TTL.REPORT_SUMMARY).toBe(300);
+      expect(CACHE_TTL.REPORT_TREND).toBe(600);
+      expect(CACHE_TTL.REPORT_HEATMAP).toBe(900);
+      expect(CACHE_TTL.REPORT_TOP_PRODUCTS).toBe(300);
     });
   });
 
@@ -44,6 +48,31 @@ describe("libs/cache", () => {
     it("generates products list key", () => {
       const key = CACHE_KEYS.PRODUCTS_LIST("abc123");
       expect(key).toBe("cache:products:list:abc123");
+    });
+
+    it("generates report sales trend key", () => {
+      const key = CACHE_KEYS.REPORT_SALES_TREND("hash123");
+      expect(key).toBe("cache:report:trend:hash123");
+    });
+
+    it("generates report heatmap key", () => {
+      const key = CACHE_KEYS.REPORT_HEATMAP("hash456");
+      expect(key).toBe("cache:report:heatmap:hash456");
+    });
+
+    it("generates report top products key", () => {
+      const key = CACHE_KEYS.REPORT_TOP_PRODUCTS("hash789");
+      expect(key).toBe("cache:report:topproducts:hash789");
+    });
+
+    it("generates report inventory key", () => {
+      const key = CACHE_KEYS.REPORT_INVENTORY("hashABC");
+      expect(key).toBe("cache:report:inventory:hashABC");
+    });
+
+    it("generates report stock movements key", () => {
+      const key = CACHE_KEYS.REPORT_STOCK_MOVEMENTS("hashDEF");
+      expect(key).toBe("cache:report:stockmovements:hashDEF");
     });
   });
 
@@ -116,6 +145,13 @@ describe("libs/cache", () => {
       redisMock.setex.mockRejectedValue(new Error("Redis error"));
 
       await expect(setCache("key", "value", 60)).resolves.toBeUndefined();
+    });
+
+    it("handles complex objects", async () => {
+      const complexObj = { nested: { data: [1, 2, 3] }, array: ["a", "b"] };
+      await setCache("complex", complexObj, 120);
+
+      expect(redisMock.setex.calls[0][2]).toBe(JSON.stringify(complexObj));
     });
   });
 
@@ -197,6 +233,18 @@ describe("libs/cache", () => {
 
       expect(result).toBeUndefined();
       expect(redisMock.setex.calls.length).toBe(0);
+    });
+
+    it("handles fetchFn errors gracefully", async () => {
+      redisMock.get.mockResolvedValue(null);
+
+      const fetchFn = async () => {
+        throw new Error("Fetch failed");
+      };
+
+      await expect(wrapWithCache("key", 60, fetchFn)).rejects.toThrow(
+        "Fetch failed",
+      );
     });
   });
 });

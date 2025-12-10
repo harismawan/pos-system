@@ -12,16 +12,6 @@ const dateRangeQuery = {
   outletId: t.Optional(t.String()),
 };
 
-// GET /reports/sales-summary
-export const salesSummarySchema = {
-  query: t.Object({
-    ...dateRangeQuery,
-    groupBy: t.Optional(
-      t.Union([t.Literal("day"), t.Literal("week"), t.Literal("month")]),
-    ),
-  }),
-};
-
 // GET /reports/top-products
 export const topProductsSchema = {
   query: t.Object({
@@ -70,5 +60,23 @@ export const orderHistorySchema = {
     ),
     customerId: t.Optional(t.String()),
     ...commonSchemas.pagination,
+  }),
+};
+
+// GET /reports/sales-trend
+export const salesTrendSchema = {
+  query: t.Object({
+    ...dateRangeQuery,
+    groupBy: t.Optional(
+      t.Union([t.Literal("day"), t.Literal("week"), t.Literal("month")]),
+    ),
+    compareWithPrevious: t.Optional(t.BooleanString({ default: true })),
+  }),
+};
+
+// GET /reports/hourly-heatmap
+export const heatmapSchema = {
+  query: t.Object({
+    ...dateRangeQuery,
   }),
 };
