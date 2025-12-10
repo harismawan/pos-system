@@ -21,16 +21,12 @@ data:
   DATABASE_IDLE_TIMEOUT: "30000"
   DATABASE_CONNECTION_TIMEOUT: "10000"
 
-  # Redis Configuration
-  REDIS_HOST: "redis-svc"
-  REDIS_PORT: "6379"
-
   # JWT Token Expiration
   JWT_EXPIRES_IN: "15m"
-  REFRESH_TOKEN_EXPIRES_IN: "7d"
+  REFRESH_TOKEN_EXPIRES_IN: "1d"
 
   # CORS Configuration
-  CORS_ORIGIN: "https://pos.example.com"
+  CORS_ORIGIN: "https://pos.harismawan.com"
   CORS_CREDENTIALS: "true"
 
   # Logging Configuration

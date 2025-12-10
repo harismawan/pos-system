@@ -7,7 +7,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ============================================
@@ -23,24 +22,26 @@ enum UserRole {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  name          String
-  username      String   @unique
-  passwordHash  String   @map("password_hash")
-  email         String?  @unique
-  phone         String?
-  role          UserRole @default(CASHIER)
-  isActive      Boolean  @default(true) @map("is_active")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(cuid())
+  name         String
+  username     String   @unique
+  passwordHash String   @map("password_hash")
+  email        String?  @unique
+  phone        String?
+  role         UserRole @default(CASHIER)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   // Relations
-  outletUsers           OutletUser[]
-  createdPurchaseOrders PurchaseOrder[]  @relation("CreatedByUser")
+  outletUsers            OutletUser[]
+  createdPurchaseOrders  PurchaseOrder[] @relation("CreatedByUser")
   receivedPurchaseOrders PurchaseOrder[] @relation("ReceivedByUser")
-  posOrders             PosOrder[]
-  stockMovements        StockMovement[]
+  posOrders              PosOrder[]
+  stockMovements         StockMovement[]
 
+  @@index([role])
+  @@index([isActive])
   @@map("users")
 }
 
@@ -90,7 +91,7 @@ model Outlet {
   updatedAt          DateTime @updatedAt @map("updated_at")
 
   // Relations
-  defaultPriceTier  PriceTier?          @relation(fields: [defaultPriceTierId], references: [id], onDelete: SetNull)
+  defaultPriceTier  PriceTier?         @relation(fields: [defaultPriceTierId], references: [id], onDelete: SetNull)
   outletUsers       OutletUser[]
   warehouses        Warehouse[]
   posRegisters      PosRegister[]
@@ -126,12 +127,12 @@ model Warehouse {
   updatedAt    DateTime      @updatedAt @map("updated_at")
 
   // Relations
-  outlet              Outlet?           @relation(fields: [outletId], references: [id], onDelete: SetNull)
-  inventories         Inventory[]
-  purchaseOrders      PurchaseOrder[]
-  posOrders           PosOrder[]
-  stockMovementsFrom  StockMovement[]   @relation("FromWarehouse")
-  stockMovementsTo    StockMovement[]   @relation("ToWarehouse")
+  outlet             Outlet?         @relation(fields: [outletId], references: [id], onDelete: SetNull)
+  inventories        Inventory[]
+  purchaseOrders     PurchaseOrder[]
+  posOrders          PosOrder[]
+  stockMovementsFrom StockMovement[] @relation("FromWarehouse")
+  stockMovementsTo   StockMovement[] @relation("ToWarehouse")
 
   @@index([outletId])
   @@index([isActive])
@@ -198,14 +199,15 @@ model Product {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   // Relations
-  priceTiers        ProductPriceTier[]
-  inventories       Inventory[]
+  priceTiers         ProductPriceTier[]
+  inventories        Inventory[]
   purchaseOrderItems PurchaseOrderItem[]
-  posOrderItems     PosOrderItem[]
-  stockMovements    StockMovement[]
+  posOrderItems      PosOrderItem[]
+  stockMovements     StockMovement[]
 
   @@index([isActive])
   @@index([category])
+  @@index([name])
   @@map("products")
 }
 
@@ -219,9 +221,9 @@ model ProductPriceTier {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   // Relations
-  product   Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
-  priceTier PriceTier  @relation(fields: [priceTierId], references: [id], onDelete: Cascade)
-  outlet    Outlet?    @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  priceTier PriceTier @relation(fields: [priceTierId], references: [id], onDelete: Cascade)
+  outlet    Outlet?   @relation(fields: [outletId], references: [id], onDelete: Cascade)
 
   @@unique([productId, priceTierId, outletId])
   @@index([productId])
@@ -256,6 +258,8 @@ model Customer {
   posOrders PosOrder[]
 
   @@index([email])
+  @@index([phone])
+  @@index([name])
   @@index([priceTierId])
   @@map("customers")
 }
@@ -265,14 +269,14 @@ model Customer {
 // ============================================
 
 model Inventory {
-  id           String   @id @default(cuid())
-  productId    String   @map("product_id")
-  warehouseId  String   @map("warehouse_id")
-  quantityOnHand Decimal @map("quantity_on_hand") @default(0) @db.Decimal(10, 2)
-  minimumStock Decimal  @map("minimum_stock") @default(0) @db.Decimal(10, 2)
-  maximumStock Decimal? @map("maximum_stock") @db.Decimal(10, 2)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id             String   @id @default(cuid())
+  productId      String   @map("product_id")
+  warehouseId    String   @map("warehouse_id")
+  quantityOnHand Decimal  @default(0) @map("quantity_on_hand") @db.Decimal(10, 2)
+  minimumStock   Decimal  @default(0) @map("minimum_stock") @db.Decimal(10, 2)
+  maximumStock   Decimal? @map("maximum_stock") @db.Decimal(10, 2)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   // Relations
   product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -310,6 +314,7 @@ model Supplier {
   purchaseOrders PurchaseOrder[]
 
   @@index([isActive])
+  @@index([name])
   @@map("suppliers")
 }
 
@@ -321,28 +326,28 @@ enum PurchaseOrderStatus {
 }
 
 model PurchaseOrder {
-  id              String              @id @default(cuid())
-  supplierId      String              @map("supplier_id")
-  warehouseId     String              @map("warehouse_id")
-  outletId        String              @map("outlet_id")
-  status          PurchaseOrderStatus @default(DRAFT)
-  orderNumber     String              @unique @map("order_number")
-  orderDate       DateTime            @map("order_date")
-  expectedDate    DateTime?           @map("expected_date")
-  totalAmount     Decimal             @map("total_amount") @db.Decimal(12, 2)
-  notes           String?             @db.Text
-  createdByUserId String              @map("created_by_user_id")
-  receivedByUserId String?            @map("received_by_user_id")
-  createdAt       DateTime            @default(now()) @map("created_at")
-  updatedAt       DateTime            @updatedAt @map("updated_at")
+  id               String              @id @default(cuid())
+  supplierId       String              @map("supplier_id")
+  warehouseId      String              @map("warehouse_id")
+  outletId         String              @map("outlet_id")
+  status           PurchaseOrderStatus @default(DRAFT)
+  orderNumber      String              @unique @map("order_number")
+  orderDate        DateTime            @map("order_date")
+  expectedDate     DateTime?           @map("expected_date")
+  totalAmount      Decimal             @map("total_amount") @db.Decimal(12, 2)
+  notes            String?             @db.Text
+  createdByUserId  String              @map("created_by_user_id")
+  receivedByUserId String?             @map("received_by_user_id")
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
 
   // Relations
-  supplier      Supplier              @relation(fields: [supplierId], references: [id], onDelete: Restrict)
-  warehouse     Warehouse             @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
-  outlet        Outlet                @relation(fields: [outletId], references: [id], onDelete: Restrict)
-  createdBy     User                  @relation("CreatedByUser", fields: [createdByUserId], references: [id], onDelete: Restrict)
-  receivedBy    User?                 @relation("ReceivedByUser", fields: [receivedByUserId], references: [id], onDelete: Restrict)
-  items         PurchaseOrderItem[]
+  supplier   Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  warehouse  Warehouse           @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+  outlet     Outlet              @relation(fields: [outletId], references: [id], onDelete: Restrict)
+  createdBy  User                @relation("CreatedByUser", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  receivedBy User?               @relation("ReceivedByUser", fields: [receivedByUserId], references: [id], onDelete: Restrict)
+  items      PurchaseOrderItem[]
 
   @@index([supplierId])
   @@index([warehouseId])
@@ -357,7 +362,7 @@ model PurchaseOrderItem {
   purchaseOrderId  String   @map("purchase_order_id")
   productId        String   @map("product_id")
   quantityOrdered  Decimal  @map("quantity_ordered") @db.Decimal(10, 2)
-  quantityReceived Decimal  @map("quantity_received") @default(0) @db.Decimal(10, 2)
+  quantityReceived Decimal  @default(0) @map("quantity_received") @db.Decimal(10, 2)
   unitCost         Decimal  @map("unit_cost") @db.Decimal(10, 2)
   lineTotal        Decimal  @map("line_total") @db.Decimal(12, 2)
   createdAt        DateTime @default(now()) @map("created_at")
@@ -427,23 +432,23 @@ enum PaymentStatus {
 }
 
 model PosOrder {
-  id                  String          @id @default(cuid())
-  outletId            String          @map("outlet_id")
-  warehouseId         String          @map("warehouse_id")
-  registerId          String?         @map("register_id")
-  customerId          String?         @map("customer_id")
-  cashierId           String          @map("cashier_id")
-  orderNumber         String          @unique @map("order_number")
-  status              PosOrderStatus  @default(OPEN)
-  paymentStatus       PaymentStatus   @default(UNPAID) @map("payment_status")
-  subtotalAmount      Decimal         @map("subtotal_amount") @db.Decimal(12, 2)
-  totalDiscountAmount Decimal         @map("total_discount_amount") @default(0) @db.Decimal(12, 2)
-  totalTaxAmount      Decimal         @map("total_tax_amount") @default(0) @db.Decimal(12, 2)
-  totalAmount         Decimal         @map("total_amount") @db.Decimal(12, 2)
-  notes               String?         @db.Text
-  createdAt           DateTime        @default(now()) @map("created_at")
-  closedAt            DateTime?       @map("closed_at")
-  updatedAt           DateTime        @updatedAt @map("updated_at")
+  id                  String         @id @default(cuid())
+  outletId            String         @map("outlet_id")
+  warehouseId         String         @map("warehouse_id")
+  registerId          String?        @map("register_id")
+  customerId          String?        @map("customer_id")
+  cashierId           String         @map("cashier_id")
+  orderNumber         String         @unique @map("order_number")
+  status              PosOrderStatus @default(OPEN)
+  paymentStatus       PaymentStatus  @default(UNPAID) @map("payment_status")
+  subtotalAmount      Decimal        @map("subtotal_amount") @db.Decimal(12, 2)
+  totalDiscountAmount Decimal        @default(0) @map("total_discount_amount") @db.Decimal(12, 2)
+  totalTaxAmount      Decimal        @default(0) @map("total_tax_amount") @db.Decimal(12, 2)
+  totalAmount         Decimal        @map("total_amount") @db.Decimal(12, 2)
+  notes               String?        @db.Text
+  createdAt           DateTime       @default(now()) @map("created_at")
+  closedAt            DateTime?      @map("closed_at")
+  updatedAt           DateTime       @updatedAt @map("updated_at")
 
   // Relations
   outlet    Outlet         @relation(fields: [outletId], references: [id], onDelete: Restrict)
@@ -456,27 +461,31 @@ model PosOrder {
 
   @@index([outletId, createdAt])
   @@index([status])
+  @@index([status, createdAt]) // Analytics: getSalesTrend, getHourlySalesHeatmap
+  @@index([status, outletId, createdAt]) // Analytics: filtered by outlet
+  @@index([paymentStatus])
   @@index([customerId])
   @@index([cashierId])
+  @@index([closedAt])
   @@map("pos_orders")
 }
 
 model PosOrderItem {
-  id                   String     @id @default(cuid())
-  posOrderId           String     @map("pos_order_id")
-  productId            String     @map("product_id")
-  quantity             Decimal    @db.Decimal(10, 2)
-  unitPrice            Decimal    @map("unit_price") @db.Decimal(10, 2)
-  discountAmount       Decimal    @map("discount_amount") @default(0) @db.Decimal(10, 2)
-  taxAmount            Decimal    @map("tax_amount") @default(0) @db.Decimal(10, 2)
-  lineTotal            Decimal    @map("line_total") @db.Decimal(12, 2)
-  effectivePriceTierId String?    @map("effective_price_tier_id")
-  createdAt            DateTime   @default(now()) @map("created_at")
-  updatedAt            DateTime   @updatedAt @map("updated_at")
+  id                   String   @id @default(cuid())
+  posOrderId           String   @map("pos_order_id")
+  productId            String   @map("product_id")
+  quantity             Decimal  @db.Decimal(10, 2)
+  unitPrice            Decimal  @map("unit_price") @db.Decimal(10, 2)
+  discountAmount       Decimal  @default(0) @map("discount_amount") @db.Decimal(10, 2)
+  taxAmount            Decimal  @default(0) @map("tax_amount") @db.Decimal(10, 2)
+  lineTotal            Decimal  @map("line_total") @db.Decimal(12, 2)
+  effectivePriceTierId String?  @map("effective_price_tier_id")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
 
   // Relations
-  posOrder          PosOrder   @relation(fields: [posOrderId], references: [id], onDelete: Cascade)
-  product           Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
+  posOrder           PosOrder   @relation(fields: [posOrderId], references: [id], onDelete: Cascade)
+  product            Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
   effectivePriceTier PriceTier? @relation(fields: [effectivePriceTierId], references: [id], onDelete: SetNull)
 
   @@index([posOrderId])
@@ -525,5 +534,6 @@ model AuditLog {
   @@index([eventType, createdAt])
   @@index([outletId, createdAt])
   @@index([userId])
+  @@index([entityType, entityId])
   @@map("audit_logs")
 }

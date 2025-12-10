@@ -12,4 +12,4 @@ metadata:
 data:
   # Note: Frontend environment variables are baked into the build
   # This ConfigMap is for reference and nginx configuration overrides if needed
-  VITE_API_URL: "https://api.pos.example.com"
+  VITE_API_URL: "https://api-pos.harismawan.com"

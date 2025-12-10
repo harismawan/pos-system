@@ -13,10 +13,6 @@ data:
   # Environment
   NODE_ENV: "production"
 
-  # Redis Configuration
-  REDIS_HOST: "redis-svc"
-  REDIS_PORT: "6379"
-
   # Worker Configuration
   WORKER_CONCURRENCY: "5"
   WORKER_MAX_RETRIES: "3"
@@ -25,7 +21,7 @@ data:
   LOG_LEVEL: "info"
 
   # SMTP Configuration (non-sensitive)
-  SMTP_HOST: "smtp.example.com"
+  SMTP_HOST: "smtp.gmail.com"
   SMTP_PORT: "587"
   SMTP_SECURE: "false"
-  SMTP_FROM: "POS System <noreply@pos-system.local>"
+  SMTP_FROM: "Interactive Developer <interactive.apk@gmail.com>"

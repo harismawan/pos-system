@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/name: pos-frontend
     app.kubernetes.io/component: frontend
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: pos-frontend
@@ -32,6 +32,8 @@ spec:
         runAsUser: 1001
         runAsGroup: 1001
         fsGroup: 1001
+      imagePullSecrets:
+        - name: ghcr-creds
       containers:
         - name: frontend
           image: pos-frontend:latest
