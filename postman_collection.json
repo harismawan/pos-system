@@ -130,6 +130,219 @@
               "path": ["auth", "logout"]
             }
           }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/forgot-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "forgot-password"]
+            }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"reset-token\",\n  \"password\": \"newPassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/reset-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "reset-password"]
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"password123\",\n  \"newPassword\": \"newPassword456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "change-password"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            }
+          }
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"newuser\",\n  \"password\": \"password123\",\n  \"email\": \"newuser@example.com\",\n  \"role\": \"CASHIER\",\n  \"name\": \"New Store User\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            }
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\",\n  \"role\": \"MANAGER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Assign User to Outlet",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"outletId\": \"{{outletId}}\",\n  \"role\": \"CASHIER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/:id/outlets",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", ":id", "outlets"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Remove User from Outlet",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/:id/outlets/:outletId",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", ":id", "outlets", ":outletId"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                },
+                {
+                  "key": "outletId",
+                  "value": ""
+                }
+              ]
+            }
+          }
         }
       ]
     },
@@ -247,6 +460,24 @@
               "raw": "{{baseUrl}}/products/:id",
               "host": ["{{baseUrl}}"],
               "path": ["products", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reactivate Product",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/:id/reactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", ":id", "reactivate"],
               "variable": [
                 {
                   "key": "id",
@@ -387,6 +618,24 @@
               "variable": [
                 {
                   "key": "productId",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Price Tier",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pricing/tiers/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["pricing", "tiers", ":id"],
+              "variable": [
+                {
+                  "key": "id",
                   "value": ""
                 }
               ]
@@ -760,6 +1009,24 @@
           }
         },
         {
+          "name": "Delete Warehouse",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/warehouses/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["warehouses", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
           "name": "Get Warehouse Inventory",
           "request": {
             "method": "GET",
@@ -817,6 +1084,55 @@
                   "disabled": true
                 }
               ]
+            }
+          }
+        },
+        {
+          "name": "Get Low Stock",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Outlet-Id",
+                "value": "{{outletId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/low-stock?warehouseId=",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "low-stock"],
+              "query": [
+                {
+                  "key": "warehouseId",
+                  "value": "",
+                  "description": "Optional: filter by warehouse"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Submit Stock Take",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Outlet-Id",
+                "value": "{{outletId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"warehouseId\": \"\",\n  \"items\": [\n    {\n      \"productId\": \"\",\n      \"physicalQuantity\": 100\n    }\n  ],\n  \"notes\": \"Annual stock count\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventory/stock-take",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "stock-take"]
             }
           }
         },
@@ -1324,7 +1640,7 @@
       "name": "Reports",
       "item": [
         {
-          "name": "Get Sales Summary",
+          "name": "Get Sales Trend",
           "request": {
             "method": "GET",
             "header": [
@@ -1334,9 +1650,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/reports/sales-summary?startDate=2024-01-01&endDate=2024-12-31&groupBy=day",
+              "raw": "{{baseUrl}}/reports/sales-trend?startDate=2024-01-01&endDate=2024-12-31&groupBy=day",
               "host": ["{{baseUrl}}"],
-              "path": ["reports", "sales-summary"],
+              "path": ["reports", "sales-trend"],
               "query": [
                 {
                   "key": "startDate",
@@ -1350,6 +1666,33 @@
                   "key": "groupBy",
                   "value": "day",
                   "description": "Options: day, week, month"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Hourly Heatmap",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Outlet-Id",
+                "value": "{{outletId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reports/hourly-heatmap?startDate=2024-01-01&endDate=2024-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "hourly-heatmap"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-12-31"
                 }
               ]
             }

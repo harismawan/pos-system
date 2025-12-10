@@ -53,6 +53,7 @@ pos-system/
 - **State Management**: Zustand
 - **Routing**: React Router v6
 - **Styling**: CSS (no framework)
+- **Charting**: Chart.js with react-chartjs-2
 
 ### Worker
 
@@ -294,36 +295,100 @@ Base URL: `http://localhost:3000/api`
 
 ### Authentication
 
-- `POST /auth/login` - Login with username/password
-- `POST /auth/refresh` - Refresh access token
-- `POST /auth/logout` - Logout (invalidate token)
-- `GET /auth/me` - Get current user info
+- `POST /auth/login` - Login
+- `POST /auth/logout` - Logout
+- `POST /auth/refresh` - Refresh token
+- `GET /auth/me` - Get current user profile
+- `POST /auth/forgot-password` - Request password reset
+- `POST /auth/reset-password` - Reset password
+- `POST /auth/change-password` - Change password
+
+### Users
+
+- `GET /users` - List users
+- `POST /users` - Create user
+- `GET /users/:id` - Get user details
+- `PUT /users/:id` - Update user
+- `DELETE /users/:id` - Deactivate user
+- `POST /users/:id/outlets` - Assign user to outlet
+- `DELETE /users/:id/outlets/:outletId` - Remove user from outlet
 
 ### Products
 
-- `GET /products` - List products (with filters, pagination)
-- `GET /products/:id` - Get product by ID
+- `GET /products` - List products
 - `POST /products` - Create product
+- `GET /products/:id` - Get product details
 - `PUT /products/:id` - Update product
 - `DELETE /products/:id` - Soft delete product
+- `POST /products/:id/reactivate` - Reactivate product
 
 ### Pricing
 
-- `GET /pricing/quote` - Get price quote for a product
 - `GET /pricing/tiers` - List price tiers
 - `POST /pricing/tiers` - Create price tier
 - `PUT /pricing/tiers/:id` - Update price tier
-- `GET /pricing/products/:productId/prices` - Get product prices
-- `POST /pricing/products/:productId/prices` - Set product price
+- `DELETE /pricing/tiers/:id` - Delete price tier
+- `GET /pricing/quote` - Calculate price for context
+- `GET /pricing/products/:productId` - Get product prices
+- `PUT /pricing/products/:productId` - Update product prices
 
-### POS / Sales
+### Inventory
 
-- `POST /pos/orders` - Create new POS order
-- `GET /pos/orders` - List orders (with filters)
-- `GET /pos/orders/:id` - Get order by ID
-- `POST /pos/orders/:id/complete` - Complete order (updates inventory)
-- `POST /pos/orders/:id/cancel` - Cancel order
-- `POST /pos/orders/:id/payments` - Add payment to order
+- `GET /inventory` - Get inventory levels
+- `GET /inventory/low-stock` - Get low stock alerts
+- `GET /inventory/movements` - View stock movement history
+- `POST /inventory/adjustments` - Adjust stock quantity
+- `POST /inventory/transfers` - Transfer stock between warehouses
+- `POST /inventory/stock-take` - Submit stock count
+
+### Sales / POS
+
+- `GET /sales/orders` - List sales orders
+- `POST /sales/orders` - Create order
+- `GET /sales/orders/:id` - Get order details
+- `POST /sales/orders/:id/complete` - Finalize order
+- `POST /sales/orders/:id/cancel` - Void order
+- `POST /sales/orders/:id/payments` - Add payment
+
+### Customers
+
+- `GET /customers` - List customers
+- `POST /customers` - Create customer
+- `GET /customers/:id` - Get customer details
+- `PUT /customers/:id` - Update customer
+- `DELETE /customers/:id` - Delete customer
+
+### Suppliers
+
+- `GET /suppliers` - List suppliers
+- `POST /suppliers` - Create supplier
+- `GET /suppliers/:id` - Get supplier details
+- `PUT /suppliers/:id` - Update supplier
+- `DELETE /suppliers/:id` - Delete supplier
+
+### Purchase Orders
+
+- `GET /purchase-orders` - List POs
+- `POST /purchase-orders` - Create PO
+- `GET /purchase-orders/:id` - Get PO details
+- `PUT /purchase-orders/:id` - Update PO
+- `POST /purchase-orders/:id/receive` - Receive items
+- `POST /purchase-orders/:id/cancel` - Cancel PO
+
+### Reports
+
+- `GET /reports/sales-trend` - Sales analytics
+- `GET /reports/hourly-heatmap` - Peak hour analysis
+- `GET /reports/top-products` - Best sellers
+- `GET /reports/inventory-valuation` - Stock value
+- `GET /reports/stock-movements` - Movement report
+- `GET /reports/order-history` - Sales history
+
+### Outlets & Warehouses
+
+- `GET /outlets` - List outlets
+- `GET /warehouses` - List warehouses
+- `GET /warehouses/:id/inventory` - Warehouse stock
 
 ## 🔨 Background Jobs
 
@@ -428,15 +493,15 @@ KEYS *
 
 This is a comprehensive POS system template. Key areas for extension:
 
-- [ ] Complete remaining backend modules (outlets, customers, warehouses, inventory, suppliers, purchase orders, reports)
-- [ ] Add frontend pages for all modules
-- [ ] Implement comprehensive validation schemas
-- [ ] Add unit and integration tests
-- [ ] Implement token refresh logic in frontend
+- [x] Complete remaining backend modules (outlets, customers, warehouses, inventory, suppliers, purchase orders, reports)
+- [x] Add frontend pages for all modules
+- [x] Implement comprehensive validation schemas
+- [x] Add unit and integration tests
+- [x] Implement token refresh logic in frontend
 - [ ] Add WebSocket support for real-time updates
-- [ ] Implement advanced reporting with charts
+- [x] Implement advanced reporting with charts
 - [ ] Add barcode scanning support
-- [ ] Implement receipt printing
+- [x] Implement receipt printing
 
 ## 📝 License
 
