@@ -1,5 +1,6 @@
 // Shared test setup for backend unit tests
 // Ensures required environment variables exist before modules load config
+import "./setupMocks.js";
 
 process.env.NODE_ENV = process.env.NODE_ENV || "test";
 process.env.DATABASE_URL =

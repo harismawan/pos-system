@@ -1,24 +1,24 @@
-# #!/bin/sh
-# . "$(dirname "$0")/_/husky.sh"
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
 
-# echo "Running pre-commit checks..."
+echo "Running pre-commit checks..."
 
-# # Check code style
-# echo "Validating code style..."
-# bun x prettier --write . || {
-#     echo "❌ Code style validation failed. Run 'bun x prettier --write .' to fix."
-#     exit 1
-# }
+# Check code style
+echo "Validating code style..."
+bun x prettier --write . || {
+    echo "❌ Code style validation failed. Run 'bun x prettier --write .' to fix."
+    exit 1
+}
 
-# # staging after code changes
-# echo "Staging changes after code style..."
-# git add .
+# staging after code changes
+echo "Staging changes after code style..."
+git add .
 
-# # Run tests
-# echo "Running tests..."
-# bun test || {
-#     echo "❌ Tests failed."
-#     exit 1
-# }
+# Run tests
+echo "Running tests..."
+bun test || {
+    echo "❌ Tests failed."
+    exit 1
+}
 
-# echo "✅ All checks passed!"
+echo "✅ All checks passed!"
