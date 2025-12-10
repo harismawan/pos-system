@@ -32,7 +32,7 @@ Improvement recommendations for features, performance, and system architecture.
 
 | Priority | Task                                               | Impact                       |
 | -------- | -------------------------------------------------- | ---------------------------- |
-| 🔴 High  | Add Redis caching for products, pricing            | Reduce DB load 50%+          |
+| ✅ Done  | Add Redis caching for products, pricing            | Reduce DB load 50%+          |
 | ✅ Done  | Implement database connection pooling              | Handle more concurrent users |
 | ✅ Done  | Add database indexes on frequently queried columns | Speed up queries             |
 | ✅ Done  | Implement query pagination limits                  | Prevent memory issues        |
@@ -59,7 +59,7 @@ Improvement recommendations for features, performance, and system architecture.
 | -------- | ------------------------------------------------ | ------------------------- |
 | ✅ Done  | Add user CRUD (create, edit, delete staff)       | Essential for multi-user  |
 | ✅ Done  | Role-based permissions (Owner, Manager, Cashier) | Security & access control |
-| 🟡 Med   | Password reset via email                         | Self-service accounts     |
+| ✅ Done  | Password reset via email                         | Self-service accounts     |
 | ✅ Done  | Activity/audit log viewer                        | Track user actions        |
 
 ### POS Enhancements
