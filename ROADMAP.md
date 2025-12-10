@@ -129,6 +129,12 @@ Improvement recommendations for features, performance, and system architecture.
 | 🟡 Med   | Database read replicas     | Scale reads             |
 | 🟢 Low   | GraphQL API (optional)     | Flexible data fetching  |
 
+### Storage & Assets
+
+| Priority | Task                         | Impact                         |
+| -------- | ---------------------------- | ------------------------------ |
+| 🟡 Med   | Use MinIO for object storage | Scalable product image hosting |
+
 ### DevOps & Deployment
 
 | Priority | Task                            | Impact                  |

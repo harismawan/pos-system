@@ -25,10 +25,7 @@ function LoginPage() {
     handleBlur,
     validateAll,
     getError,
-  } = useFormValidation(
-    { username: "owner", password: "password123" },
-    validationRules,
-  );
+  } = useFormValidation({ username: "", password: "" }, validationRules);
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -189,7 +186,7 @@ function LoginPage() {
         </form>
       </div>
 
-      {/* Demo credentials */}
+      {/* Registration Info */}
       <div
         style={{
           marginTop: "16px",
@@ -198,34 +195,27 @@ function LoginPage() {
           backdropFilter: "blur(10px)",
           borderRadius: "var(--radius-xl)",
           border: "1px solid rgba(255, 255, 255, 0.15)",
+          textAlign: "center",
         }}
       >
         <div
           style={{
-            fontSize: "12px",
-            color: "rgba(255, 255, 255, 0.7)",
-            marginBottom: "8px",
-            fontWeight: 500,
-          }}
-        >
-          Demo Credentials
-        </div>
-        <div
-          style={{
-            display: "flex",
-            gap: "24px",
             fontSize: "13px",
             color: "rgba(255, 255, 255, 0.9)",
+            lineHeight: "1.5",
           }}
         >
-          <div>
-            <span style={{ opacity: 0.6 }}>Username:</span>{" "}
-            <strong>owner</strong>
-          </div>
-          <div>
-            <span style={{ opacity: 0.6 }}>Password:</span>{" "}
-            <strong>password123</strong>
-          </div>
+          Interested in an account? Please contact{" "}
+          <a
+            href="mailto:mail@harismawan.com"
+            style={{
+              color: "white",
+              fontWeight: 600,
+              textDecoration: "underline",
+            }}
+          >
+            mail@harismawan.com
+          </a>
         </div>
       </div>
     </div>
