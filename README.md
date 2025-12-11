@@ -413,6 +413,62 @@ The worker processes three types of jobs from Redis queues:
 
 Jobs are enqueued from the backend and consumed by the worker using Redis `BRPOP` (blocking pop) pattern with retry logic.
 
+## 🔄 CI/CD Pipeline
+
+The project includes automated CI/CD using GitHub Actions with deployment to microk8s.
+
+### Workflows
+
+| Workflow                            | Trigger                                               | Description                                            |
+| ----------------------------------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| **CI** (`.github/workflows/ci.yml`) | Push to `main`/`develop`, PRs to `main`               | Runs tests, builds and pushes Docker images to ghcr.io |
+| **CD** (`.github/workflows/cd.yml`) | Auto-triggered after CI on `main`, or manual dispatch | Deploys to microk8s cluster via Kubernetes API         |
+
+### Required GitHub Secrets
+
+Configure these in **Settings → Secrets and variables → Actions**:
+
+| Secret            | Description                                   |
+| ----------------- | --------------------------------------------- |
+| `KUBECONFIG_DATA` | Base64-encoded kubeconfig for microk8s access |
+
+The `GITHUB_TOKEN` is automatically provided for pushing to ghcr.io.
+
+### Repository Variables
+
+Configure in **Settings → Secrets and variables → Actions → Variables**:
+
+| Variable       | Description                                                               |
+| -------------- | ------------------------------------------------------------------------- |
+| `VITE_API_URL` | Backend API URL for frontend builds (e.g., `https://api.pos.example.com`) |
+
+### Getting KUBECONFIG_DATA
+
+```bash
+# On your microk8s server
+microk8s config | base64 -w 0
+
+# Copy the output and set as KUBECONFIG_DATA secret
+```
+
+### Manual Deployment
+
+Trigger deployment manually from the GitHub Actions UI:
+
+1. Go to **Actions → CD → Run workflow**
+2. Optionally specify an image tag (defaults to `latest`)
+3. Click **Run workflow**
+
+### Docker Images
+
+Images are pushed to GitHub Container Registry:
+
+- `ghcr.io/<owner>/pos-backend`
+- `ghcr.io/<owner>/pos-frontend`
+- `ghcr.io/<owner>/pos-worker`
+
+Tags: `latest`, `<commit-sha>`
+
 ## 🧪 Database Tools
 
 ```bash

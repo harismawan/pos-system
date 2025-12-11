@@ -1,0 +1,96 @@
+name: CD
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy (defaults to latest)"
+        required: false
+        default: "latest"
+
+env:
+  NAMESPACE: pos-system
+
+jobs:
+  deploy:
+    name: Deploy to microk8s
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: "v1.31.0"
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG_DATA }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Verify cluster connection
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
+
+      - name: Set image tag
+        id: set-tag
+        run: |
+          TAG="${{ github.event.inputs.image_tag }}"
+          if [ -z "$TAG" ] || [ "$TAG" = "latest" ]; then
+            TAG="latest"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Deploying with image tag: $TAG"
+
+      - name: Update backend deployment
+        run: |
+          kubectl set image deployment/pos-backend \
+            backend=ghcr.io/${{ github.repository_owner }}/pos-backend:${{ steps.set-tag.outputs.tag }} \
+            -n ${{ env.NAMESPACE }}
+
+      - name: Update frontend deployment
+        run: |
+          kubectl set image deployment/pos-frontend \
+            frontend=ghcr.io/${{ github.repository_owner }}/pos-frontend:${{ steps.set-tag.outputs.tag }} \
+            -n ${{ env.NAMESPACE }}
+
+      - name: Update worker deployment
+        run: |
+          kubectl set image deployment/pos-worker \
+            worker=ghcr.io/${{ github.repository_owner }}/pos-worker:${{ steps.set-tag.outputs.tag }} \
+            -n ${{ env.NAMESPACE }}
+
+      - name: Wait for backend rollout
+        run: |
+          kubectl rollout status deployment/pos-backend -n ${{ env.NAMESPACE }} --timeout=300s
+
+      - name: Wait for frontend rollout
+        run: |
+          kubectl rollout status deployment/pos-frontend -n ${{ env.NAMESPACE }} --timeout=300s
+
+      - name: Wait for worker rollout
+        run: |
+          kubectl rollout status deployment/pos-worker -n ${{ env.NAMESPACE }} --timeout=300s
+
+      - name: Verify deployment
+        run: |
+          echo "=== Deployment Status ==="
+          kubectl get deployments -n ${{ env.NAMESPACE }}
+          echo ""
+          echo "=== Pod Status ==="
+          kubectl get pods -n ${{ env.NAMESPACE }}
+          echo ""
+          echo "=== Recent Events ==="
+          kubectl get events -n ${{ env.NAMESPACE }} --sort-by='.lastTimestamp' | tail -20
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "Deployment failed, initiating rollback..."
+          kubectl rollout undo deployment/pos-backend -n ${{ env.NAMESPACE }} || true
+          kubectl rollout undo deployment/pos-frontend -n ${{ env.NAMESPACE }} || true
+          kubectl rollout undo deployment/pos-worker -n ${{ env.NAMESPACE }} || true
