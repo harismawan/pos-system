@@ -196,7 +196,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'cd.yml',
-              ref: 'main',
+              ref: context.ref,
               inputs: {
                 image_tag: '${{ needs.prepare.outputs.version }}',
                 deploy_backend: '${{ needs.prepare.outputs.build_backend }}',
