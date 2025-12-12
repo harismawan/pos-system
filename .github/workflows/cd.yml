@@ -74,17 +74,17 @@ jobs:
       - name: Wait for backend rollout
         if: github.event.inputs.deploy_backend == 'true'
         run: |
-          kubectl rollout status deployment/pos-backend -n ${{ env.NAMESPACE }} --timeout=300s
+          kubectl rollout status deployment/pos-backend -n ${{ env.NAMESPACE }} --timeout=600s
 
       - name: Wait for frontend rollout
         if: github.event.inputs.deploy_frontend == 'true'
         run: |
-          kubectl rollout status deployment/pos-frontend -n ${{ env.NAMESPACE }} --timeout=300s
+          kubectl rollout status deployment/pos-frontend -n ${{ env.NAMESPACE }} --timeout=600s
 
       - name: Wait for worker rollout
         if: github.event.inputs.deploy_worker == 'true'
         run: |
-          kubectl rollout status deployment/pos-worker -n ${{ env.NAMESPACE }} --timeout=300s
+          kubectl rollout status deployment/pos-worker -n ${{ env.NAMESPACE }} --timeout=600s
 
       - name: Verify deployment
         run: |
