@@ -14,10 +14,54 @@ env:
   WORKER_IMAGE: ghcr.io/${{ github.repository_owner }}/pos-worker
 
 jobs:
-  build:
-    name: Build and Push Images
+  prepare:
+    name: Prepare Build Matrix
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
+    outputs:
+      version: ${{ steps.parse-tag.outputs.version }}
+      build_backend: ${{ steps.parse-tag.outputs.build_backend }}
+      build_frontend: ${{ steps.parse-tag.outputs.build_frontend }}
+      build_worker: ${{ steps.parse-tag.outputs.build_worker }}
+    steps:
+      - name: Parse tag
+        id: parse-tag
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          echo "Raw tag: $TAG"
+
+          # Check if tag ends with service suffix
+          if [[ "$TAG" == *"-backend" ]]; then
+            VERSION="${TAG%-backend}"
+            echo "build_backend=true" >> $GITHUB_OUTPUT
+            echo "build_frontend=false" >> $GITHUB_OUTPUT
+            echo "build_worker=false" >> $GITHUB_OUTPUT
+          elif [[ "$TAG" == *"-frontend" ]]; then
+            VERSION="${TAG%-frontend}"
+            echo "build_backend=false" >> $GITHUB_OUTPUT
+            echo "build_frontend=true" >> $GITHUB_OUTPUT
+            echo "build_worker=false" >> $GITHUB_OUTPUT
+          elif [[ "$TAG" == *"-worker" ]]; then
+            VERSION="${TAG%-worker}"
+            echo "build_backend=false" >> $GITHUB_OUTPUT
+            echo "build_frontend=false" >> $GITHUB_OUTPUT
+            echo "build_worker=true" >> $GITHUB_OUTPUT
+          else
+            # No suffix = build all
+            VERSION="$TAG"
+            echo "build_backend=true" >> $GITHUB_OUTPUT
+            echo "build_frontend=true" >> $GITHUB_OUTPUT
+            echo "build_worker=true" >> $GITHUB_OUTPUT
+          fi
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Parsed version: $VERSION"
+
+  build-backend:
+    name: Build Backend
+    runs-on: ubuntu-latest
+    needs: prepare
+    if: needs.prepare.outputs.build_backend == 'true'
     permissions:
       contents: read
       packages: write
@@ -35,82 +79,115 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata for backend
-        id: meta-backend
+      - name: Extract metadata
+        id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.BACKEND_IMAGE }}
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=${{ needs.prepare.outputs.version }}
             type=raw,value=latest
 
-      - name: Build and push backend
+      - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: ./backend
           push: true
-          tags: ${{ steps.meta-backend.outputs.tags }}
-          labels: ${{ steps.meta-backend.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Extract metadata for frontend
-        id: meta-frontend
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    needs: prepare
+    if: needs.prepare.outputs.build_frontend == 'true'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.FRONTEND_IMAGE }}
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=${{ needs.prepare.outputs.version }}
             type=raw,value=latest
 
-      - name: Build and push frontend
+      - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: ./frontend
           push: true
-          tags: ${{ steps.meta-frontend.outputs.tags }}
-          labels: ${{ steps.meta-frontend.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
             VITE_API_URL=${{ vars.VITE_API_URL }}
 
-      - name: Extract metadata for worker
-        id: meta-worker
+  build-worker:
+    name: Build Worker
+    runs-on: ubuntu-latest
+    needs: prepare
+    if: needs.prepare.outputs.build_worker == 'true'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.WORKER_IMAGE }}
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=${{ needs.prepare.outputs.version }}
             type=raw,value=latest
 
-      - name: Build and push worker
+      - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: ./worker
           push: true
-          tags: ${{ steps.meta-worker.outputs.tags }}
-          labels: ${{ steps.meta-worker.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      - name: Get version from tag
-        id: get-version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
   trigger-deploy:
     name: Trigger Deployment
     runs-on: ubuntu-latest
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [prepare, build-backend, build-frontend, build-worker]
+    if: always() && needs.prepare.result == 'success' && (needs.build-backend.result == 'success' || needs.build-backend.result == 'skipped') && (needs.build-frontend.result == 'success' || needs.build-frontend.result == 'skipped') && (needs.build-worker.result == 'success' || needs.build-worker.result == 'skipped')
     steps:
-      - name: Get version from tag
-        id: get-version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-
       - name: Trigger CD workflow
         uses: actions/github-script@v7
         with:
@@ -121,6 +198,9 @@ jobs:
               workflow_id: 'cd.yml',
               ref: 'main',
               inputs: {
-                image_tag: '${{ steps.get-version.outputs.VERSION }}'
+                image_tag: '${{ needs.prepare.outputs.version }}',
+                deploy_backend: '${{ needs.prepare.outputs.build_backend }}',
+                deploy_frontend: '${{ needs.prepare.outputs.build_frontend }}',
+                deploy_worker: '${{ needs.prepare.outputs.build_worker }}'
               }
             })

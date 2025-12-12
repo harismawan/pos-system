@@ -7,6 +7,18 @@ on:
         description: "Image tag to deploy (defaults to latest)"
         required: false
         default: "latest"
+      deploy_backend:
+        description: "Deploy backend (true/false)"
+        required: false
+        default: "true"
+      deploy_frontend:
+        description: "Deploy frontend (true/false)"
+        required: false
+        default: "true"
+      deploy_worker:
+        description: "Deploy worker (true/false)"
+        required: false
+        default: "true"
 
 env:
   NAMESPACE: pos-system
@@ -14,11 +26,22 @@ env:
 jobs:
   deploy:
     name: Deploy to microk8s
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     environment: production
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: "v1.31.0"
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG_DATA }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
 
       - name: Verify cluster connection
         run: |
@@ -36,32 +59,41 @@ jobs:
           echo "Deploying with image tag: $TAG"
 
       - name: Update backend deployment
+        if: github.event.inputs.deploy_backend == 'true'
         run: |
+          echo "Deploying backend..."
           kubectl set image deployment/pos-backend \
             backend=ghcr.io/${{ github.repository_owner }}/pos-backend:${{ steps.set-tag.outputs.tag }} \
             -n ${{ env.NAMESPACE }}
 
       - name: Update frontend deployment
+        if: github.event.inputs.deploy_frontend == 'true'
         run: |
+          echo "Deploying frontend..."
           kubectl set image deployment/pos-frontend \
             frontend=ghcr.io/${{ github.repository_owner }}/pos-frontend:${{ steps.set-tag.outputs.tag }} \
             -n ${{ env.NAMESPACE }}
 
       - name: Update worker deployment
+        if: github.event.inputs.deploy_worker == 'true'
         run: |
+          echo "Deploying worker..."
           kubectl set image deployment/pos-worker \
             worker=ghcr.io/${{ github.repository_owner }}/pos-worker:${{ steps.set-tag.outputs.tag }} \
             -n ${{ env.NAMESPACE }}
 
       - name: Wait for backend rollout
+        if: github.event.inputs.deploy_backend == 'true'
         run: |
           kubectl rollout status deployment/pos-backend -n ${{ env.NAMESPACE }} --timeout=300s
 
       - name: Wait for frontend rollout
+        if: github.event.inputs.deploy_frontend == 'true'
         run: |
           kubectl rollout status deployment/pos-frontend -n ${{ env.NAMESPACE }} --timeout=300s
 
       - name: Wait for worker rollout
+        if: github.event.inputs.deploy_worker == 'true'
         run: |
           kubectl rollout status deployment/pos-worker -n ${{ env.NAMESPACE }} --timeout=300s
 
@@ -80,6 +112,12 @@ jobs:
         if: failure()
         run: |
           echo "Deployment failed, initiating rollback..."
-          kubectl rollout undo deployment/pos-backend -n ${{ env.NAMESPACE }} || true
-          kubectl rollout undo deployment/pos-frontend -n ${{ env.NAMESPACE }} || true
-          kubectl rollout undo deployment/pos-worker -n ${{ env.NAMESPACE }} || true
+          if [ "${{ github.event.inputs.deploy_backend }}" = "true" ]; then
+            kubectl rollout undo deployment/pos-backend -n ${{ env.NAMESPACE }} || true
+          fi
+          if [ "${{ github.event.inputs.deploy_frontend }}" = "true" ]; then
+            kubectl rollout undo deployment/pos-frontend -n ${{ env.NAMESPACE }} || true
+          fi
+          if [ "${{ github.event.inputs.deploy_worker }}" = "true" ]; then
+            kubectl rollout undo deployment/pos-worker -n ${{ env.NAMESPACE }} || true
+          fi
