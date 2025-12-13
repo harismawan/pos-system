@@ -1,7 +1,33 @@
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import pg from "pg";
 import bcrypt from "bcryptjs";
 
-const prisma = new PrismaClient();
+// Create PostgreSQL connection pool
+const pool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: parseInt(process.env.DATABASE_POOL_MAX || "10", 10),
+  min: parseInt(process.env.DATABASE_POOL_MIN || "1", 10),
+  idleTimeoutMillis: parseInt(process.env.DATABASE_IDLE_TIMEOUT || "30000", 10),
+  connectionTimeoutMillis: parseInt(
+    process.env.DATABASE_CONNECTION_TIMEOUT || "10000",
+    10,
+  ),
+  allowExitOnIdle: false,
+});
+
+// Create Prisma adapter
+const adapter = new PrismaPg(pool);
+
+// Prisma 7: Initialize with adapter
+const prisma = new PrismaClient({
+  adapter,
+  log: [
+    { emit: "event", level: "query" },
+    { emit: "event", level: "error" },
+    { emit: "event", level: "warn" },
+  ],
+});
 
 async function main() {
   console.log("🌱 Starting seed...");
