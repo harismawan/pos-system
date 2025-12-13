@@ -35,6 +35,11 @@ const resetMocks = () => {
   loggerMock.error.mockReset();
 };
 
+const mockStore = {
+  user: { id: "u1", businessId: "biz-1" },
+  outletId: "store-1",
+};
+
 describe("modules/products/products.controller", () => {
   beforeEach(resetMocks);
 
@@ -42,12 +47,13 @@ describe("modules/products/products.controller", () => {
     const set = {};
     const res = await controller.getProductsController({
       query: { search: "abc", outletId: "q-1" },
-      store: { outletId: "store-1" },
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(serviceMock.getProducts.calls[0][0].outletId).toBe("store-1");
+    expect(serviceMock.getProducts.calls[0][0].businessId).toBe("biz-1");
   });
 
   it("returns error when get products fails", async () => {
@@ -58,7 +64,7 @@ describe("modules/products/products.controller", () => {
 
     const res = await controller.getProductsController({
       query: {},
-      store: {},
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);
@@ -70,11 +76,13 @@ describe("modules/products/products.controller", () => {
     const set = {};
     const res = await controller.getProductByIdController({
       params: { id: "p1" },
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(res.data.id).toBe("p1");
+    expect(serviceMock.getProductById.calls[0][1]).toBe("biz-1");
   });
 
   it("returns 404 when product is missing", async () => {
@@ -85,6 +93,7 @@ describe("modules/products/products.controller", () => {
 
     const res = await controller.getProductByIdController({
       params: { id: "missing" },
+      store: mockStore,
       set,
     });
 
@@ -96,11 +105,13 @@ describe("modules/products/products.controller", () => {
     const set = {};
     const res = await controller.createProductController({
       body: { name: "Test" },
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(201);
     expect(res.success).toBe(true);
     expect(serviceMock.createProduct.calls.length).toBeGreaterThan(0);
+    expect(serviceMock.createProduct.calls[0][1]).toBe("biz-1");
   });
 
   it("returns error when create fails", async () => {
@@ -109,7 +120,11 @@ describe("modules/products/products.controller", () => {
       throw new Error("boom");
     });
 
-    const res = await controller.createProductController({ body: {}, set });
+    const res = await controller.createProductController({
+      body: {},
+      store: mockStore,
+      set,
+    });
     expect(set.status).toBe(400);
     expect(res.success).toBe(false);
   });
@@ -124,6 +139,7 @@ describe("modules/products/products.controller", () => {
 
     const res = await controller.getProductByIdController({
       params: { id: "p1" },
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(418);
@@ -136,11 +152,13 @@ describe("modules/products/products.controller", () => {
     const res = await controller.updateProductController({
       params: { id: "p1" },
       body: { name: "New" },
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(serviceMock.updateProduct.calls.length).toBe(1);
+    expect(serviceMock.updateProduct.calls[0][2]).toBe("biz-1");
   });
 
   it("returns error when update fails", async () => {
@@ -152,6 +170,7 @@ describe("modules/products/products.controller", () => {
     const res = await controller.updateProductController({
       params: { id: "p1" },
       body: {},
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);
@@ -162,11 +181,13 @@ describe("modules/products/products.controller", () => {
     const set = {};
     const res = await controller.deleteProductController({
       params: { id: "p1" },
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(serviceMock.deleteProduct.calls.length).toBe(1);
+    expect(serviceMock.deleteProduct.calls[0][1]).toBe("biz-1");
   });
 
   it("returns error when delete fails with custom status", async () => {
@@ -179,6 +200,7 @@ describe("modules/products/products.controller", () => {
 
     const res = await controller.deleteProductController({
       params: { id: "p1" },
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(409);

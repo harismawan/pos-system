@@ -60,16 +60,22 @@ describe("modules/purchaseOrders/purchaseOrders.controller", () => {
     loggerMock.error.mockReset();
   });
 
+  const mockStore = {
+    user: { id: "u1", businessId: "biz-1" },
+    outletId: "store-1",
+  };
+
   it("returns purchase orders list and prefers outletId from store", async () => {
     const set = {};
     const res = await controller.getPurchaseOrdersController({
       query: { outletId: "q-1" },
-      store: { outletId: "store-1" },
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(serviceMock.getPurchaseOrders.calls[0][0].outletId).toBe("store-1");
+    expect(serviceMock.getPurchaseOrders.calls[0][1]).toBe("biz-1");
   });
 
   it("returns error when get purchase orders fails", async () => {
@@ -80,7 +86,7 @@ describe("modules/purchaseOrders/purchaseOrders.controller", () => {
 
     const res = await controller.getPurchaseOrdersController({
       query: {},
-      store: {},
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);
@@ -91,11 +97,13 @@ describe("modules/purchaseOrders/purchaseOrders.controller", () => {
     const set = {};
     const res = await controller.getPurchaseOrderByIdController({
       params: { id: "po1" },
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(res.data.id).toBe("po1");
+    expect(serviceMock.getPurchaseOrderById.calls[0][1]).toBe("biz-1");
   });
 
   it("returns 404 when purchase order missing", async () => {
@@ -106,6 +114,7 @@ describe("modules/purchaseOrders/purchaseOrders.controller", () => {
 
     const res = await controller.getPurchaseOrderByIdController({
       params: { id: "missing" },
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(404);
@@ -122,6 +131,7 @@ describe("modules/purchaseOrders/purchaseOrders.controller", () => {
 
     const res = await controller.getPurchaseOrderByIdController({
       params: { id: "po1" },
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(410);
@@ -130,20 +140,18 @@ describe("modules/purchaseOrders/purchaseOrders.controller", () => {
 
   it("sets 201 on create purchase order", async () => {
     const set = {};
-    const store = { user: { id: "u1" } };
     const res = await controller.createPurchaseOrderController({
       body: {},
-      store,
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(201);
     expect(res.success).toBe(true);
-    expect(serviceMock.createPurchaseOrder.calls.length).toBeGreaterThan(0);
+    expect(serviceMock.createPurchaseOrder.calls[0][2]).toBe("biz-1");
   });
 
   it("returns error when create fails with custom status", async () => {
     const set = {};
-    const store = { user: { id: "u1" } };
     const err = new Error("invalid");
     err.statusCode = 422;
     serviceMock.createPurchaseOrder.mockImplementation(async () => {
@@ -152,7 +160,7 @@ describe("modules/purchaseOrders/purchaseOrders.controller", () => {
 
     const res = await controller.createPurchaseOrderController({
       body: {},
-      store,
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(422);
@@ -161,11 +169,10 @@ describe("modules/purchaseOrders/purchaseOrders.controller", () => {
 
   it("updates purchase order", async () => {
     const set = {};
-    const store = { user: { id: "u1" } };
     const res = await controller.updatePurchaseOrderController({
       params: { id: "po1" },
       body: { status: "UPDATED" },
-      store,
+      store: mockStore,
       set,
     });
 
@@ -174,12 +181,12 @@ describe("modules/purchaseOrders/purchaseOrders.controller", () => {
       "po1",
       { status: "UPDATED" },
       "u1",
+      "biz-1",
     ]);
   });
 
   it("returns error when update fails", async () => {
     const set = {};
-    const store = { user: { id: "u1" } };
     serviceMock.updatePurchaseOrder.mockImplementation(async () => {
       throw new Error("fail");
     });
@@ -187,7 +194,7 @@ describe("modules/purchaseOrders/purchaseOrders.controller", () => {
     const res = await controller.updatePurchaseOrderController({
       params: { id: "po1" },
       body: {},
-      store,
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);
@@ -196,11 +203,10 @@ describe("modules/purchaseOrders/purchaseOrders.controller", () => {
 
   it("receives purchase order", async () => {
     const set = {};
-    const store = { user: { id: "u1" } };
     const res = await controller.receivePurchaseOrderController({
       params: { id: "po1" },
       body: { receivedItems: [] },
-      store,
+      store: mockStore,
       set,
     });
 
@@ -209,12 +215,12 @@ describe("modules/purchaseOrders/purchaseOrders.controller", () => {
       "po1",
       [],
       "u1",
+      "biz-1",
     ]);
   });
 
   it("returns error when receive fails with status code", async () => {
     const set = {};
-    const store = { user: { id: "u1" } };
     const err = new Error("cannot receive");
     err.statusCode = 409;
     serviceMock.receivePurchaseOrder.mockImplementation(async () => {
@@ -224,7 +230,7 @@ describe("modules/purchaseOrders/purchaseOrders.controller", () => {
     const res = await controller.receivePurchaseOrderController({
       params: { id: "po1" },
       body: { receivedItems: [] },
-      store,
+      store: mockStore,
       set,
     });
 
@@ -234,27 +240,29 @@ describe("modules/purchaseOrders/purchaseOrders.controller", () => {
 
   it("cancels purchase order", async () => {
     const set = {};
-    const store = { user: { id: "u1" } };
     const res = await controller.cancelPurchaseOrderController({
       params: { id: "po1" },
-      store,
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
-    expect(serviceMock.cancelPurchaseOrder.calls[0]).toEqual(["po1", "u1"]);
+    expect(serviceMock.cancelPurchaseOrder.calls[0]).toEqual([
+      "po1",
+      "u1",
+      "biz-1",
+    ]);
   });
 
   it("returns error when cancel fails", async () => {
     const set = {};
-    const store = { user: { id: "u1" } };
     serviceMock.cancelPurchaseOrder.mockImplementation(async () => {
       throw new Error("fail");
     });
 
     const res = await controller.cancelPurchaseOrderController({
       params: { id: "po1" },
-      store,
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);

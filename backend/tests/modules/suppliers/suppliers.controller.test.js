@@ -21,6 +21,11 @@ mock.module("../../../src/libs/logger.js", () => ({ default: loggerMock }));
 const controller =
   await import("../../../src/modules/suppliers/suppliers.controller.js");
 
+const mockStore = {
+  user: { id: "u1", businessId: "biz-1" },
+  outletId: "store-1",
+};
+
 describe("modules/suppliers/suppliers.controller", () => {
   beforeEach(() => {
     serviceMock.getSuppliers.mockReset();
@@ -43,10 +48,12 @@ describe("modules/suppliers/suppliers.controller", () => {
     const set = {};
     const res = await controller.getSuppliersController({
       query: { search: "a" },
+      store: mockStore,
       set,
     });
     expect(res.success).toBe(true);
-    expect(serviceMock.getSuppliers.calls.length).toBeGreaterThan(0);
+    expect(serviceMock.getSuppliers.calls[0][0].search).toBe("a");
+    expect(serviceMock.getSuppliers.calls[0][0].businessId).toBe("biz-1");
   });
 
   it("returns error when list fails", async () => {
@@ -55,7 +62,11 @@ describe("modules/suppliers/suppliers.controller", () => {
       throw new Error("fail");
     });
 
-    const res = await controller.getSuppliersController({ query: {}, set });
+    const res = await controller.getSuppliersController({
+      query: {},
+      store: mockStore,
+      set,
+    });
     expect(set.status).toBe(500);
     expect(res.error).toBe("Internal Server Error");
   });
@@ -64,11 +75,13 @@ describe("modules/suppliers/suppliers.controller", () => {
     const set = {};
     const res = await controller.getSupplierByIdController({
       params: { id: "s1" },
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(res.data.id).toBe("s1");
+    expect(serviceMock.getSupplierById.calls[0][1]).toBe("biz-1");
   });
 
   it("sets 404 when supplier not found", async () => {
@@ -79,6 +92,7 @@ describe("modules/suppliers/suppliers.controller", () => {
 
     const res = await controller.getSupplierByIdController({
       params: { id: "missing" },
+      store: mockStore,
       set,
     });
 
@@ -96,6 +110,7 @@ describe("modules/suppliers/suppliers.controller", () => {
 
     const res = await controller.getSupplierByIdController({
       params: { id: "s1" },
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(410);
@@ -106,12 +121,14 @@ describe("modules/suppliers/suppliers.controller", () => {
     const set = {};
     const res = await controller.createSupplierController({
       body: { name: "A" },
+      store: mockStore,
       set,
     });
 
     expect(set.status).toBe(201);
     expect(res.success).toBe(true);
     expect(serviceMock.createSupplier.calls.length).toBe(1);
+    expect(serviceMock.createSupplier.calls[0][1]).toBe("biz-1");
   });
 
   it("returns error when create fails with custom status", async () => {
@@ -122,7 +139,11 @@ describe("modules/suppliers/suppliers.controller", () => {
       throw err;
     });
 
-    const res = await controller.createSupplierController({ body: {}, set });
+    const res = await controller.createSupplierController({
+      body: {},
+      store: mockStore,
+      set,
+    });
     expect(set.status).toBe(422);
     expect(res.error).toBe("invalid");
   });
@@ -132,11 +153,13 @@ describe("modules/suppliers/suppliers.controller", () => {
     const res = await controller.updateSupplierController({
       params: { id: "s1" },
       body: { name: "New" },
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(serviceMock.updateSupplier.calls.length).toBe(1);
+    expect(serviceMock.updateSupplier.calls[0][2]).toBe("biz-1");
   });
 
   it("returns error when update fails", async () => {
@@ -148,6 +171,7 @@ describe("modules/suppliers/suppliers.controller", () => {
     const res = await controller.updateSupplierController({
       params: { id: "s1" },
       body: {},
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);
@@ -158,11 +182,13 @@ describe("modules/suppliers/suppliers.controller", () => {
     const set = {};
     const res = await controller.deleteSupplierController({
       params: { id: "s1" },
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(serviceMock.deleteSupplier.calls.length).toBe(1);
+    expect(serviceMock.deleteSupplier.calls[0][1]).toBe("biz-1");
   });
 
   it("returns error when delete fails with status", async () => {
@@ -175,6 +201,7 @@ describe("modules/suppliers/suppliers.controller", () => {
 
     const res = await controller.deleteSupplierController({
       params: { id: "s1" },
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(409);

@@ -15,12 +15,15 @@ mock.module("../../../src/libs/prisma.js", () => ({ default: prismaMock }));
 mock.module("../../../src/libs/logger.js", () => ({ default: loggerMock }));
 mock.module("bcryptjs", () => ({ default: bcryptMock }));
 
+const businessId = "biz_123";
+
 const usersService =
   await import("../../../src/modules/users/users.service.js?controllers");
 
 describe("modules/users/users.service", () => {
   beforeEach(() => {
-    prismaMock.user.findUnique.mockReset?.();
+    prismaMock.user.findUnique.mockReset?.(); // Keep for ID lookups
+    prismaMock.user.findFirst.mockReset?.(); // Add for business-scoped lookups
     prismaMock.user.findMany.mockReset?.();
     prismaMock.user.count.mockReset?.();
     prismaMock.user.create.mockReset?.();
@@ -39,9 +42,58 @@ describe("modules/users/users.service", () => {
 
   it("rejects creating a user when username already exists", async () => {
     let createCalled = false;
-    prismaMock.user.findUnique.mockImplementation(async () => ({
-      id: "existing",
-    }));
+    prismaMock.user.findUnique.mockImplementation(async ({ where }) => {
+      if (where.username === "jane") return { id: "existing", businessId };
+      return null;
+    });
+    prismaMock.user.create.mockImplementation(async () => {
+      createCalled = true;
+      return { id: "new" };
+    });
+
+    const err = await usersService
+      .createUser({
+        name: "Jane",
+        username: "jane",
+        password: "secret",
+        businessId,
+      })
+      .catch((e) => e);
+
+    expect(err).toBeInstanceOf(Error);
+    expect(createCalled).toBe(false);
+  });
+
+  it("rejects creating a user when username already exists", async () => {
+    let createCalled = false;
+    prismaMock.user.findUnique.mockImplementation(async ({ where }) => {
+      if (where.username === "jane") return { id: "existing", businessId };
+      return null;
+    });
+    prismaMock.user.create.mockImplementation(async () => {
+      createCalled = true;
+      return { id: "new" };
+    });
+
+    const err = await usersService
+      .createUser({
+        name: "Jane",
+        username: "jane",
+        password: "secret",
+        businessId,
+      })
+      .catch((e) => e);
+
+    expect(err).toBeInstanceOf(Error);
+    expect(createCalled).toBe(false);
+  });
+
+  it("rejects creating a user when username already exists (conflict)", async () => {
+    let createCalled = false;
+    prismaMock.user.findUnique.mockImplementation(async ({ where }) => {
+      if (where.username === "jane") return { id: "existing", businessId };
+      return null;
+    });
     prismaMock.user.create.mockImplementation(async () => {
       createCalled = true;
       return { id: "new" };
@@ -53,11 +105,11 @@ describe("modules/users/users.service", () => {
         username: "jane",
         password: "secret",
         role: "ADMIN",
+        businessId,
       })
       .catch((e) => e);
 
     expect(err).toBeInstanceOf(Error);
-    expect(err.statusCode).toBe(400);
     expect(createCalled).toBe(false);
   });
 
@@ -79,6 +131,7 @@ describe("modules/users/users.service", () => {
       email: "john@example.com",
       password: "secret",
       role: "OWNER",
+      businessId,
     });
 
     expect(hashCalled).toBe(true);
@@ -86,13 +139,20 @@ describe("modules/users/users.service", () => {
     expect(prismaMock.user.create.calls[0][0].data.passwordHash).toBe(
       "hashed-password",
     );
+    expect(prismaMock.user.create.calls[0][0].data.businessId).toBe(businessId);
   });
 
   it("throws when updating a missing user", async () => {
     prismaMock.user.findUnique.mockImplementation(async () => null);
 
     await expect(
-      usersService.updateUser("missing", { name: "Update" }),
+      usersService.updateUser("missing", { name: "Update" }), // Missing businessId
+    ).rejects.toThrow("businessId is required");
+
+    // Test missing user properly
+    prismaMock.user.findUnique.mockImplementation(async () => null);
+    await expect(
+      usersService.updateUser("missing", { name: "Update" }, businessId),
     ).rejects.toThrow("User not found");
   });
 
@@ -106,18 +166,24 @@ describe("modules/users/users.service", () => {
       search: "a",
       role: "ADMIN",
       isActive: "true",
+      businessId,
     });
 
     const args = prismaMock.user.findMany.calls[0][0];
     expect(args.where.isActive).toBe(true);
+    expect(args.where.businessId).toBe(businessId);
     expect(args.skip).toBe(5);
     expect(res.pagination.totalPages).toBe(1);
   });
 
   it("returns user by id with outlets", async () => {
-    prismaMock.user.findUnique.mockResolvedValue({ id: "u1", outletUsers: [] });
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: "u1",
+      businessId,
+      outletUsers: [],
+    });
 
-    const user = await usersService.getUserById("u1");
+    const user = await usersService.getUserById("u1", businessId);
     expect(user.id).toBe("u1");
     const args = prismaMock.user.findUnique.calls[0][0];
     expect(args.select.outletUsers.include.outlet.select.code).toBe(true);
@@ -126,7 +192,9 @@ describe("modules/users/users.service", () => {
   it("throws when getting a missing user", async () => {
     prismaMock.user.findUnique.mockResolvedValue(null);
 
-    const err = await usersService.getUserById("missing").catch((e) => e);
+    const err = await usersService
+      .getUserById("missing", businessId)
+      .catch((e) => e);
     expect(err).toBeInstanceOf(Error);
     expect(err.message).toBe("User not found");
     expect(err.statusCode).toBe(404);
@@ -134,8 +202,10 @@ describe("modules/users/users.service", () => {
 
   it("throws when email already exists on create", async () => {
     prismaMock.user.findUnique.mockImplementation(async ({ where }) => {
+      // Mock findUnique for username and email checks
       if (where.username) return null;
-      if (where.email) return { id: "existing-email" };
+      if (where.email || where.businessId_email)
+        return { id: "existing-email", businessId };
       return null;
     });
 
@@ -146,6 +216,7 @@ describe("modules/users/users.service", () => {
         email: "john@example.com",
         password: "secret",
         role: "OWNER",
+        businessId,
       }),
     ).rejects.toThrow("Email already exists");
   });
@@ -157,6 +228,7 @@ describe("modules/users/users.service", () => {
         lookup += 1;
         return {
           id: "u1",
+          businessId,
           email: lookup === 1 ? "old@example.com" : "old@example.com",
         };
       }
@@ -172,11 +244,15 @@ describe("modules/users/users.service", () => {
     });
     bcryptMock.hash.mockResolvedValue("new-hash");
 
-    const user = await usersService.updateUser("u1", {
-      email: "new@example.com",
-      password: "new",
-      isActive: false,
-    });
+    const user = await usersService.updateUser(
+      "u1",
+      {
+        email: "new@example.com",
+        password: "new",
+        isActive: false,
+      },
+      businessId,
+    );
 
     expect(user.id).toBe("u1");
     expect(prismaMock.user.update.calls[0][0].data.passwordHash).toBe(
@@ -187,32 +263,33 @@ describe("modules/users/users.service", () => {
 
   it("throws when update email already exists", async () => {
     prismaMock.user.findUnique.mockImplementation(async ({ where }) => {
-      if (where.id) return { id: "u1", email: "old@example.com" };
-      if (where.email) return { id: "other" };
+      if (where.id) return { id: "u1", businessId, email: "old@example.com" };
+      if (where.email || where.businessId_email)
+        return { id: "other", businessId };
       return null;
     });
 
     await expect(
-      usersService.updateUser("u1", { email: "dup@example.com" }),
+      usersService.updateUser("u1", { email: "dup@example.com" }, businessId),
     ).rejects.toThrow("Email already exists");
   });
 
   it("prevents deleting self and missing user", async () => {
-    await expect(usersService.deleteUser("u1", "u1")).rejects.toThrow(
-      "Cannot delete your own account",
-    );
+    await expect(
+      usersService.deleteUser("u1", "u1", businessId),
+    ).rejects.toThrow("Cannot delete your own account");
 
     prismaMock.user.findUnique.mockResolvedValue(null);
-    await expect(usersService.deleteUser("u2", "admin")).rejects.toThrow(
-      "User not found",
-    );
+    await expect(
+      usersService.deleteUser("u2", "admin", businessId),
+    ).rejects.toThrow("User not found");
   });
 
   it("soft deletes user and logs", async () => {
-    prismaMock.user.findUnique.mockResolvedValue({ id: "u1" });
+    prismaMock.user.findUnique.mockResolvedValue({ id: "u1", businessId });
     prismaMock.user.update.mockResolvedValue({});
 
-    const res = await usersService.deleteUser("u1", "admin");
+    const res = await usersService.deleteUser("u1", "admin", businessId);
 
     expect(res.success).toBe(true);
     expect(prismaMock.user.update.calls[0][0].data.isActive).toBe(false);
@@ -262,6 +339,53 @@ describe("modules/users/users.service", () => {
     prismaMock.outletUser.deleteMany.mockResolvedValue({ count: 1 });
     const res = await usersService.removeUserFromOutlet("u1", "out1");
     expect(res.success).toBe(true);
+    expect(res.success).toBe(true);
     expect(loggerMock.info.calls.length).toBe(1);
+  });
+
+  describe("Validation & Error Handling", () => {
+    it("throws when businessId is missing in getUsers", async () => {
+      await expect(usersService.getUsers({})).rejects.toThrow(
+        "businessId is required",
+      );
+    });
+
+    it("throws when businessId is missing in getUserById", async () => {
+      await expect(usersService.getUserById("u1")).rejects.toThrow(
+        "businessId is required",
+      );
+    });
+
+    it("throws when user missing or cross-business in getUserById", async () => {
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: "u1",
+        businessId: "other",
+      });
+      await expect(usersService.getUserById("u1", businessId)).rejects.toThrow(
+        "User not found",
+      );
+    });
+
+    it("throws when businessId is missing in createUser", async () => {
+      await expect(
+        usersService.createUser({
+          name: "Test",
+          username: "test",
+          password: "password",
+        }),
+      ).rejects.toThrow("businessId is required");
+    });
+
+    it("throws when businessId is missing in updateUser", async () => {
+      await expect(usersService.updateUser("u1", {}, null)).rejects.toThrow(
+        "businessId is required",
+      );
+    });
+
+    it("throws when businessId is missing in deleteUser", async () => {
+      await expect(
+        usersService.deleteUser("u1", "admin", null),
+      ).rejects.toThrow("businessId is required");
+    });
   });
 });

@@ -59,7 +59,13 @@ async function fetchInventoryByOutlet(outletId, productIds) {
 }
 
 export async function getProducts(filters = {}) {
-  const { search, category, isActive, page, limit, outletId } = filters;
+  const { search, category, isActive, page, limit, outletId, businessId } =
+    filters;
+
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
 
   // Normalize pagination with max limit enforcement
   const {
@@ -70,6 +76,7 @@ export async function getProducts(filters = {}) {
 
   // Create cache key from filters (excluding outletId since inventory is separate)
   const cacheFilters = {
+    businessId,
     search,
     category,
     isActive,
@@ -78,7 +85,7 @@ export async function getProducts(filters = {}) {
   };
   const cacheKey = CACHE_KEYS.PRODUCTS_LIST(hashObject(cacheFilters));
 
-  const where = {};
+  const where = { businessId };
 
   if (search) {
     where.OR = [
@@ -161,7 +168,12 @@ export async function getProducts(filters = {}) {
   return result;
 }
 
-export async function getProductById(id) {
+export async function getProductById(id, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const cacheKey = CACHE_KEYS.PRODUCT_BY_ID(id);
 
   // Parallel fetch: cache + fresh inventory
@@ -171,6 +183,10 @@ export async function getProductById(id) {
   ]);
 
   if (cached) {
+    // Validate business access
+    if (cached.businessId !== businessId) {
+      throw new Error("Product not found");
+    }
     // Cache hit: merge with fresh inventory
     return { ...cached, inventories };
   }
@@ -188,7 +204,7 @@ export async function getProductById(id) {
     },
   });
 
-  if (!product) {
+  if (!product || product.businessId !== businessId) {
     throw new Error("Product not found");
   }
 
@@ -199,9 +215,17 @@ export async function getProductById(id) {
   return { ...product, inventories };
 }
 
-export async function createProduct(data) {
+export async function createProduct(data, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const product = await prisma.product.create({
-    data,
+    data: {
+      ...data,
+      businessId,
+    },
   });
 
   // Invalidate product list cache
@@ -210,7 +234,18 @@ export async function createProduct(data) {
   return product;
 }
 
-export async function updateProduct(id, data) {
+export async function updateProduct(id, data, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
+  // Verify product belongs to business
+  const existing = await prisma.product.findUnique({ where: { id } });
+  if (!existing || existing.businessId !== businessId) {
+    throw new Error("Product not found");
+  }
+
   const product = await prisma.product.update({
     where: { id },
     data,
@@ -225,7 +260,18 @@ export async function updateProduct(id, data) {
   return product;
 }
 
-export async function deleteProduct(id) {
+export async function deleteProduct(id, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
+  // Verify product belongs to business
+  const existing = await prisma.product.findUnique({ where: { id } });
+  if (!existing || existing.businessId !== businessId) {
+    throw new Error("Product not found");
+  }
+
   await prisma.product.update({
     where: { id },
     data: { isActive: false },

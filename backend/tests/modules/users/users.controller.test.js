@@ -51,6 +51,11 @@ describe("modules/users/users.controller", () => {
     loggerMock.error.mockReset();
   });
 
+  const mockStore = {
+    user: { id: "u1", businessId: "biz-1" },
+    outletId: "store-1",
+  };
+
   it("lists users with parsed pagination", async () => {
     const set = {};
     const res = await controller.getUsersController({
@@ -61,7 +66,7 @@ describe("modules/users/users.controller", () => {
         role: "ADMIN",
         isActive: "true",
       },
-      store: {},
+      store: mockStore,
       set,
     });
 
@@ -70,6 +75,7 @@ describe("modules/users/users.controller", () => {
     expect(args.page).toBe(2);
     expect(args.limit).toBe(5);
     expect(args.role).toBe("ADMIN");
+    expect(args.businessId).toBe("biz-1");
   });
 
   it("returns error when list users fails", async () => {
@@ -80,7 +86,7 @@ describe("modules/users/users.controller", () => {
 
     const res = await controller.getUsersController({
       query: {},
-      store: {},
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);
@@ -93,19 +99,20 @@ describe("modules/users/users.controller", () => {
 
     const res = await controller.getUserByIdController({
       params: { id: "u1" },
-      store: {},
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(res.data.user.id).toBe("u1");
+    expect(serviceMock.getUserById.calls[0][1]).toBe("biz-1");
   });
 
   it("returns 404 when user is missing", async () => {
     const set = {};
     const res = await controller.getUserByIdController({
       params: { id: "missing" },
-      store: {},
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(404);
@@ -122,7 +129,7 @@ describe("modules/users/users.controller", () => {
 
     const res = await controller.getUserByIdController({
       params: { id: "u1" },
-      store: {},
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(410);
@@ -131,15 +138,15 @@ describe("modules/users/users.controller", () => {
 
   it("creates user and enqueues audit log", async () => {
     const set = {};
-    const store = { user: { id: "admin" }, outletId: "out-1" };
     const res = await controller.createUserController({
       body: { name: "Test" },
-      store,
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(201);
     expect(res.success).toBe(true);
     expect(jobsMock.enqueueAuditLogJob.calls.length).toBeGreaterThan(0);
+    expect(serviceMock.createUser.calls[0][0].businessId).toBe("biz-1");
   });
 
   it("returns error when create fails", async () => {
@@ -152,7 +159,7 @@ describe("modules/users/users.controller", () => {
 
     const res = await controller.createUserController({
       body: {},
-      store: {},
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(409);
@@ -161,12 +168,11 @@ describe("modules/users/users.controller", () => {
 
   it("updates user and enqueues audit log", async () => {
     const set = {};
-    const store = { user: { id: "admin" }, outletId: "out-1" };
 
     const res = await controller.updateUserController({
       params: { id: "u1" },
       body: { name: "New" },
-      store,
+      store: mockStore,
       set,
     });
 
@@ -174,6 +180,7 @@ describe("modules/users/users.controller", () => {
     expect(jobsMock.enqueueAuditLogJob.calls[0][0].eventType).toBe(
       "USER_UPDATED",
     );
+    expect(serviceMock.updateUser.calls[0][2]).toBe("biz-1");
   });
 
   it("returns error when update fails", async () => {
@@ -185,7 +192,7 @@ describe("modules/users/users.controller", () => {
     const res = await controller.updateUserController({
       params: { id: "u1" },
       body: {},
-      store: {},
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);
@@ -194,11 +201,10 @@ describe("modules/users/users.controller", () => {
 
   it("deletes user and enqueues audit log", async () => {
     const set = {};
-    const store = { user: { id: "admin" }, outletId: "out-1" };
 
     const res = await controller.deleteUserController({
       params: { id: "u1" },
-      store,
+      store: mockStore,
       set,
     });
 
@@ -206,6 +212,7 @@ describe("modules/users/users.controller", () => {
     expect(jobsMock.enqueueAuditLogJob.calls.at(-1)[0].eventType).toBe(
       "USER_DELETED",
     );
+    expect(serviceMock.deleteUser.calls[0][2]).toBe("biz-1");
   });
 
   it("returns error when delete fails", async () => {
@@ -216,7 +223,7 @@ describe("modules/users/users.controller", () => {
 
     const res = await controller.deleteUserController({
       params: { id: "u1" },
-      store: {},
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);
@@ -225,12 +232,11 @@ describe("modules/users/users.controller", () => {
 
   it("assigns outlet and enqueues audit log", async () => {
     const set = {};
-    const store = { user: { id: "admin" } };
 
     const res = await controller.assignOutletController({
       params: { id: "u1" },
       body: { outletId: "out-1", outletRole: "MANAGER", isDefault: true },
-      store,
+      store: mockStore,
       set,
     });
 
@@ -251,7 +257,7 @@ describe("modules/users/users.controller", () => {
     const res = await controller.assignOutletController({
       params: { id: "u1" },
       body: { outletId: "out-1", outletRole: "MANAGER", isDefault: false },
-      store: {},
+      store: mockStore,
       set,
     });
 
@@ -261,11 +267,10 @@ describe("modules/users/users.controller", () => {
 
   it("removes outlet and enqueues audit log", async () => {
     const set = {};
-    const store = { user: { id: "admin" } };
 
     const res = await controller.removeOutletController({
       params: { id: "u1", outletId: "out-1" },
-      store,
+      store: mockStore,
       set,
     });
 
@@ -283,7 +288,7 @@ describe("modules/users/users.controller", () => {
 
     const res = await controller.removeOutletController({
       params: { id: "u1", outletId: "out-1" },
-      store: {},
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);

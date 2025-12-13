@@ -5,12 +5,25 @@
 import prisma from "../../libs/prisma.js";
 import { enqueueAuditLogJob } from "../../libs/jobs.js";
 
-export async function getWarehouses(filters = {}) {
+export async function getWarehouses(filters = {}, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const { outletId, type, isActive, page = 1, limit = 50 } = filters;
 
-  const where = {};
+  const where = {
+    outlet: {
+      businessId, // Filter by business
+    },
+  };
 
   if (outletId) {
+    const outlet = await prisma.outlet.findUnique({ where: { id: outletId } });
+    if (!outlet || outlet.businessId !== businessId) {
+      throw new Error("Outlet not found");
+    }
     where.outletId = outletId;
   }
 
@@ -53,7 +66,12 @@ export async function getWarehouses(filters = {}) {
   };
 }
 
-export async function getWarehouseById(id) {
+export async function getWarehouseById(id, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const warehouse = await prisma.warehouse.findUnique({
     where: { id },
     include: {
@@ -75,10 +93,29 @@ export async function getWarehouseById(id) {
     throw new Error("Warehouse not found");
   }
 
+  if (warehouse.outlet.businessId !== businessId) {
+    throw new Error("Warehouse not found");
+  }
+
   return warehouse;
 }
 
-export async function createWarehouse(data, userId) {
+export async function createWarehouse(data, userId, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
+  // Verify outlet belongs to business
+  if (data.outletId) {
+    const outlet = await prisma.outlet.findUnique({
+      where: { id: data.outletId },
+    });
+    if (!outlet || outlet.businessId !== businessId) {
+      throw new Error("Outlet not found");
+    }
+  }
+
   // If isDefault is true, unset other defaults for the same outlet
   if (data.isDefault && data.outletId) {
     await prisma.warehouse.updateMany({
@@ -113,17 +150,30 @@ export async function createWarehouse(data, userId) {
   return warehouse;
 }
 
-export async function updateWarehouse(id, data, userId) {
+export async function updateWarehouse(id, data, userId, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
+  const existingWarehouse = await prisma.warehouse.findUnique({
+    where: { id },
+    include: { outlet: true },
+  });
+
+  if (
+    !existingWarehouse ||
+    existingWarehouse.outlet.businessId !== businessId
+  ) {
+    throw new Error("Warehouse not found");
+  }
+
   // If isDefault is being set to true, unset other defaults
   if (data.isDefault) {
-    const warehouse = await prisma.warehouse.findUnique({
-      where: { id },
-    });
-
-    if (warehouse?.outletId) {
+    if (existingWarehouse?.outletId) {
       await prisma.warehouse.updateMany({
         where: {
-          outletId: warehouse.outletId,
+          outletId: existingWarehouse.outletId,
           isDefault: true,
           id: { not: id },
         },
@@ -155,7 +205,21 @@ export async function updateWarehouse(id, data, userId) {
   return warehouse;
 }
 
-export async function deleteWarehouse(id) {
+export async function deleteWarehouse(id, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
+  const warehouse = await prisma.warehouse.findUnique({
+    where: { id },
+    include: { outlet: true },
+  });
+
+  if (!warehouse || warehouse.outlet.businessId !== businessId) {
+    throw new Error("Warehouse not found");
+  }
+
   // Check if warehouse has inventory
   const inventoryCount = await prisma.inventory.count({
     where: { warehouseId: id },
@@ -175,7 +239,25 @@ export async function deleteWarehouse(id) {
 /**
  * Get warehouse inventory
  */
-export async function getWarehouseInventory(warehouseId, filters = {}) {
+export async function getWarehouseInventory(
+  warehouseId,
+  filters = {},
+  businessId,
+) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
+  const warehouse = await prisma.warehouse.findUnique({
+    where: { id: warehouseId },
+    include: { outlet: true },
+  });
+
+  if (!warehouse || warehouse.outlet.businessId !== businessId) {
+    throw new Error("Warehouse not found");
+  }
+
   const { lowStock, page = 1, limit = 50 } = filters;
 
   const skip = (page - 1) * limit;

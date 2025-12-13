@@ -21,7 +21,9 @@ describe("modules/customers/customers.service", () => {
   });
 
   it("lists customers with filters and pagination", async () => {
-    prismaMock.customer.findMany.mockResolvedValue([{ id: "c1" }]);
+    prismaMock.customer.findMany.mockResolvedValue([
+      { id: "c1", businessId: "biz-1" },
+    ]);
     prismaMock.customer.count.mockResolvedValue(1);
 
     const res = await customersService.getCustomers({
@@ -30,6 +32,7 @@ describe("modules/customers/customers.service", () => {
       isMember: true,
       page: 2,
       limit: 5,
+      businessId: "biz-1",
     });
 
     const args = prismaMock.customer.findMany.calls[0][0];
@@ -41,16 +44,21 @@ describe("modules/customers/customers.service", () => {
   it("returns customer by id with relations", async () => {
     prismaMock.customer.findUnique.mockResolvedValue({
       id: "c1",
+      businessId: "biz-1",
       priceTier: {},
     });
 
-    const customer = await customersService.getCustomerById("c1");
+    const customer = await customersService.getCustomerById("c1", "biz-1");
     expect(customer.id).toBe("c1");
     const args = prismaMock.customer.findUnique.calls[0][0];
     expect(args.include.posOrders.orderBy.createdAt).toBe("desc");
   });
 
   it("prevents deleting customers with existing orders", async () => {
+    prismaMock.customer.findUnique.mockResolvedValue({
+      id: "cust-1",
+      businessId: "biz-1",
+    });
     prismaMock.posOrder.count.mockResolvedValue(2);
     let deletionCalled = false;
     prismaMock.customer.delete.mockImplementation(async () => {
@@ -58,7 +66,9 @@ describe("modules/customers/customers.service", () => {
       return { message: "ok" };
     });
 
-    const err = await customersService.deleteCustomer("cust-1").catch((e) => e);
+    const err = await customersService
+      .deleteCustomer("cust-1", "biz-1")
+      .catch((e) => e);
     expect(prismaMock.posOrder.count.calls.length).toBeGreaterThan(0);
     expect(deletionCalled).toBe(false);
     expect(err).toBeInstanceOf(Error);
@@ -68,10 +78,17 @@ describe("modules/customers/customers.service", () => {
   });
 
   it("deletes customer successfully when no orders exist", async () => {
+    prismaMock.customer.findUnique.mockResolvedValue({
+      id: "c1",
+      businessId: "biz-1",
+    });
     prismaMock.posOrder.count.mockResolvedValue(0);
-    prismaMock.customer.delete.mockResolvedValue({ id: "c1" });
+    prismaMock.customer.delete.mockResolvedValue({
+      id: "c1",
+      businessId: "biz-1",
+    });
 
-    const result = await customersService.deleteCustomer("c1");
+    const result = await customersService.deleteCustomer("c1", "biz-1");
 
     const countArgs = prismaMock.posOrder.count.calls[0][0];
     expect(countArgs.where.customerId).toBe("c1");
@@ -85,9 +102,9 @@ describe("modules/customers/customers.service", () => {
   it("throws when customer is not found", async () => {
     prismaMock.customer.findUnique.mockImplementation(async () => null);
 
-    await expect(customersService.getCustomerById("missing")).rejects.toThrow(
-      "Customer not found",
-    );
+    await expect(
+      customersService.getCustomerById("missing", "biz-1"),
+    ).rejects.toThrow("Customer not found");
   });
 
   it("creates a customer successfully", async () => {
@@ -96,19 +113,90 @@ describe("modules/customers/customers.service", () => {
       id: "new",
     }));
 
-    const result = await customersService.createCustomer({ name: "New" });
+    const result = await customersService.createCustomer(
+      { name: "New" },
+      "biz-1",
+    );
     expect(result.id).toBe("new");
   });
 
   it("updates a customer successfully", async () => {
+    prismaMock.customer.findUnique.mockResolvedValue({
+      id: "c1",
+      businessId: "biz-1",
+    });
     prismaMock.customer.update.mockImplementation(async ({ data, where }) => ({
       ...data,
       ...where,
     }));
 
-    const result = await customersService.updateCustomer("c1", {
-      name: "Updated",
-    });
+    const result = await customersService.updateCustomer(
+      "c1",
+      {
+        name: "Updated",
+      },
+      "biz-1",
+    );
     expect(result.name).toBe("Updated");
+  });
+
+  it("throws when businessId is missing in getCustomers", async () => {
+    await expect(customersService.getCustomers({})).rejects.toThrow(
+      "businessId is required",
+    );
+  });
+
+  it("throws when businessId is missing in getCustomerById", async () => {
+    await expect(customersService.getCustomerById("c1")).rejects.toThrow(
+      "businessId is required",
+    );
+  });
+
+  it("throws when accessing customer from another business", async () => {
+    prismaMock.customer.findUnique.mockResolvedValue({
+      id: "c1",
+      businessId: "other",
+    });
+    await expect(
+      customersService.getCustomerById("c1", "biz-1"),
+    ).rejects.toThrow("Customer not found");
+  });
+
+  it("throws when businessId is missing in createCustomer", async () => {
+    await expect(customersService.createCustomer({}, null)).rejects.toThrow(
+      "businessId is required",
+    );
+  });
+
+  it("throws when businessId is missing in updateCustomer", async () => {
+    await expect(
+      customersService.updateCustomer("c1", {}, null),
+    ).rejects.toThrow("businessId is required");
+  });
+
+  it("throws when updating customer from another business", async () => {
+    prismaMock.customer.findUnique.mockResolvedValue({
+      id: "c1",
+      businessId: "other",
+    });
+    await expect(
+      customersService.updateCustomer("c1", {}, "biz-1"),
+    ).rejects.toThrow("Customer not found");
+  });
+
+  it("throws when businessId is missing in deleteCustomer", async () => {
+    await expect(customersService.deleteCustomer("c1", null)).rejects.toThrow(
+      "businessId is required",
+    );
+  });
+
+  it("throws when deleting customer from another business", async () => {
+    prismaMock.customer.findUnique.mockResolvedValue({
+      id: "c1",
+      businessId: "other",
+    });
+    await expect(
+      customersService.deleteCustomer("c1", "biz-1"),
+    ).rejects.toThrow("Customer not found");
   });
 });

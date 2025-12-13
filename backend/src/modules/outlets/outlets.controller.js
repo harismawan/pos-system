@@ -7,9 +7,10 @@ import logger from "../../libs/logger.js";
 import { OUT } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
 
-export async function getOutletsController({ query, set }) {
+export async function getOutletsController({ query, store, set }) {
   try {
-    const result = await outletsService.getOutlets(query);
+    const businessId = store.user.businessId;
+    const result = await outletsService.getOutlets({ ...query, businessId });
 
     return successResponse(OUT.LIST_SUCCESS, result);
   } catch (err) {
@@ -20,9 +21,10 @@ export async function getOutletsController({ query, set }) {
   }
 }
 
-export async function getOutletByIdController({ params, set }) {
+export async function getOutletByIdController({ params, store, set }) {
   try {
-    const outlet = await outletsService.getOutletById(params.id);
+    const businessId = store.user.businessId;
+    const outlet = await outletsService.getOutletById(params.id, businessId);
 
     return successResponse(OUT.GET_SUCCESS, outlet);
   } catch (err) {
@@ -38,7 +40,8 @@ export async function getOutletByIdController({ params, set }) {
 export async function createOutletController({ body, store, set }) {
   try {
     const userId = store.user.id;
-    const outlet = await outletsService.createOutlet(body, userId);
+    const businessId = store.user.businessId;
+    const outlet = await outletsService.createOutlet(body, userId, businessId);
 
     set.status = 201;
     return successResponse(OUT.CREATE_SUCCESS, outlet);
@@ -53,7 +56,13 @@ export async function createOutletController({ body, store, set }) {
 export async function updateOutletController({ params, body, store, set }) {
   try {
     const userId = store.user.id;
-    const outlet = await outletsService.updateOutlet(params.id, body, userId);
+    const businessId = store.user.businessId;
+    const outlet = await outletsService.updateOutlet(
+      params.id,
+      body,
+      userId,
+      businessId,
+    );
 
     return successResponse(OUT.UPDATE_SUCCESS, outlet);
   } catch (err) {
@@ -64,9 +73,10 @@ export async function updateOutletController({ params, body, store, set }) {
   }
 }
 
-export async function deleteOutletController({ params, set }) {
+export async function deleteOutletController({ params, store, set }) {
   try {
-    const result = await outletsService.deleteOutlet(params.id);
+    const businessId = store.user.businessId;
+    const result = await outletsService.deleteOutlet(params.id, businessId);
 
     return successResponse(OUT.DELETE_SUCCESS, result);
   } catch (err) {

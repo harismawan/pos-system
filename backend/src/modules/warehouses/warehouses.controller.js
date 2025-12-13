@@ -7,9 +7,10 @@ import logger from "../../libs/logger.js";
 import { WAR } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
 
-export async function getWarehousesController({ query, set }) {
+export async function getWarehousesController({ query, store, set }) {
   try {
-    const result = await warehousesService.getWarehouses(query);
+    const businessId = store.user.businessId;
+    const result = await warehousesService.getWarehouses(query, businessId);
 
     return successResponse(WAR.LIST_SUCCESS, result);
   } catch (err) {
@@ -20,9 +21,13 @@ export async function getWarehousesController({ query, set }) {
   }
 }
 
-export async function getWarehouseByIdController({ params, set }) {
+export async function getWarehouseByIdController({ params, store, set }) {
   try {
-    const warehouse = await warehousesService.getWarehouseById(params.id);
+    const businessId = store.user.businessId;
+    const warehouse = await warehousesService.getWarehouseById(
+      params.id,
+      businessId,
+    );
 
     return successResponse(WAR.GET_SUCCESS, warehouse);
   } catch (err) {
@@ -38,7 +43,12 @@ export async function getWarehouseByIdController({ params, set }) {
 export async function createWarehouseController({ body, store, set }) {
   try {
     const userId = store.user.id;
-    const warehouse = await warehousesService.createWarehouse(body, userId);
+    const businessId = store.user.businessId;
+    const warehouse = await warehousesService.createWarehouse(
+      body,
+      userId,
+      businessId,
+    );
 
     set.status = 201;
     return successResponse(WAR.CREATE_SUCCESS, warehouse);
@@ -53,10 +63,12 @@ export async function createWarehouseController({ body, store, set }) {
 export async function updateWarehouseController({ params, body, store, set }) {
   try {
     const userId = store.user.id;
+    const businessId = store.user.businessId;
     const warehouse = await warehousesService.updateWarehouse(
       params.id,
       body,
       userId,
+      businessId,
     );
 
     return successResponse(WAR.UPDATE_SUCCESS, warehouse);
@@ -68,9 +80,13 @@ export async function updateWarehouseController({ params, body, store, set }) {
   }
 }
 
-export async function deleteWarehouseController({ params, set }) {
+export async function deleteWarehouseController({ params, store, set }) {
   try {
-    const result = await warehousesService.deleteWarehouse(params.id);
+    const businessId = store.user.businessId;
+    const result = await warehousesService.deleteWarehouse(
+      params.id,
+      businessId,
+    );
 
     return successResponse(WAR.DELETE_SUCCESS, result);
   } catch (err) {
@@ -81,11 +97,18 @@ export async function deleteWarehouseController({ params, set }) {
   }
 }
 
-export async function getWarehouseInventoryController({ params, query, set }) {
+export async function getWarehouseInventoryController({
+  params,
+  query,
+  store,
+  set,
+}) {
   try {
+    const businessId = store.user.businessId;
     const result = await warehousesService.getWarehouseInventory(
       params.id,
       query,
+      businessId,
     );
 
     return successResponse(WAR.GET_INVENTORY_SUCCESS, result);

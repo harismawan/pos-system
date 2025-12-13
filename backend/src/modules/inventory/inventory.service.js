@@ -10,7 +10,12 @@ import logger from "../../libs/logger.js";
 /**
  * Get inventory with filters
  */
-export async function getInventory(filters = {}) {
+export async function getInventory(filters = {}, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const {
     productId,
     warehouseId,
@@ -24,10 +29,20 @@ export async function getInventory(filters = {}) {
 
   // If lowStock filter is used, we need a raw query since Prisma doesn't support column-to-column comparison
   if (lowStock) {
-    const conditions = ["i.quantity_on_hand <= i.minimum_stock"];
-    const params = [];
+    const conditions = [
+      "i.quantity_on_hand <= i.minimum_stock",
+      `p.business_id = $1`, // Filter by business
+    ];
+    const params = [businessId];
 
     if (productId) {
+      // Verify product belongs to business
+      const product = await prisma.product.findUnique({
+        where: { id: productId },
+      });
+      if (!product || product.businessId !== businessId) {
+        throw new Error("Product not found");
+      }
       params.push(productId);
       conditions.push(`i.product_id = $${params.length}`);
     }
@@ -49,6 +64,7 @@ export async function getInventory(filters = {}) {
             SELECT COUNT(*)::int as count
             FROM inventories i
             JOIN warehouses w ON i.warehouse_id = w.id
+            JOIN products p ON i.product_id = p.id
             WHERE ${whereClause}
         `;
     const countResult = await prisma.$queryRawUnsafe(countQuery, ...params);
@@ -59,6 +75,7 @@ export async function getInventory(filters = {}) {
             SELECT i.id
             FROM inventories i
             JOIN warehouses w ON i.warehouse_id = w.id
+            JOIN products p ON i.product_id = p.id
             WHERE ${whereClause}
             ORDER BY i.created_at DESC
             LIMIT ${limit} OFFSET ${skip}
@@ -98,9 +115,20 @@ export async function getInventory(filters = {}) {
   }
 
   // Regular query without lowStock filter
-  const where = {};
+  const where = {
+    product: {
+      businessId, // Filter via product's business
+    },
+  };
 
   if (productId) {
+    // Verify product belongs to business
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+    });
+    if (!product || product.businessId !== businessId) {
+      throw new Error("Product not found");
+    }
     where.productId = productId;
   }
 
@@ -149,8 +177,19 @@ export async function getInventory(filters = {}) {
 /**
  * Adjust inventory (increase or decrease)
  */
-export async function adjustInventory(data, userId) {
+export async function adjustInventory(data, userId, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const { productId, warehouseId, outletId, quantity, type, notes } = data;
+
+  // Verify product belongs to business
+  const product = await prisma.product.findUnique({ where: { id: productId } });
+  if (!product || product.businessId !== businessId) {
+    throw new Error("Product not found");
+  }
 
   if (!["ADJUSTMENT_IN", "ADJUSTMENT_OUT"].includes(type)) {
     throw new Error(
@@ -251,7 +290,12 @@ export async function adjustInventory(data, userId) {
 /**
  * Transfer inventory between warehouses
  */
-export async function transferInventory(data, userId) {
+export async function transferInventory(data, userId, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const {
     productId,
     fromWarehouseId,
@@ -260,6 +304,12 @@ export async function transferInventory(data, userId) {
     quantity,
     notes,
   } = data;
+
+  // Verify product belongs to business
+  const product = await prisma.product.findUnique({ where: { id: productId } });
+  if (!product || product.businessId !== businessId) {
+    throw new Error("Product not found");
+  }
 
   if (fromWarehouseId === toWarehouseId) {
     throw new Error("Cannot transfer to the same warehouse");
@@ -388,7 +438,12 @@ export async function transferInventory(data, userId) {
 /**
  * Get stock movements
  */
-export async function getStockMovements(filters = {}) {
+export async function getStockMovements(filters = {}, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const {
     productId,
     warehouseId,
@@ -398,9 +453,20 @@ export async function getStockMovements(filters = {}) {
     limit = 50,
   } = filters;
 
-  const where = {};
+  const where = {
+    product: {
+      businessId, // Filter via product's business
+    },
+  };
 
   if (productId) {
+    // Verify product belongs to business
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+    });
+    if (!product || product.businessId !== businessId) {
+      throw new Error("Product not found");
+    }
     where.productId = productId;
   }
 

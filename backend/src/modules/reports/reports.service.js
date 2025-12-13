@@ -15,18 +15,31 @@ import {
 /**
  * Get top selling products (cached)
  */
-export async function getTopProducts(filters = {}) {
-  const cacheKey = CACHE_KEYS.REPORT_TOP_PRODUCTS(hashObject(filters));
+/**
+ * Get top selling products (cached)
+ */
+export async function getTopProducts(filters = {}, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
+  const cacheKey = CACHE_KEYS.REPORT_TOP_PRODUCTS(
+    hashObject({ ...filters, businessId }),
+  );
 
   return wrapWithCache(cacheKey, CACHE_TTL.REPORT_TOP_PRODUCTS, async () => {
-    return fetchTopProducts(filters);
+    return fetchTopProducts(filters, businessId);
   });
 }
 
 /**
  * Internal: Fetch top products from DB
  */
-async function fetchTopProducts(filters = {}) {
+/**
+ * Internal: Fetch top products from DB
+ */
+async function fetchTopProducts(filters = {}, businessId) {
   const {
     startDate,
     endDate,
@@ -38,10 +51,20 @@ async function fetchTopProducts(filters = {}) {
   const where = {
     posOrder: {
       status: "COMPLETED",
+      outlet: {
+        businessId, // Filter by business
+      },
     },
   };
 
-  if (outletId) where.posOrder.outletId = outletId;
+  if (outletId) {
+    const outlet = await prisma.outlet.findUnique({ where: { id: outletId } });
+    if (!outlet || outlet.businessId !== businessId) {
+      throw new Error("Outlet not found");
+    }
+    where.posOrder.outletId = outletId;
+  }
+
   if (startDate || endDate) {
     where.posOrder.createdAt = {};
     if (startDate) where.posOrder.createdAt.gte = new Date(startDate);
@@ -96,21 +119,38 @@ async function fetchTopProducts(filters = {}) {
 /**
  * Get inventory valuation report (cached)
  */
-export async function getInventoryValuation(filters = {}) {
-  const cacheKey = CACHE_KEYS.REPORT_INVENTORY(hashObject(filters));
+/**
+ * Get inventory valuation report (cached)
+ */
+export async function getInventoryValuation(filters = {}, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
+  const cacheKey = CACHE_KEYS.REPORT_INVENTORY(
+    hashObject({ ...filters, businessId }),
+  );
 
   return wrapWithCache(cacheKey, CACHE_TTL.REPORT_SUMMARY, async () => {
-    return fetchInventoryValuation(filters);
+    return fetchInventoryValuation(filters, businessId);
   });
 }
 
 /**
  * Internal: Fetch inventory valuation from DB
  */
-async function fetchInventoryValuation(filters = {}) {
+/**
+ * Internal: Fetch inventory valuation from DB
+ */
+async function fetchInventoryValuation(filters = {}, businessId) {
   const { warehouseId, category } = filters;
 
-  const where = {};
+  const where = {
+    product: {
+      businessId, // Filter by business
+    },
+  };
   if (warehouseId) where.warehouseId = warehouseId;
 
   const inventory = await prisma.inventory.findMany({
@@ -181,18 +221,31 @@ async function fetchInventoryValuation(filters = {}) {
 /**
  * Get stock movement report (cached)
  */
-export async function getStockMovementReport(filters = {}) {
-  const cacheKey = CACHE_KEYS.REPORT_STOCK_MOVEMENTS(hashObject(filters));
+/**
+ * Get stock movement report (cached)
+ */
+export async function getStockMovementReport(filters = {}, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
+  const cacheKey = CACHE_KEYS.REPORT_STOCK_MOVEMENTS(
+    hashObject({ ...filters, businessId }),
+  );
 
   return wrapWithCache(cacheKey, CACHE_TTL.REPORT_SUMMARY, async () => {
-    return fetchStockMovementReport(filters);
+    return fetchStockMovementReport(filters, businessId);
   });
 }
 
 /**
  * Internal: Fetch stock movement report from DB
  */
-async function fetchStockMovementReport(filters = {}) {
+/**
+ * Internal: Fetch stock movement report from DB
+ */
+async function fetchStockMovementReport(filters = {}, businessId) {
   const {
     startDate,
     endDate,
@@ -203,9 +256,20 @@ async function fetchStockMovementReport(filters = {}) {
     limit = 50,
   } = filters;
 
-  const where = {};
+  const where = {
+    product: {
+      businessId, // Filter by business via product
+    },
+  };
 
-  if (outletId) where.outletId = outletId;
+  if (outletId) {
+    const outlet = await prisma.outlet.findUnique({ where: { id: outletId } });
+    if (!outlet || outlet.businessId !== businessId) {
+      throw new Error("Outlet not found");
+    }
+    where.outletId = outletId;
+  }
+
   if (warehouseId) {
     where.OR = [
       { fromWarehouseId: warehouseId },
@@ -274,7 +338,15 @@ async function fetchStockMovementReport(filters = {}) {
 /**
  * Get order history
  */
-export async function getOrderHistory(filters = {}) {
+/**
+ * Get order history
+ */
+export async function getOrderHistory(filters = {}, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const {
     startDate,
     endDate,
@@ -285,11 +357,33 @@ export async function getOrderHistory(filters = {}) {
     limit = 20,
   } = filters;
 
-  const where = {};
+  const where = {
+    outlet: {
+      businessId, // Filter by business
+    },
+  };
 
-  if (outletId) where.outletId = outletId;
+  if (outletId) {
+    const outlet = await prisma.outlet.findUnique({ where: { id: outletId } });
+    if (!outlet || outlet.businessId !== businessId) {
+      throw new Error("Outlet not found");
+    }
+    where.outletId = outletId;
+  }
+
   if (status) where.status = status;
-  if (customerId) where.customerId = customerId;
+
+  if (customerId) {
+    // Verify customer belongs to business
+    const customer = await prisma.customer.findUnique({
+      where: { id: customerId },
+    });
+    if (!customer || customer.businessId !== businessId) {
+      throw new Error("Customer not found");
+    }
+    where.customerId = customerId;
+  }
+
   if (startDate || endDate) {
     where.createdAt = {};
     if (startDate) where.createdAt.gte = new Date(startDate);
@@ -342,18 +436,32 @@ export async function getOrderHistory(filters = {}) {
  * Get sales trend with period comparison (cached)
  * Compares current period with previous period (e.g., this week vs last week)
  */
-export async function getSalesTrend(filters = {}) {
-  const cacheKey = CACHE_KEYS.REPORT_SALES_TREND(hashObject(filters));
+/**
+ * Get sales trend with period comparison (cached)
+ * Compares current period with previous period (e.g., this week vs last week)
+ */
+export async function getSalesTrend(filters = {}, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
+  const cacheKey = CACHE_KEYS.REPORT_SALES_TREND(
+    hashObject({ ...filters, businessId }),
+  );
 
   return wrapWithCache(cacheKey, CACHE_TTL.REPORT_TREND, async () => {
-    return fetchSalesTrend(filters);
+    return fetchSalesTrend(filters, businessId);
   });
 }
 
 /**
  * Internal: Fetch sales trend with comparison from DB
  */
-async function fetchSalesTrend(filters = {}) {
+/**
+ * Internal: Fetch sales trend with comparison from DB
+ */
+async function fetchSalesTrend(filters = {}, businessId) {
   const {
     startDate,
     endDate,
@@ -376,12 +484,22 @@ async function fetchSalesTrend(filters = {}) {
   // Build where clause for current period
   const currentWhere = {
     status: "COMPLETED",
+    outlet: {
+      businessId,
+    },
     createdAt: {
       gte: currentStart,
       lte: currentEnd,
     },
   };
-  if (outletId) currentWhere.outletId = outletId;
+
+  if (outletId) {
+    const outlet = await prisma.outlet.findUnique({ where: { id: outletId } });
+    if (!outlet || outlet.businessId !== businessId) {
+      throw new Error("Outlet not found");
+    }
+    currentWhere.outletId = outletId;
+  }
 
   // Fetch current period orders with additional fields for tax/discount
   const currentOrders = await prisma.posOrder.findMany({
@@ -422,6 +540,9 @@ async function fetchSalesTrend(filters = {}) {
 
     const previousWhere = {
       status: "COMPLETED",
+      outlet: {
+        businessId,
+      },
       createdAt: {
         gte: previousStart,
         lte: previousEnd,
@@ -484,24 +605,47 @@ async function fetchSalesTrend(filters = {}) {
  * Get hourly sales heatmap (cached)
  * Returns sales data grouped by hour and day of week
  */
-export async function getHourlySalesHeatmap(filters = {}) {
-  const cacheKey = CACHE_KEYS.REPORT_HEATMAP(hashObject(filters));
+/**
+ * Get hourly sales heatmap (cached)
+ * Returns sales data grouped by hour and day of week
+ */
+export async function getHourlySalesHeatmap(filters = {}, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
+  const cacheKey = CACHE_KEYS.REPORT_HEATMAP(
+    hashObject({ ...filters, businessId }),
+  );
 
   return wrapWithCache(cacheKey, CACHE_TTL.REPORT_HEATMAP, async () => {
-    return fetchHourlySalesHeatmap(filters);
+    return fetchHourlySalesHeatmap(filters, businessId);
   });
 }
 
 /**
  * Internal: Fetch hourly sales heatmap from DB
  */
-async function fetchHourlySalesHeatmap(filters = {}) {
+/**
+ * Internal: Fetch hourly sales heatmap from DB
+ */
+async function fetchHourlySalesHeatmap(filters = {}, businessId) {
   const { startDate, endDate, outletId } = filters;
 
   const where = {
     status: "COMPLETED",
+    outlet: {
+      businessId,
+    },
   };
-  if (outletId) where.outletId = outletId;
+  if (outletId) {
+    const outlet = await prisma.outlet.findUnique({ where: { id: outletId } });
+    if (!outlet || outlet.businessId !== businessId) {
+      throw new Error("Outlet not found");
+    }
+    where.outletId = outletId;
+  }
   if (startDate || endDate) {
     where.createdAt = {};
     if (startDate) where.createdAt.gte = new Date(startDate);

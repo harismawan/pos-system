@@ -5,9 +5,14 @@
 import prisma from "../../libs/prisma.js";
 
 export async function getSuppliers(filters = {}) {
-  const { search, isActive, page = 1, limit = 50 } = filters;
+  const { search, isActive, page = 1, limit = 50, businessId } = filters;
 
-  const where = {};
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
+  const where = { businessId };
 
   if (search) {
     where.OR = [
@@ -51,7 +56,12 @@ export async function getSuppliers(filters = {}) {
   };
 }
 
-export async function getSupplierById(id) {
+export async function getSupplierById(id, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const supplier = await prisma.supplier.findUnique({
     where: { id },
     include: {
@@ -66,22 +76,41 @@ export async function getSupplierById(id) {
     },
   });
 
-  if (!supplier) {
+  if (!supplier || supplier.businessId !== businessId) {
     throw new Error("Supplier not found");
   }
 
   return supplier;
 }
 
-export async function createSupplier(data) {
+export async function createSupplier(data, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const supplier = await prisma.supplier.create({
-    data,
+    data: {
+      ...data,
+      businessId,
+    },
   });
 
   return supplier;
 }
 
-export async function updateSupplier(id, data) {
+export async function updateSupplier(id, data, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
+  // Verify supplier belongs to business
+  const existing = await prisma.supplier.findUnique({ where: { id } });
+  if (!existing || existing.businessId !== businessId) {
+    throw new Error("Supplier not found");
+  }
+
   const supplier = await prisma.supplier.update({
     where: { id },
     data,
@@ -90,7 +119,18 @@ export async function updateSupplier(id, data) {
   return supplier;
 }
 
-export async function deleteSupplier(id) {
+export async function deleteSupplier(id, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
+  // Verify supplier belongs to business
+  const existing = await prisma.supplier.findUnique({ where: { id } });
+  if (!existing || existing.businessId !== businessId) {
+    throw new Error("Supplier not found");
+  }
+
   // Check if supplier has purchase orders
   const orderCount = await prisma.purchaseOrder.count({
     where: { supplierId: id },

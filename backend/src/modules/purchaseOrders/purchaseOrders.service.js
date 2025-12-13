@@ -24,7 +24,12 @@ async function generatePoNumber(outletId) {
   return `PO-${outlet?.code || "SYS"}-${dateStr}-${random}`;
 }
 
-export async function getPurchaseOrders(filters = {}) {
+export async function getPurchaseOrders(filters = {}, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const {
     supplierId,
     warehouseId,
@@ -34,9 +39,29 @@ export async function getPurchaseOrders(filters = {}) {
     limit = 50,
   } = filters;
 
-  const where = {};
+  const where = {
+    AND: [
+      {
+        supplier: {
+          businessId,
+        },
+      },
+      {
+        outlet: {
+          businessId,
+        },
+      },
+    ],
+  };
 
   if (supplierId) {
+    // Verify supplier belongs to business
+    const supplier = await prisma.supplier.findUnique({
+      where: { id: supplierId },
+    });
+    if (!supplier || supplier.businessId !== businessId) {
+      throw new Error("Supplier not found");
+    }
     where.supplierId = supplierId;
   }
 
@@ -45,6 +70,11 @@ export async function getPurchaseOrders(filters = {}) {
   }
 
   if (outletId) {
+    // Verify outlet belongs to business
+    const outlet = await prisma.outlet.findUnique({ where: { id: outletId } });
+    if (!outlet || outlet.businessId !== businessId) {
+      throw new Error("Outlet not found");
+    }
     where.outletId = outletId;
   }
 
@@ -92,7 +122,12 @@ export async function getPurchaseOrders(filters = {}) {
   };
 }
 
-export async function getPurchaseOrderById(id) {
+export async function getPurchaseOrderById(id, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const order = await prisma.purchaseOrder.findUnique({
     where: { id },
     include: {
@@ -125,12 +160,49 @@ export async function getPurchaseOrderById(id) {
     throw new Error("Purchase order not found");
   }
 
+  // Verify order belongs to business
+  if (
+    order.outlet.businessId !== businessId ||
+    order.supplier.businessId !== businessId
+  ) {
+    throw new Error("Purchase order not found");
+  }
+
   return order;
 }
 
-export async function createPurchaseOrder(data, userId) {
+export async function createPurchaseOrder(data, userId, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const { supplierId, warehouseId, outletId, expectedDate, notes, items } =
     data;
+
+  // Verify supplier belongs to business
+  const supplier = await prisma.supplier.findUnique({
+    where: { id: supplierId },
+  });
+  if (!supplier || supplier.businessId !== businessId) {
+    throw new Error("Supplier not found");
+  }
+
+  // Verify outlet belongs to business
+  const outlet = await prisma.outlet.findUnique({ where: { id: outletId } });
+  if (!outlet || outlet.businessId !== businessId) {
+    throw new Error("Outlet not found");
+  }
+
+  // Verify all products belong to business
+  for (const item of items) {
+    const product = await prisma.product.findUnique({
+      where: { id: item.productId },
+    });
+    if (!product || product.businessId !== businessId) {
+      throw new Error(`Product ${item.productId} not found`);
+    }
+  }
 
   const orderNumber = await generatePoNumber(outletId);
 
@@ -196,12 +268,18 @@ export async function createPurchaseOrder(data, userId) {
   return order;
 }
 
-export async function updatePurchaseOrder(id, data, userId) {
+export async function updatePurchaseOrder(id, data, userId, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const order = await prisma.purchaseOrder.findUnique({
     where: { id },
+    include: { outlet: true },
   });
 
-  if (!order) {
+  if (!order || order.outlet.businessId !== businessId) {
     throw new Error("Purchase order not found");
   }
 
@@ -231,8 +309,18 @@ export async function updatePurchaseOrder(id, data, userId) {
   return updated;
 }
 
-export async function receivePurchaseOrder(id, receivedItems, userId) {
-  const order = await getPurchaseOrderById(id);
+export async function receivePurchaseOrder(
+  id,
+  receivedItems,
+  userId,
+  businessId,
+) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
+  const order = await getPurchaseOrderById(id, businessId);
 
   if (order.status === "RECEIVED") {
     throw new Error("Purchase order already received");
@@ -352,8 +440,13 @@ export async function receivePurchaseOrder(id, receivedItems, userId) {
   return result;
 }
 
-export async function cancelPurchaseOrder(id, userId) {
-  const order = await getPurchaseOrderById(id);
+export async function cancelPurchaseOrder(id, userId, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
+  const order = await getPurchaseOrderById(id, businessId);
 
   if (order.status === "RECEIVED") {
     throw new Error("Cannot cancel received purchase order");

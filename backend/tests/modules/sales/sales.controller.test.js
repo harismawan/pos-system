@@ -45,16 +45,22 @@ describe("modules/sales/sales.controller", () => {
     loggerMock.error.mockReset();
   });
 
+  const mockStore = {
+    user: { id: "u1", businessId: "biz-1" },
+    outletId: "store-1",
+  };
+
   it("returns POS orders list and prefers outletId from store", async () => {
     const set = {};
     const res = await controller.getPosOrdersController({
       query: { outletId: "q-1" },
-      store: { outletId: "store-1" },
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(serviceMock.getPosOrders.calls[0][0].outletId).toBe("store-1");
+    expect(serviceMock.getPosOrders.calls[0][1]).toBe("biz-1");
   });
 
   it("returns error when list fails", async () => {
@@ -65,7 +71,7 @@ describe("modules/sales/sales.controller", () => {
 
     const res = await controller.getPosOrdersController({
       query: {},
-      store: {},
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);
@@ -74,21 +80,20 @@ describe("modules/sales/sales.controller", () => {
 
   it("sets 201 when creating POS order", async () => {
     const set = {};
-    const store = { user: { id: "u1" } };
     const res = await controller.createPosOrderController({
       body: {},
-      store,
+      store: mockStore,
       set,
     });
 
     expect(set.status).toBe(201);
     expect(res.success).toBe(true);
     expect(serviceMock.createPosOrder.calls.length).toBeGreaterThan(0);
+    expect(serviceMock.createPosOrder.calls[0][2]).toBe("biz-1");
   });
 
   it("returns error when create fails with status code", async () => {
     const set = {};
-    const store = { user: { id: "u1" } };
     const err = new Error("bad data");
     err.statusCode = 422;
     serviceMock.createPosOrder.mockImplementation(async () => {
@@ -97,7 +102,7 @@ describe("modules/sales/sales.controller", () => {
 
     const res = await controller.createPosOrderController({
       body: {},
-      store,
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(422);
@@ -108,11 +113,13 @@ describe("modules/sales/sales.controller", () => {
     const set = {};
     const res = await controller.getPosOrderByIdController({
       params: { id: "o1" },
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(res.data.id).toBe("o1");
+    expect(serviceMock.getPosOrderById.calls[0][1]).toBe("biz-1");
   });
 
   it("returns 404 when order is missing", async () => {
@@ -123,6 +130,7 @@ describe("modules/sales/sales.controller", () => {
 
     const res = await controller.getPosOrderByIdController({
       params: { id: "missing" },
+      store: mockStore,
       set,
     });
 
@@ -140,6 +148,7 @@ describe("modules/sales/sales.controller", () => {
 
     const res = await controller.getPosOrderByIdController({
       params: { id: "o1" },
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);
@@ -148,14 +157,13 @@ describe("modules/sales/sales.controller", () => {
 
   it("handles completion errors with 400 status", async () => {
     const set = {};
-    const store = { user: { id: "u1" } };
     serviceMock.completePosOrder.mockImplementation(async () => {
       throw new Error("cannot complete");
     });
 
     const res = await controller.completePosOrderController({
       params: { id: "o1" },
-      store,
+      store: mockStore,
       set,
     });
 
@@ -170,40 +178,41 @@ describe("modules/sales/sales.controller", () => {
 
   it("completes POS order successfully", async () => {
     const set = {};
-    const store = { user: { id: "u1" } };
     const res = await controller.completePosOrderController({
       params: { id: "o1" },
-      store,
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
-    expect(serviceMock.completePosOrder.calls[0]).toEqual(["o1", "u1"]);
+    expect(serviceMock.completePosOrder.calls[0]).toEqual([
+      "o1",
+      "u1",
+      "biz-1",
+    ]);
   });
 
   it("cancels POS order", async () => {
     const set = {};
-    const store = { user: { id: "u1" } };
     const res = await controller.cancelPosOrderController({
       params: { id: "o1" },
-      store,
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
-    expect(serviceMock.cancelPosOrder.calls[0]).toEqual(["o1", "u1"]);
+    expect(serviceMock.cancelPosOrder.calls[0]).toEqual(["o1", "u1", "biz-1"]);
   });
 
   it("returns error when cancel fails", async () => {
     const set = {};
-    const store = { user: { id: "u1" } };
     serviceMock.cancelPosOrder.mockImplementation(async () => {
       throw new Error("cannot cancel");
     });
 
     const res = await controller.cancelPosOrderController({
       params: { id: "o1" },
-      store,
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(400);
@@ -215,12 +224,14 @@ describe("modules/sales/sales.controller", () => {
     const res = await controller.addPaymentController({
       params: { id: "o1" },
       body: { amount: 10 },
+      store: mockStore,
       set,
     });
 
     expect(set.status).toBe(201);
     expect(res.success).toBe(true);
     expect(serviceMock.addPayment.calls[0][0]).toBe("o1");
+    expect(serviceMock.addPayment.calls[0][2]).toBe("biz-1");
   });
 
   it("returns error when add payment fails", async () => {
@@ -232,6 +243,7 @@ describe("modules/sales/sales.controller", () => {
     const res = await controller.addPaymentController({
       params: { id: "o1" },
       body: {},
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(400);

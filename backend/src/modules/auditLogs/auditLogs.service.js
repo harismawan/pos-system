@@ -11,23 +11,24 @@ import {
 /**
  * Get audit logs with pagination and filters
  */
-export async function getAuditLogs({
-  page,
-  limit,
-  eventType,
-  entityType,
-  userId,
-  outletId,
-  startDate,
-  endDate,
-}) {
+export async function getAuditLogs(
+  { page, limit, eventType, entityType, userId, outletId, startDate, endDate },
+  businessId,
+) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const {
     page: pageNum,
     limit: limitNum,
     skip,
   } = normalizePagination({ page, limit });
 
-  const where = {};
+  const where = {
+    OR: [{ outlet: { businessId } }, { user: { businessId } }],
+  };
 
   if (eventType) {
     where.eventType = eventType;
@@ -38,10 +39,21 @@ export async function getAuditLogs({
   }
 
   if (userId) {
+    // Verify user belongs to business
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.businessId !== businessId) {
+      // if user not in business, return empty or throw? throw is safer.
+      throw new Error("User not found");
+    }
     where.userId = userId;
   }
 
   if (outletId) {
+    // Verify outlet belongs to business
+    const outlet = await prisma.outlet.findUnique({ where: { id: outletId } });
+    if (!outlet || outlet.businessId !== businessId) {
+      throw new Error("Outlet not found");
+    }
     where.outletId = outletId;
   }
 
@@ -94,9 +106,18 @@ export async function getAuditLogs({
 /**
  * Get a single audit log by ID
  */
-export async function getAuditLogById(id) {
+export async function getAuditLogById(id, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const log = await prisma.auditLog.findUnique({
     where: { id },
+    include: {
+      outlet: true,
+      user: true,
+    },
   });
 
   if (!log) {
@@ -105,23 +126,43 @@ export async function getAuditLogById(id) {
     throw error;
   }
 
-  // Fetch user info if exists
-  let user = null;
-  if (log.userId) {
-    user = await prisma.user.findUnique({
-      where: { id: log.userId },
-      select: { id: true, name: true, username: true },
-    });
+  // Check ownership: Either outlet is in business OR user is in business
+  const logOutletBusinessId = log.outlet?.businessId;
+  const logUserBusinessId = log.user?.businessId;
+
+  if (logOutletBusinessId !== businessId && logUserBusinessId !== businessId) {
+    const error = new Error("Audit log not found");
+    error.statusCode = 404;
+    throw error;
   }
 
-  return { ...log, user };
+  // Fetch user info if exists and needed (already included above but structure might expect clean return)
+  let user = null;
+  if (log.userId) {
+    user = {
+      id: log.user.id,
+      name: log.user.name,
+      username: log.user.username,
+    };
+  }
+
+  // Clean up result to match original return structure (excluding full user/outlet if not originally there)
+  const { outlet, user: fullUser, ...logData } = log;
+  return { ...logData, user };
 }
 
 /**
  * Get distinct event types for filtering
  */
-export async function getEventTypes() {
+export async function getEventTypes(businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
   const result = await prisma.auditLog.findMany({
+    where: {
+      OR: [{ outlet: { businessId } }, { user: { businessId } }],
+    },
     select: { eventType: true },
     distinct: ["eventType"],
     orderBy: { eventType: "asc" },
@@ -132,8 +173,15 @@ export async function getEventTypes() {
 /**
  * Get distinct entity types for filtering
  */
-export async function getEntityTypes() {
+export async function getEntityTypes(businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
   const result = await prisma.auditLog.findMany({
+    where: {
+      OR: [{ outlet: { businessId } }, { user: { businessId } }],
+    },
     select: { entityType: true },
     distinct: ["entityType"],
     orderBy: { entityType: "asc" },

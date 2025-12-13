@@ -22,6 +22,10 @@ mock.module("../../../src/libs/logger.js", () => ({ default: loggerMock }));
 const controller =
   await import("../../../src/modules/warehouses/warehouses.controller.js");
 
+const mockStore = {
+  user: { id: "u1", businessId: "biz-1" },
+};
+
 describe("modules/warehouses/warehouses.controller", () => {
   beforeEach(() => {
     serviceMock.getWarehouses.mockReset();
@@ -47,10 +51,15 @@ describe("modules/warehouses/warehouses.controller", () => {
 
   it("lists warehouses", async () => {
     const set = {};
-    const res = await controller.getWarehousesController({ query: {}, set });
+    const res = await controller.getWarehousesController({
+      query: {},
+      store: mockStore,
+      set,
+    });
 
     expect(res.success).toBe(true);
     expect(serviceMock.getWarehouses.calls.length).toBe(1);
+    expect(serviceMock.getWarehouses.calls[0][1]).toBe("biz-1");
   });
 
   it("returns error when list warehouses fails", async () => {
@@ -59,7 +68,11 @@ describe("modules/warehouses/warehouses.controller", () => {
       throw new Error("fail");
     });
 
-    const res = await controller.getWarehousesController({ query: {}, set });
+    const res = await controller.getWarehousesController({
+      query: {},
+      store: mockStore,
+      set,
+    });
     expect(set.status).toBe(500);
     expect(res.error).toBe("Internal Server Error");
   });
@@ -68,11 +81,13 @@ describe("modules/warehouses/warehouses.controller", () => {
     const set = {};
     const res = await controller.getWarehouseByIdController({
       params: { id: "w1" },
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(res.data.id).toBe("w1");
+    expect(serviceMock.getWarehouseById.calls[0][1]).toBe("biz-1");
   });
 
   it("sets 404 when warehouse not found", async () => {
@@ -83,6 +98,7 @@ describe("modules/warehouses/warehouses.controller", () => {
 
     const res = await controller.getWarehouseByIdController({
       params: { id: "missing" },
+      store: mockStore,
       set,
     });
 
@@ -100,6 +116,7 @@ describe("modules/warehouses/warehouses.controller", () => {
 
     const res = await controller.getWarehouseByIdController({
       params: { id: "w1" },
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(410);
@@ -108,20 +125,20 @@ describe("modules/warehouses/warehouses.controller", () => {
 
   it("sets 201 on create warehouse", async () => {
     const set = {};
-    const store = { user: { id: "u1" } };
     const res = await controller.createWarehouseController({
       body: {},
-      store,
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(201);
     expect(res.success).toBe(true);
     expect(serviceMock.createWarehouse.calls.length).toBeGreaterThan(0);
+    expect(serviceMock.createWarehouse.calls[0][1]).toBe("u1");
+    expect(serviceMock.createWarehouse.calls[0][2]).toBe("biz-1");
   });
 
   it("returns error when create fails with custom status", async () => {
     const set = {};
-    const store = { user: { id: "u1" } };
     const err = new Error("invalid");
     err.statusCode = 422;
     serviceMock.createWarehouse.mockImplementation(async () => {
@@ -130,7 +147,7 @@ describe("modules/warehouses/warehouses.controller", () => {
 
     const res = await controller.createWarehouseController({
       body: {},
-      store,
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(422);
@@ -139,16 +156,17 @@ describe("modules/warehouses/warehouses.controller", () => {
 
   it("updates warehouse", async () => {
     const set = {};
-    const store = { user: { id: "u1" } };
     const res = await controller.updateWarehouseController({
       params: { id: "w1" },
       body: { name: "New" },
-      store,
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(serviceMock.updateWarehouse.calls.length).toBe(1);
+    expect(serviceMock.updateWarehouse.calls[0][2]).toBe("u1");
+    expect(serviceMock.updateWarehouse.calls[0][3]).toBe("biz-1");
   });
 
   it("returns error when update fails", async () => {
@@ -160,7 +178,7 @@ describe("modules/warehouses/warehouses.controller", () => {
     const res = await controller.updateWarehouseController({
       params: { id: "w1" },
       body: {},
-      store: { user: { id: "u1" } },
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);
@@ -171,11 +189,13 @@ describe("modules/warehouses/warehouses.controller", () => {
     const set = {};
     const res = await controller.deleteWarehouseController({
       params: { id: "w1" },
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(serviceMock.deleteWarehouse.calls.length).toBe(1);
+    expect(serviceMock.deleteWarehouse.calls[0][1]).toBe("biz-1");
   });
 
   it("returns error when delete fails", async () => {
@@ -188,6 +208,7 @@ describe("modules/warehouses/warehouses.controller", () => {
 
     const res = await controller.deleteWarehouseController({
       params: { id: "w1" },
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(409);
@@ -199,11 +220,13 @@ describe("modules/warehouses/warehouses.controller", () => {
     const res = await controller.getWarehouseInventoryController({
       params: { id: "w1" },
       query: { lowStock: true },
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(serviceMock.getWarehouseInventory.calls[0][0]).toBe("w1");
+    expect(serviceMock.getWarehouseInventory.calls[0][2]).toBe("biz-1");
   });
 
   it("returns error when get inventory fails", async () => {
@@ -215,6 +238,7 @@ describe("modules/warehouses/warehouses.controller", () => {
     const res = await controller.getWarehouseInventoryController({
       params: { id: "w1" },
       query: {},
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);

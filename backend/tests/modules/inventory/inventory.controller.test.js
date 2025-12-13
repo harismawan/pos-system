@@ -36,16 +36,21 @@ describe("modules/inventory/inventory.controller", () => {
     loggerMock.error.mockReset();
   });
 
+  const mockStore = {
+    user: { id: "u1", businessId: "biz-1" },
+    outletId: "out-1",
+  };
+
   it("passes outletId from store to get inventory", async () => {
     const set = {};
-    const store = { outletId: "out-1" };
     const res = await controller.getInventoryController({
       query: {},
-      store,
+      store: mockStore,
       set,
     });
     expect(res.success).toBe(true);
     expect(serviceMock.getInventory.calls[0][0].outletId).toBe("out-1");
+    expect(serviceMock.getInventory.calls[0][1]).toBe("biz-1");
   });
 
   it("returns error response when get inventory fails", async () => {
@@ -56,7 +61,7 @@ describe("modules/inventory/inventory.controller", () => {
 
     const res = await controller.getInventoryController({
       query: {},
-      store: {},
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);
@@ -65,14 +70,13 @@ describe("modules/inventory/inventory.controller", () => {
 
   it("returns error response when adjust fails", async () => {
     const set = {};
-    const store = { user: { id: "u1" }, outletId: "out-1" };
     serviceMock.adjustInventory.mockImplementation(async () => {
       throw new Error("fail");
     });
 
     const res = await controller.adjustInventoryController({
       body: { productId: "p1" },
-      store,
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);
@@ -81,41 +85,39 @@ describe("modules/inventory/inventory.controller", () => {
 
   it("adjusts inventory successfully", async () => {
     const set = {};
-    const store = { user: { id: "u1" }, outletId: "out-1" };
     const res = await controller.adjustInventoryController({
       body: { productId: "p1" },
-      store,
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(serviceMock.adjustInventory.calls[0][1]).toBe("u1");
+    expect(serviceMock.adjustInventory.calls[0][2]).toBe("biz-1");
   });
 
   it("transfers inventory with outlet from store", async () => {
     const set = {};
-    const store = { user: { id: "u1" }, outletId: "out-1" };
-
     const res = await controller.transferInventoryController({
-      body: { fromWarehouseId: "w1", outletId: "q" },
-      store,
+      body: { fromWarehouseId: "w1" },
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(serviceMock.transferInventory.calls[0][0].outletId).toBe("out-1");
+    expect(serviceMock.transferInventory.calls[0][2]).toBe("biz-1");
   });
 
   it("returns error when transfer fails", async () => {
     const set = {};
-    const store = { user: { id: "u1" } };
     serviceMock.transferInventory.mockImplementation(async () => {
       throw new Error("fail");
     });
 
     const res = await controller.transferInventoryController({
       body: { outletId: "out" },
-      store,
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);
@@ -124,16 +126,15 @@ describe("modules/inventory/inventory.controller", () => {
 
   it("gets stock movements with outlet from store", async () => {
     const set = {};
-    const store = { outletId: "out-1" };
-
     const res = await controller.getStockMovementsController({
       query: { outletId: "q" },
-      store,
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(serviceMock.getStockMovements.calls[0][0].outletId).toBe("out-1");
+    expect(serviceMock.getStockMovements.calls[0][1]).toBe("biz-1");
   });
 
   it("returns error when get stock movements fails", async () => {
@@ -144,7 +145,7 @@ describe("modules/inventory/inventory.controller", () => {
 
     const res = await controller.getStockMovementsController({
       query: {},
-      store: {},
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);

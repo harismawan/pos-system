@@ -44,11 +44,16 @@ describe("modules/pricing/pricing.controller", () => {
     loggerMock.error.mockReset();
   });
 
+  const mockStore = {
+    user: { id: "u1", businessId: "biz-1" },
+    outletId: "out-1",
+  };
+
   it("returns 400 when required params missing", async () => {
     const set = {};
     const res = await controller.getPriceQuoteController({
       query: {},
-      store: {},
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(400);
@@ -57,17 +62,18 @@ describe("modules/pricing/pricing.controller", () => {
 
   it("returns success when params provided and prefers store outletId", async () => {
     const set = {};
-    const store = { outletId: "out-1" };
     const res = await controller.getPriceQuoteController({
       query: { productId: "p1" },
-      store,
+      store: mockStore,
       set,
     });
     expect(res.success).toBe(true);
-    const [productId, outletId, customerId] = serviceMock.resolvePrice.calls[0];
+    const [productId, outletId, customerId, businessId] =
+      serviceMock.resolvePrice.calls[0];
     expect(productId).toBe("p1");
     expect(outletId).toBe("out-1");
     expect(customerId).toBeUndefined();
+    expect(businessId).toBe("biz-1");
   });
 
   it("handles price quote service errors with custom status code", async () => {
@@ -80,7 +86,7 @@ describe("modules/pricing/pricing.controller", () => {
 
     const res = await controller.getPriceQuoteController({
       query: { productId: "p1", outletId: "out1" },
-      store: {},
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(404);
@@ -92,11 +98,13 @@ describe("modules/pricing/pricing.controller", () => {
     const set = {};
     const res = await controller.createPriceTierController({
       body: { name: "Tier" },
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(201);
     expect(res.success).toBe(true);
     expect(res.data.name).toBe("Tier");
+    expect(serviceMock.createPriceTier.calls[0][1]).toBe("biz-1");
   });
 
   it("handles price tier creation errors", async () => {
@@ -105,7 +113,11 @@ describe("modules/pricing/pricing.controller", () => {
       throw new Error("fail");
     });
 
-    const res = await controller.createPriceTierController({ body: {}, set });
+    const res = await controller.createPriceTierController({
+      body: {},
+      store: mockStore,
+      set,
+    });
     expect(set.status).toBe(500);
     expect(res.success).toBe(false);
     expect(loggerMock.error.calls.length).toBe(1);
@@ -113,9 +125,12 @@ describe("modules/pricing/pricing.controller", () => {
 
   it("returns price tiers list", async () => {
     const set = {};
-    const res = await controller.getPriceTiersController({ set });
+    const res = await controller.getPriceTiersController({
+      store: mockStore,
+      set,
+    });
     expect(res.success).toBe(true);
-    expect(serviceMock.getPriceTiers.calls.length).toBeGreaterThan(0);
+    expect(serviceMock.getPriceTiers.calls[0][0]).toBe("biz-1");
   });
 
   it("handles price tiers errors", async () => {
@@ -126,7 +141,10 @@ describe("modules/pricing/pricing.controller", () => {
       throw err;
     });
 
-    const res = await controller.getPriceTiersController({ set });
+    const res = await controller.getPriceTiersController({
+      store: mockStore,
+      set,
+    });
     expect(set.status).toBe(503);
     expect(res.error).toBe("db down");
     expect(loggerMock.error.calls.length).toBe(1);
@@ -137,10 +155,11 @@ describe("modules/pricing/pricing.controller", () => {
     const res = await controller.updatePriceTierController({
       params: { id: "tier1" },
       body: { name: "Updated" },
+      store: mockStore,
       set,
     });
     expect(res.success).toBe(true);
-    expect(serviceMock.updatePriceTier.calls.length).toBeGreaterThan(0);
+    expect(serviceMock.updatePriceTier.calls[0][2]).toBe("biz-1");
   });
 
   it("handles update price tier errors", async () => {
@@ -152,6 +171,7 @@ describe("modules/pricing/pricing.controller", () => {
     const res = await controller.updatePriceTierController({
       params: { id: "tier1" },
       body: {},
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);
@@ -163,10 +183,11 @@ describe("modules/pricing/pricing.controller", () => {
     const set = {};
     const res = await controller.getProductPricesController({
       params: { productId: "p1" },
+      store: mockStore,
       set,
     });
     expect(res.success).toBe(true);
-    expect(serviceMock.getProductPrices.calls.length).toBeGreaterThan(0);
+    expect(serviceMock.getProductPrices.calls[0][1]).toBe("biz-1");
   });
 
   it("handles product prices errors", async () => {
@@ -177,6 +198,7 @@ describe("modules/pricing/pricing.controller", () => {
 
     const res = await controller.getProductPricesController({
       params: { productId: "p1" },
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);
@@ -193,6 +215,7 @@ describe("modules/pricing/pricing.controller", () => {
     const res = await controller.setProductPriceController({
       params: { productId: "p1" },
       body: { price: 1 },
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);
@@ -205,11 +228,13 @@ describe("modules/pricing/pricing.controller", () => {
     const res = await controller.setProductPriceController({
       params: { productId: "p1" },
       body: { price: 1 },
+      store: mockStore,
       set,
     });
     expect(res.success).toBe(true);
     const callArgs = serviceMock.setProductPrice.calls[0][0];
     expect(callArgs.productId).toBe("p1");
     expect(callArgs.price).toBe(1);
+    expect(serviceMock.setProductPrice.calls[0][1]).toBe("biz-1");
   });
 });

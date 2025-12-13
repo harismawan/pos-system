@@ -9,8 +9,13 @@ import { successResponse, errorResponse } from "../../libs/responses.js";
 
 export async function getProductsController({ query, store, set }) {
   try {
+    const businessId = store.user.businessId;
     const outletId = store.outletId || query.outletId;
-    const result = await productsService.getProducts({ ...query, outletId });
+    const result = await productsService.getProducts({
+      ...query,
+      outletId,
+      businessId,
+    });
 
     return successResponse(PRD.LIST_SUCCESS, result);
   } catch (err) {
@@ -21,9 +26,10 @@ export async function getProductsController({ query, store, set }) {
   }
 }
 
-export async function getProductByIdController({ params, set }) {
+export async function getProductByIdController({ params, store, set }) {
   try {
-    const product = await productsService.getProductById(params.id);
+    const businessId = store.user.businessId;
+    const product = await productsService.getProductById(params.id, businessId);
 
     return successResponse(PRD.GET_SUCCESS, product);
   } catch (err) {
@@ -36,9 +42,10 @@ export async function getProductByIdController({ params, set }) {
   }
 }
 
-export async function createProductController({ body, set }) {
+export async function createProductController({ body, store, set }) {
   try {
-    const product = await productsService.createProduct(body);
+    const businessId = store.user.businessId;
+    const product = await productsService.createProduct(body, businessId);
 
     set.status = 201;
     return successResponse(PRD.CREATE_SUCCESS, product);
@@ -50,9 +57,14 @@ export async function createProductController({ body, set }) {
   }
 }
 
-export async function updateProductController({ params, body, set }) {
+export async function updateProductController({ params, body, store, set }) {
   try {
-    const product = await productsService.updateProduct(params.id, body);
+    const businessId = store.user.businessId;
+    const product = await productsService.updateProduct(
+      params.id,
+      body,
+      businessId,
+    );
 
     return successResponse(PRD.UPDATE_SUCCESS, product);
   } catch (err) {
@@ -63,9 +75,10 @@ export async function updateProductController({ params, body, set }) {
   }
 }
 
-export async function deleteProductController({ params, set }) {
+export async function deleteProductController({ params, store, set }) {
   try {
-    const result = await productsService.deleteProduct(params.id);
+    const businessId = store.user.businessId;
+    const result = await productsService.deleteProduct(params.id, businessId);
 
     return successResponse(PRD.DELETE_SUCCESS, result);
   } catch (err) {

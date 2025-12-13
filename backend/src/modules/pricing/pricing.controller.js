@@ -11,6 +11,7 @@ export async function getPriceQuoteController({ query, store, set }) {
   try {
     const { productId, customerId } = query;
     const outletId = store.outletId || query.outletId;
+    const businessId = store.user.businessId;
 
     if (!productId || !outletId) {
       set.status = 400;
@@ -24,6 +25,7 @@ export async function getPriceQuoteController({ query, store, set }) {
       productId,
       outletId,
       customerId,
+      businessId,
     );
 
     return successResponse(PRC.QUOTE_SUCCESS, quote);
@@ -35,9 +37,10 @@ export async function getPriceQuoteController({ query, store, set }) {
   }
 }
 
-export async function getPriceTiersController({ set }) {
+export async function getPriceTiersController({ store, set }) {
   try {
-    const tiers = await pricingService.getPriceTiers();
+    const businessId = store.user.businessId;
+    const tiers = await pricingService.getPriceTiers(businessId);
 
     return successResponse(PRC.LIST_TIERS_SUCCESS, tiers);
   } catch (err) {
@@ -48,9 +51,10 @@ export async function getPriceTiersController({ set }) {
   }
 }
 
-export async function createPriceTierController({ body, set }) {
+export async function createPriceTierController({ body, store, set }) {
   try {
-    const tier = await pricingService.createPriceTier(body);
+    const businessId = store.user.businessId;
+    const tier = await pricingService.createPriceTier(body, businessId);
 
     set.status = 201;
     return successResponse(PRC.CREATE_TIER_SUCCESS, tier);
@@ -62,9 +66,14 @@ export async function createPriceTierController({ body, set }) {
   }
 }
 
-export async function updatePriceTierController({ params, body, set }) {
+export async function updatePriceTierController({ params, body, store, set }) {
   try {
-    const tier = await pricingService.updatePriceTier(params.id, body);
+    const businessId = store.user.businessId;
+    const tier = await pricingService.updatePriceTier(
+      params.id,
+      body,
+      businessId,
+    );
 
     return successResponse(PRC.UPDATE_TIER_SUCCESS, tier);
   } catch (err) {
@@ -75,9 +84,13 @@ export async function updatePriceTierController({ params, body, set }) {
   }
 }
 
-export async function getProductPricesController({ params, set }) {
+export async function getProductPricesController({ params, store, set }) {
   try {
-    const prices = await pricingService.getProductPrices(params.productId);
+    const businessId = store.user.businessId;
+    const prices = await pricingService.getProductPrices(
+      params.productId,
+      businessId,
+    );
 
     return successResponse(PRC.GET_PRICES_SUCCESS, prices);
   } catch (err) {
@@ -88,12 +101,16 @@ export async function getProductPricesController({ params, set }) {
   }
 }
 
-export async function setProductPriceController({ params, body, set }) {
+export async function setProductPriceController({ params, body, store, set }) {
   try {
-    const price = await pricingService.setProductPrice({
-      productId: params.productId,
-      ...body,
-    });
+    const businessId = store.user.businessId;
+    const price = await pricingService.setProductPrice(
+      {
+        productId: params.productId,
+        ...body,
+      },
+      businessId,
+    );
 
     return successResponse(PRC.SET_PRICE_SUCCESS, price);
   } catch (err) {

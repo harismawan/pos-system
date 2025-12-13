@@ -6,9 +6,14 @@ import prisma from "../../libs/prisma.js";
 import { enqueueAuditLogJob } from "../../libs/jobs.js";
 
 export async function getOutlets(filters = {}) {
-  const { isActive, page = 1, limit = 50 } = filters;
+  const { isActive, page = 1, limit = 50, businessId } = filters;
 
-  const where = {};
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
+  const where = { businessId };
 
   if (isActive !== undefined) {
     where.isActive = isActive;
@@ -47,7 +52,12 @@ export async function getOutlets(filters = {}) {
   };
 }
 
-export async function getOutletById(id) {
+export async function getOutletById(id, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const outlet = await prisma.outlet.findUnique({
     where: { id },
     include: {
@@ -70,16 +80,24 @@ export async function getOutletById(id) {
     },
   });
 
-  if (!outlet) {
+  if (!outlet || outlet.businessId !== businessId) {
     throw new Error("Outlet not found");
   }
 
   return outlet;
 }
 
-export async function createOutlet(data, userId) {
+export async function createOutlet(data, userId, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const outlet = await prisma.outlet.create({
-    data,
+    data: {
+      ...data,
+      businessId,
+    },
     include: {
       defaultPriceTier: true,
     },
@@ -100,7 +118,18 @@ export async function createOutlet(data, userId) {
   return outlet;
 }
 
-export async function updateOutlet(id, data, userId) {
+export async function updateOutlet(id, data, userId, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
+  // Verify outlet belongs to business
+  const existing = await prisma.outlet.findUnique({ where: { id } });
+  if (!existing || existing.businessId !== businessId) {
+    throw new Error("Outlet not found");
+  }
+
   const outlet = await prisma.outlet.update({
     where: { id },
     data,
@@ -124,7 +153,18 @@ export async function updateOutlet(id, data, userId) {
   return outlet;
 }
 
-export async function deleteOutlet(id) {
+export async function deleteOutlet(id, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
+  // Verify outlet belongs to business
+  const existing = await prisma.outlet.findUnique({ where: { id } });
+  if (!existing || existing.businessId !== businessId) {
+    throw new Error("Outlet not found");
+  }
+
   // Check if outlet has orders
   const orderCount = await prisma.posOrder.count({
     where: { outletId: id },

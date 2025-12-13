@@ -17,6 +17,8 @@ mock.module("../../../src/libs/jobs.js", () => jobsMock);
 const inventoryService =
   await import("../../../src/modules/inventory/inventory.service.js");
 
+const businessId = "biz-1";
+
 describe("modules/inventory/inventory.service", () => {
   beforeEach(() => {
     prismaMock.inventory.findUnique.mockReset?.();
@@ -28,8 +30,15 @@ describe("modules/inventory/inventory.service", () => {
     prismaMock.inventory.count.mockReset?.();
     prismaMock.stockMovement.findMany?.mockReset?.();
     prismaMock.stockMovement.count?.mockReset?.();
+    prismaMock.product.findUnique?.mockReset?.();
     jobsMock.enqueueAuditLogJob.mockReset?.();
     loggerMock.info.mockReset?.();
+
+    // Default mock for product validation
+    prismaMock.product.findUnique.mockResolvedValue({
+      id: "p1",
+      businessId: businessId, // Ensure product belongs to business
+    });
   });
 
   it("rejects invalid adjustment types", async () => {
@@ -43,6 +52,7 @@ describe("modules/inventory/inventory.service", () => {
           type: "INVALID",
         },
         "user-1",
+        businessId,
       ),
     ).rejects.toThrow("Invalid adjustment type");
   });
@@ -62,6 +72,7 @@ describe("modules/inventory/inventory.service", () => {
           type: "ADJUSTMENT_OUT",
         },
         "user-1",
+        businessId,
       ),
     ).rejects.toThrow("Adjustment would result in negative inventory");
 
@@ -88,6 +99,7 @@ describe("modules/inventory/inventory.service", () => {
         type: "ADJUSTMENT_IN",
       },
       "user-1",
+      businessId,
     );
 
     expect(result.id).toBe("inv1");
@@ -108,6 +120,7 @@ describe("modules/inventory/inventory.service", () => {
           quantity: 1,
         },
         "user",
+        businessId,
       ),
     ).rejects.toThrow("Cannot transfer to the same warehouse");
 
@@ -122,6 +135,7 @@ describe("modules/inventory/inventory.service", () => {
           quantity: 5,
         },
         "user",
+        businessId,
       ),
     ).rejects.toThrow("Insufficient inventory for transfer");
   });
@@ -142,11 +156,14 @@ describe("modules/inventory/inventory.service", () => {
       },
     ]);
 
-    const result = await inventoryService.getInventory({
-      lowStock: true,
-      page: 1,
-      limit: 1,
-    });
+    const result = await inventoryService.getInventory(
+      {
+        lowStock: true,
+        page: 1,
+        limit: 1,
+      },
+      businessId,
+    );
 
     expect(prismaMock.$queryRawUnsafe.calls.length).toBeGreaterThanOrEqual(2);
     expect(result.inventories.length).toBe(1);
@@ -157,13 +174,16 @@ describe("modules/inventory/inventory.service", () => {
     prismaMock.inventory.findMany.mockResolvedValue([{ id: "inv1" }]);
     prismaMock.inventory.count.mockResolvedValue(1);
 
-    const result = await inventoryService.getInventory({
-      productId: "p1",
-      warehouseId: "w1",
-      outletId: "out1",
-      page: 2,
-      limit: 5,
-    });
+    const result = await inventoryService.getInventory(
+      {
+        productId: "p1",
+        warehouseId: "w1",
+        outletId: "out1",
+        page: 2,
+        limit: 5,
+      },
+      businessId,
+    );
 
     const args = prismaMock.inventory.findMany.calls[0][0];
     expect(args.where.productId).toBe("p1");
@@ -174,12 +194,15 @@ describe("modules/inventory/inventory.service", () => {
   it("constructs correct raw query for low stock with all filters", async () => {
     prismaMock.$queryRawUnsafe.mockResolvedValue([{ count: 0 }]); // simplifies validation, we only check call args
 
-    await inventoryService.getInventory({
-      lowStock: true,
-      productId: "prod1",
-      warehouseId: "ware1",
-      outletId: "out1",
-    });
+    await inventoryService.getInventory(
+      {
+        lowStock: true,
+        productId: "p1", // matches mocked product p1
+        warehouseId: "ware1",
+        outletId: "out1",
+      },
+      businessId,
+    );
 
     const calls = prismaMock.$queryRawUnsafe.calls;
     // Should be called twice (count + ids)
@@ -191,7 +214,8 @@ describe("modules/inventory/inventory.service", () => {
     expect(querySql).toContain("i.product_id = $");
     expect(querySql).toContain("i.warehouse_id = $");
     expect(querySql).toContain("w.outlet_id = $");
-    expect(queryParams).toContain("prod1");
+    // Parameters order might vary but they should be present
+    expect(queryParams).toContain("p1");
     expect(queryParams).toContain("ware1");
     expect(queryParams).toContain("out1");
   });
@@ -200,11 +224,14 @@ describe("modules/inventory/inventory.service", () => {
     prismaMock.stockMovement.findMany.mockResolvedValue([]);
     prismaMock.stockMovement.count.mockResolvedValue(0);
 
-    await inventoryService.getStockMovements({
-      productId: "p1",
-      outletId: "o1",
-      type: "SALE",
-    });
+    await inventoryService.getStockMovements(
+      {
+        productId: "p1",
+        outletId: "o1",
+        type: "SALE",
+      },
+      businessId,
+    );
 
     const args = prismaMock.stockMovement.findMany.calls[0][0];
     expect(args.where.productId).toBe("p1");
@@ -225,6 +252,7 @@ describe("modules/inventory/inventory.service", () => {
           quantity: 1,
         },
         "user",
+        businessId,
       ),
     ).rejects.toThrow("Source inventory not found");
   });
@@ -251,6 +279,7 @@ describe("modules/inventory/inventory.service", () => {
         quantity: 5,
       },
       "user-1",
+      businessId,
     );
 
     expect(res.source.id).toBe("inv-updated");
@@ -265,15 +294,99 @@ describe("modules/inventory/inventory.service", () => {
     ]);
     prismaMock.stockMovement.count.mockResolvedValue(1);
 
-    const result = await inventoryService.getStockMovements({
-      warehouseId: "w1",
-      type: "SALE",
-      page: 1,
-      limit: 10,
-    });
+    const result = await inventoryService.getStockMovements(
+      {
+        warehouseId: "w1",
+        type: "SALE",
+        page: 1,
+        limit: 10,
+      },
+      businessId,
+    );
 
     expect(result.movements.length).toBe(1);
     const whereArg = prismaMock.stockMovement.findMany.calls[0][0].where;
     expect(whereArg.OR).toBeDefined();
+  });
+
+  it("throws when businessId is missing in getInventory", async () => {
+    await expect(inventoryService.getInventory({})).rejects.toThrow(
+      "businessId is required",
+    );
+  });
+
+  it("throws when product not found or belongs to another business in getInventory (normal)", async () => {
+    prismaMock.product.findUnique.mockResolvedValue({
+      id: "p2",
+      businessId: "other",
+    });
+    await expect(
+      inventoryService.getInventory({ productId: "p2" }, businessId),
+    ).rejects.toThrow("Product not found");
+  });
+
+  it("throws when product not found or belongs to another business in getInventory (lowStock)", async () => {
+    prismaMock.product.findUnique.mockResolvedValue({
+      id: "p2",
+      businessId: "other",
+    });
+    await expect(
+      inventoryService.getInventory(
+        { productId: "p2", lowStock: true },
+        businessId,
+      ),
+    ).rejects.toThrow("Product not found");
+  });
+
+  it("throws when businessId is missing in adjustInventory", async () => {
+    await expect(inventoryService.adjustInventory({}, "user")).rejects.toThrow(
+      "businessId is required",
+    );
+  });
+
+  it("throws when product not found or belongs to another business in adjustInventory", async () => {
+    prismaMock.product.findUnique.mockResolvedValue({
+      id: "p2",
+      businessId: "other",
+    });
+    await expect(
+      inventoryService.adjustInventory({ productId: "p2" }, "user", businessId),
+    ).rejects.toThrow("Product not found");
+  });
+
+  it("throws when businessId is missing in transferInventory", async () => {
+    await expect(
+      inventoryService.transferInventory({}, "user"),
+    ).rejects.toThrow("businessId is required");
+  });
+
+  it("throws when product not found or belongs to another business in transferInventory", async () => {
+    prismaMock.product.findUnique.mockResolvedValue({
+      id: "p2",
+      businessId: "other",
+    });
+    await expect(
+      inventoryService.transferInventory(
+        { productId: "p2" },
+        "user",
+        businessId,
+      ),
+    ).rejects.toThrow("Product not found");
+  });
+
+  it("throws when businessId is missing in getStockMovements", async () => {
+    await expect(inventoryService.getStockMovements({})).rejects.toThrow(
+      "businessId is required",
+    );
+  });
+
+  it("throws when product not found or belongs to another business in getStockMovements", async () => {
+    prismaMock.product.findUnique.mockResolvedValue({
+      id: "p2",
+      businessId: "other",
+    });
+    await expect(
+      inventoryService.getStockMovements({ productId: "p2" }, businessId),
+    ).rejects.toThrow("Product not found");
   });
 });

@@ -9,11 +9,15 @@ import { successResponse, errorResponse } from "../../libs/responses.js";
 
 export async function getPurchaseOrdersController({ query, store, set }) {
   try {
+    const businessId = store.user.businessId;
     const outletId = store.outletId || query.outletId;
-    const result = await purchaseOrdersService.getPurchaseOrders({
-      ...query,
-      outletId,
-    });
+    const result = await purchaseOrdersService.getPurchaseOrders(
+      {
+        ...query,
+        outletId,
+      },
+      businessId,
+    );
 
     return successResponse(POR.LIST_SUCCESS, result);
   } catch (err) {
@@ -24,9 +28,13 @@ export async function getPurchaseOrdersController({ query, store, set }) {
   }
 }
 
-export async function getPurchaseOrderByIdController({ params, set }) {
+export async function getPurchaseOrderByIdController({ params, store, set }) {
   try {
-    const order = await purchaseOrdersService.getPurchaseOrderById(params.id);
+    const businessId = store.user.businessId;
+    const order = await purchaseOrdersService.getPurchaseOrderById(
+      params.id,
+      businessId,
+    );
 
     return successResponse(POR.GET_SUCCESS, order);
   } catch (err) {
@@ -43,7 +51,12 @@ export async function getPurchaseOrderByIdController({ params, set }) {
 export async function createPurchaseOrderController({ body, store, set }) {
   try {
     const userId = store.user.id;
-    const order = await purchaseOrdersService.createPurchaseOrder(body, userId);
+    const businessId = store.user.businessId;
+    const order = await purchaseOrdersService.createPurchaseOrder(
+      body,
+      userId,
+      businessId,
+    );
 
     set.status = 201;
     return successResponse(POR.CREATE_SUCCESS, order);
@@ -63,10 +76,12 @@ export async function updatePurchaseOrderController({
 }) {
   try {
     const userId = store.user.id;
+    const businessId = store.user.businessId;
     const order = await purchaseOrdersService.updatePurchaseOrder(
       params.id,
       body,
       userId,
+      businessId,
     );
 
     return successResponse(POR.UPDATE_SUCCESS, order);
@@ -86,10 +101,12 @@ export async function receivePurchaseOrderController({
 }) {
   try {
     const userId = store.user.id;
+    const businessId = store.user.businessId;
     const order = await purchaseOrdersService.receivePurchaseOrder(
       params.id,
       body.receivedItems,
       userId,
+      businessId,
     );
 
     return successResponse(POR.RECEIVE_SUCCESS, order);
@@ -104,9 +121,11 @@ export async function receivePurchaseOrderController({
 export async function cancelPurchaseOrderController({ params, store, set }) {
   try {
     const userId = store.user.id;
+    const businessId = store.user.businessId;
     const order = await purchaseOrdersService.cancelPurchaseOrder(
       params.id,
       userId,
+      businessId,
     );
 
     return successResponse(POR.CANCEL_SUCCESS, order);

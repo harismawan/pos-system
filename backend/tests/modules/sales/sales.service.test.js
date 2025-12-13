@@ -30,6 +30,8 @@ mock.module("../../../src/libs/logger.js", () => ({ default: loggerMock }));
 const salesService =
   await import("../../../src/modules/sales/sales.service.js?service");
 
+const businessId = "biz-1";
+
 describe("modules/sales/sales.service", () => {
   beforeEach(() => {
     prismaMock.posOrder.findUnique.mockReset?.();
@@ -43,6 +45,8 @@ describe("modules/sales/sales.service", () => {
     prismaMock.inventory.update?.mockReset?.();
     prismaMock.payment.create?.mockReset?.();
     prismaMock.payment.findMany?.mockReset?.();
+    prismaMock.product.findUnique?.mockReset?.();
+    prismaMock.customer.findUnique?.mockReset?.();
     jobsMock.enqueueAuditLogJob.mockReset();
     jobsMock.enqueueEmailNotificationJob.mockReset();
     loggerMock.info.mockReset();
@@ -58,11 +62,12 @@ describe("modules/sales/sales.service", () => {
       id: "o1",
       status: "COMPLETED",
       paymentStatus: "PAID",
+      outlet: { businessId },
     }));
 
-    await expect(salesService.completePosOrder("o1", "u1")).rejects.toThrow(
-      "Order is not open",
-    );
+    await expect(
+      salesService.completePosOrder("o1", "u1", businessId),
+    ).rejects.toThrow("Order is not open");
   });
 
   it("throws when completing an unpaid order", async () => {
@@ -70,15 +75,22 @@ describe("modules/sales/sales.service", () => {
       id: "o1",
       status: "OPEN",
       paymentStatus: "PARTIAL",
+      outlet: { businessId },
     }));
 
-    await expect(salesService.completePosOrder("o1", "u1")).rejects.toThrow(
-      "Order must be fully paid before completion",
-    );
+    await expect(
+      salesService.completePosOrder("o1", "u1", businessId),
+    ).rejects.toThrow("Order must be fully paid before completion");
   });
 
   it("creates POS order with calculated totals and price tiers", async () => {
-    prismaMock.outlet.findUnique.mockResolvedValue({ code: "OUT1" });
+    prismaMock.outlet.findUnique.mockResolvedValue({
+      code: "OUT1",
+      businessId,
+    });
+    prismaMock.product.findUnique.mockResolvedValue({ id: "p1", businessId });
+    prismaMock.customer.findUnique.mockResolvedValue({ id: "c1", businessId });
+
     let createArgs;
     prismaMock.posOrder.create.mockImplementation(async (args) => {
       createArgs = args;
@@ -108,6 +120,7 @@ describe("modules/sales/sales.service", () => {
         notes: "note",
       },
       "u1",
+      businessId,
     );
 
     Math.random = originalRandom;
@@ -121,24 +134,32 @@ describe("modules/sales/sales.service", () => {
   });
 
   it("gets POS orders with filters and pagination", async () => {
+    prismaMock.outlet.findUnique.mockResolvedValue({ id: "out-1", businessId });
+    prismaMock.customer.findUnique.mockResolvedValue({ id: "c1", businessId });
     prismaMock.posOrder.findMany.mockResolvedValue([{ id: "o1" }]);
     prismaMock.posOrder.count.mockResolvedValue(1);
 
-    const res = await salesService.getPosOrders({
-      outletId: "out-1",
-      status: "OPEN",
-      customerId: "c1",
-      cashierId: "u1",
-      page: 2,
-      limit: 5,
-    });
+    const res = await salesService.getPosOrders(
+      {
+        outletId: "out-1",
+        status: "OPEN",
+        customerId: "c1",
+        cashierId: "u1",
+        page: 2,
+        limit: 5,
+        businessId,
+      },
+      businessId,
+    );
 
     const args = prismaMock.posOrder.findMany.calls[0][0];
+    // The service adds outlet: { businessId } to ensure isolation
     expect(args.where).toEqual({
       outletId: "out-1",
       status: "OPEN",
       customerId: "c1",
       cashierId: "u1",
+      outlet: { businessId: "biz-1" },
     });
     expect(args.skip).toBe(5);
     expect(res.pagination.totalPages).toBe(1);
@@ -149,9 +170,10 @@ describe("modules/sales/sales.service", () => {
       id: "o1",
       items: [],
       payments: [],
+      outlet: { businessId },
     });
 
-    const res = await salesService.getPosOrderById("o1");
+    const res = await salesService.getPosOrderById("o1", businessId);
 
     expect(res.id).toBe("o1");
     const args = prismaMock.posOrder.findUnique.calls[0][0];
@@ -169,6 +191,7 @@ describe("modules/sales/sales.service", () => {
       totalAmount: 20,
       customer: { name: "Cust", email: "a@test.com" },
       items: [{ productId: "p1", quantity: 2 }],
+      outlet: { businessId },
     });
     prismaMock.inventory.findUnique.mockResolvedValue({ id: "inv1" });
     prismaMock.posOrder.update.mockResolvedValue({
@@ -176,7 +199,7 @@ describe("modules/sales/sales.service", () => {
       status: "COMPLETED",
     });
 
-    const res = await salesService.completePosOrder("o1", "u1");
+    const res = await salesService.completePosOrder("o1", "u1", businessId);
 
     expect(res.status).toBe("COMPLETED");
     expect(prismaMock.stockMovement.create.calls.length).toBe(1);
@@ -199,6 +222,7 @@ describe("modules/sales/sales.service", () => {
       totalAmount: 20,
       customer: null,
       items: [{ productId: "p1", quantity: 1 }],
+      outlet: { businessId },
     });
     prismaMock.inventory.findUnique.mockResolvedValue({ id: "inv1" });
     prismaMock.posOrder.update.mockResolvedValue({
@@ -206,7 +230,7 @@ describe("modules/sales/sales.service", () => {
       status: "COMPLETED",
     });
 
-    await salesService.completePosOrder("o1", "u1");
+    await salesService.completePosOrder("o1", "u1", businessId);
 
     expect(jobsMock.enqueueEmailNotificationJob.calls.length).toBe(0);
   });
@@ -217,13 +241,14 @@ describe("modules/sales/sales.service", () => {
       status: "OPEN",
       outletId: "out-1",
       orderNumber: "POS-1",
+      outlet: { businessId },
     });
     prismaMock.posOrder.update.mockResolvedValue({
       id: "o1",
       status: "CANCELLED",
     });
 
-    const res = await salesService.cancelPosOrder("o1", "u1");
+    const res = await salesService.cancelPosOrder("o1", "u1", businessId);
 
     expect(res.status).toBe("CANCELLED");
     expect(jobsMock.enqueueAuditLogJob.calls.at(-1)[0].eventType).toBe(
@@ -235,11 +260,12 @@ describe("modules/sales/sales.service", () => {
     prismaMock.posOrder.findUnique.mockResolvedValue({
       id: "o1",
       status: "COMPLETED",
+      outlet: { businessId },
     });
 
-    await expect(salesService.cancelPosOrder("o1", "u1")).rejects.toThrow(
-      "Only open orders can be cancelled",
-    );
+    await expect(
+      salesService.cancelPosOrder("o1", "u1", businessId),
+    ).rejects.toThrow("Only open orders can be cancelled");
   });
 
   it("adds payment and updates status to PAID", async () => {
@@ -247,6 +273,7 @@ describe("modules/sales/sales.service", () => {
       id: "o1",
       status: "OPEN",
       totalAmount: 100,
+      outlet: { businessId },
     });
     prismaMock.payment.create.mockResolvedValue({ id: "pay1" });
     prismaMock.payment.findMany.mockResolvedValue([{ amount: 100 }]);
@@ -255,10 +282,14 @@ describe("modules/sales/sales.service", () => {
       paymentStatus: "PAID",
     });
 
-    const res = await salesService.addPayment("o1", {
-      method: "CASH",
-      amount: 100,
-    });
+    const res = await salesService.addPayment(
+      "o1",
+      {
+        method: "CASH",
+        amount: 100,
+      },
+      businessId,
+    );
 
     expect(res.order.paymentStatus).toBe("PAID");
     expect(loggerMock.info.calls.length).toBe(1);
@@ -269,6 +300,7 @@ describe("modules/sales/sales.service", () => {
       id: "o1",
       status: "OPEN",
       totalAmount: 100,
+      outlet: { businessId },
     });
     prismaMock.payment.create.mockResolvedValue({ id: "pay1" });
     prismaMock.payment.findMany.mockResolvedValue([{ amount: 50 }]);
@@ -277,10 +309,14 @@ describe("modules/sales/sales.service", () => {
       paymentStatus: "PARTIAL",
     });
 
-    const res = await salesService.addPayment("o1", {
-      method: "CARD",
-      amount: 50,
-    });
+    const res = await salesService.addPayment(
+      "o1",
+      {
+        method: "CARD",
+        amount: 50,
+      },
+      businessId,
+    );
 
     expect(res.order.paymentStatus).toBe("PARTIAL");
   });
@@ -289,10 +325,122 @@ describe("modules/sales/sales.service", () => {
     prismaMock.posOrder.findUnique.mockResolvedValue({
       id: "o1",
       status: "COMPLETED",
+      outlet: { businessId },
     });
 
     await expect(
-      salesService.addPayment("o1", { method: "CARD", amount: 10 }),
+      salesService.addPayment("o1", { method: "CARD", amount: 10 }, businessId),
     ).rejects.toThrow("Cannot add payment to non-open order");
+  });
+
+  describe("Validation & Error Handling", () => {
+    it("throws when businessId is missing in createPosOrder", async () => {
+      await expect(salesService.createPosOrder({}, "u1")).rejects.toThrow(
+        "businessId is required",
+      );
+    });
+
+    it("throws when outlet missing or cross-business in createPosOrder", async () => {
+      prismaMock.outlet.findUnique.mockResolvedValue({
+        id: "o1",
+        businessId: "other",
+      });
+      await expect(
+        salesService.createPosOrder({ outletId: "o1" }, "u1", businessId),
+      ).rejects.toThrow("Outlet not found or access denied");
+    });
+
+    it("throws when customer belongs to another business in createPosOrder", async () => {
+      prismaMock.outlet.findUnique.mockResolvedValue({ id: "o1", businessId });
+      prismaMock.customer.findUnique.mockResolvedValue({
+        id: "c1",
+        businessId: "other",
+      });
+      await expect(
+        salesService.createPosOrder(
+          { outletId: "o1", customerId: "c1" },
+          "u1",
+          businessId,
+        ),
+      ).rejects.toThrow("Customer not found");
+    });
+
+    it("throws when product belongs to another business in createPosOrder", async () => {
+      prismaMock.outlet.findUnique.mockResolvedValue({ id: "o1", businessId });
+      prismaMock.product.findUnique.mockResolvedValue({
+        id: "p1",
+        businessId: "other",
+      });
+      await expect(
+        salesService.createPosOrder(
+          {
+            outletId: "o1",
+            items: [{ productId: "p1", quantity: 1 }],
+          },
+          "u1",
+          businessId,
+        ),
+      ).rejects.toThrow("Product p1 not found");
+    });
+
+    it("throws when businessId is missing in getPosOrderById", async () => {
+      await expect(salesService.getPosOrderById("o1")).rejects.toThrow(
+        "businessId is required",
+      );
+    });
+
+    it("throws when order belongs to another business in getPosOrderById", async () => {
+      prismaMock.posOrder.findUnique.mockResolvedValue({
+        id: "o1",
+        outlet: { businessId: "other" },
+      });
+      await expect(
+        salesService.getPosOrderById("o1", businessId),
+      ).rejects.toThrow("Order not found");
+    });
+
+    it("throws when businessId is missing in getPosOrders", async () => {
+      await expect(salesService.getPosOrders({})).rejects.toThrow(
+        "businessId is required",
+      );
+    });
+
+    it("throws when outlet belongs to another business in getPosOrders", async () => {
+      prismaMock.outlet.findUnique.mockResolvedValue({
+        id: "o1",
+        businessId: "other",
+      });
+      await expect(
+        salesService.getPosOrders({ outletId: "o1" }, businessId),
+      ).rejects.toThrow("Outlet not found");
+    });
+
+    it("throws when customer belongs to another business in getPosOrders", async () => {
+      prismaMock.customer.findUnique.mockResolvedValue({
+        id: "c1",
+        businessId: "other",
+      });
+      await expect(
+        salesService.getPosOrders({ customerId: "c1" }, businessId),
+      ).rejects.toThrow("Customer not found");
+    });
+
+    it("throws when businessId is missing in completePosOrder", async () => {
+      await expect(salesService.completePosOrder("o1", "u1")).rejects.toThrow(
+        "businessId is required",
+      );
+    });
+
+    it("throws when businessId is missing in cancelPosOrder", async () => {
+      await expect(salesService.cancelPosOrder("o1", "u1")).rejects.toThrow(
+        "businessId is required",
+      );
+    });
+
+    it("throws when businessId is missing in addPayment", async () => {
+      await expect(salesService.addPayment("o1", {})).rejects.toThrow(
+        "businessId is required",
+      );
+    });
   });
 });

@@ -39,16 +39,26 @@ describe("modules/reports/reports.controller", () => {
     loggerMock.error.mockReset();
   });
 
+  const mockStore = {
+    user: { id: "u1", businessId: "biz-1" },
+    outletId: "store-1",
+  };
+
+  const mockStoreAdmin = {
+    user: { id: "u1", businessId: "biz-1" },
+  };
+
   it("passes outletId from query for top products", async () => {
     const set = {};
     const res = await controller.getTopProductsController({
       query: { outletId: "q-1" },
-      store: {},
+      store: mockStoreAdmin,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(serviceMock.getTopProducts.calls[0][0].outletId).toBe("q-1");
+    expect(serviceMock.getTopProducts.calls[0][1]).toBe("biz-1");
   });
 
   it("returns error when top products fails", async () => {
@@ -59,7 +69,7 @@ describe("modules/reports/reports.controller", () => {
 
     const res = await controller.getTopProductsController({
       query: {},
-      store: {},
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);
@@ -70,6 +80,7 @@ describe("modules/reports/reports.controller", () => {
     const set = {};
     const res = await controller.getInventoryValuationController({
       query: { warehouseId: "w1" },
+      store: mockStore,
       set,
     });
 
@@ -77,6 +88,7 @@ describe("modules/reports/reports.controller", () => {
     expect(serviceMock.getInventoryValuation.calls[0][0].warehouseId).toBe(
       "w1",
     );
+    expect(serviceMock.getInventoryValuation.calls[0][1]).toBe("biz-1");
   });
 
   it("returns error when inventory valuation fails with custom status", async () => {
@@ -89,6 +101,7 @@ describe("modules/reports/reports.controller", () => {
 
     const res = await controller.getInventoryValuationController({
       query: {},
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(422);
@@ -97,47 +110,45 @@ describe("modules/reports/reports.controller", () => {
 
   it("returns error when stock movement report fails", async () => {
     const set = {};
-    const store = { outletId: "out-1" };
     serviceMock.getStockMovementReport.mockImplementation(async () => {
       throw new Error("boom");
     });
 
     const res = await controller.getStockMovementsController({
       query: {},
-      store,
+      store: mockStore,
       set,
     });
 
     expect(set.status).toBe(500);
     expect(res.success).toBe(false);
-
-    serviceMock.getStockMovementReport.mockImplementation(async () => ({
-      movements: [],
-    }));
   });
 
   it("passes outletId from query for stock movements", async () => {
     const set = {};
     const res = await controller.getStockMovementsController({
       query: { outletId: "q-2" },
-      store: {},
+      store: mockStoreAdmin,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(serviceMock.getStockMovementReport.calls[0][0].outletId).toBe("q-2");
+    expect(serviceMock.getStockMovementReport.calls[0][1]).toBe("biz-1");
   });
 
   it("returns order history and prefers store outlet", async () => {
     const set = {};
     const res = await controller.getOrderHistoryController({
       query: { outletId: "q-3" },
-      store: { outletId: "store-1" },
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
+    // Based on logic: store.outletId || query.outletId. mockStore has store-1.
     expect(serviceMock.getOrderHistory.calls[0][0].outletId).toBe("store-1");
+    expect(serviceMock.getOrderHistory.calls[0][1]).toBe("biz-1");
   });
 
   it("returns error when order history fails", async () => {
@@ -148,7 +159,7 @@ describe("modules/reports/reports.controller", () => {
 
     const res = await controller.getOrderHistoryController({
       query: {},
-      store: {},
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);
@@ -159,12 +170,13 @@ describe("modules/reports/reports.controller", () => {
     const set = {};
     const res = await controller.getSalesTrendController({
       query: { startDate: "2024-01-01", endDate: "2024-01-31" },
-      store: { outletId: "store-1" },
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(serviceMock.getSalesTrend.calls[0][0].outletId).toBe("store-1");
+    expect(serviceMock.getSalesTrend.calls[0][1]).toBe("biz-1");
   });
 
   it("returns error when sales trend fails with custom status", async () => {
@@ -177,7 +189,7 @@ describe("modules/reports/reports.controller", () => {
 
     const res = await controller.getSalesTrendController({
       query: {},
-      store: {},
+      store: mockStore,
       set,
     });
 
@@ -193,7 +205,7 @@ describe("modules/reports/reports.controller", () => {
 
     const res = await controller.getSalesTrendController({
       query: {},
-      store: {},
+      store: mockStore,
       set,
     });
 
@@ -205,14 +217,15 @@ describe("modules/reports/reports.controller", () => {
     const set = {};
     const res = await controller.getHourlySalesHeatmapController({
       query: { startDate: "2024-01-01" },
-      store: { outletId: "store-2" },
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(serviceMock.getHourlySalesHeatmap.calls[0][0].outletId).toBe(
-      "store-2",
+      "store-1",
     );
+    expect(serviceMock.getHourlySalesHeatmap.calls[0][1]).toBe("biz-1");
   });
 
   it("returns error when hourly heatmap fails with custom status", async () => {
@@ -225,7 +238,7 @@ describe("modules/reports/reports.controller", () => {
 
     const res = await controller.getHourlySalesHeatmapController({
       query: {},
-      store: {},
+      store: mockStore,
       set,
     });
 
@@ -241,7 +254,7 @@ describe("modules/reports/reports.controller", () => {
 
     const res = await controller.getHourlySalesHeatmapController({
       query: {},
-      store: {},
+      store: mockStore,
       set,
     });
 

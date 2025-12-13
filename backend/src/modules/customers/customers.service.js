@@ -5,9 +5,21 @@
 import prisma from "../../libs/prisma.js";
 
 export async function getCustomers(filters = {}) {
-  const { search, priceTierId, isMember, page = 1, limit = 50 } = filters;
+  const {
+    search,
+    priceTierId,
+    isMember,
+    page = 1,
+    limit = 50,
+    businessId,
+  } = filters;
 
-  const where = {};
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
+  const where = { businessId };
 
   if (search) {
     where.OR = [
@@ -51,7 +63,12 @@ export async function getCustomers(filters = {}) {
   };
 }
 
-export async function getCustomerById(id) {
+export async function getCustomerById(id, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const customer = await prisma.customer.findUnique({
     where: { id },
     include: {
@@ -63,16 +80,24 @@ export async function getCustomerById(id) {
     },
   });
 
-  if (!customer) {
+  if (!customer || customer.businessId !== businessId) {
     throw new Error("Customer not found");
   }
 
   return customer;
 }
 
-export async function createCustomer(data) {
+export async function createCustomer(data, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const customer = await prisma.customer.create({
-    data,
+    data: {
+      ...data,
+      businessId,
+    },
     include: {
       priceTier: true,
     },
@@ -81,7 +106,18 @@ export async function createCustomer(data) {
   return customer;
 }
 
-export async function updateCustomer(id, data) {
+export async function updateCustomer(id, data, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
+  // Verify customer belongs to business
+  const existing = await prisma.customer.findUnique({ where: { id } });
+  if (!existing || existing.businessId !== businessId) {
+    throw new Error("Customer not found");
+  }
+
   const customer = await prisma.customer.update({
     where: { id },
     data,
@@ -93,7 +129,18 @@ export async function updateCustomer(id, data) {
   return customer;
 }
 
-export async function deleteCustomer(id) {
+export async function deleteCustomer(id, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
+  // Verify customer belongs to business
+  const existing = await prisma.customer.findUnique({ where: { id } });
+  if (!existing || existing.businessId !== businessId) {
+    throw new Error("Customer not found");
+  }
+
   // Check if customer has orders
   const orderCount = await prisma.posOrder.count({
     where: { customerId: id },

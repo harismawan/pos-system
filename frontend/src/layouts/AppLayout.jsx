@@ -103,6 +103,9 @@ function AppLayout() {
           color: "white",
           display: "flex",
           flexDirection: "column",
+          height: "100vh",
+          position: "sticky",
+          top: 0,
         }}
       >
         <div

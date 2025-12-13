@@ -12,16 +12,20 @@ import { successResponse, errorResponse } from "../../libs/responses.js";
  */
 export async function getAuditLogsController({ query, store, set }) {
   try {
-    const result = await auditLogsService.getAuditLogs({
-      page: query.page,
-      limit: query.limit,
-      eventType: query.eventType,
-      entityType: query.entityType,
-      userId: query.userId,
-      outletId: query.outletId || store.outletId,
-      startDate: query.startDate,
-      endDate: query.endDate,
-    });
+    const businessId = store.user.businessId;
+    const result = await auditLogsService.getAuditLogs(
+      {
+        page: query.page,
+        limit: query.limit,
+        eventType: query.eventType,
+        entityType: query.entityType,
+        userId: query.userId,
+        outletId: store.outletId || query.outletId,
+        startDate: query.startDate,
+        endDate: query.endDate,
+      },
+      businessId,
+    );
 
     return successResponse(AUD.LIST_SUCCESS, result);
   } catch (err) {
@@ -35,9 +39,10 @@ export async function getAuditLogsController({ query, store, set }) {
 /**
  * Get a single audit log by ID
  */
-export async function getAuditLogByIdController({ params, set }) {
+export async function getAuditLogByIdController({ params, store, set }) {
   try {
-    const log = await auditLogsService.getAuditLogById(params.id);
+    const businessId = store.user.businessId;
+    const log = await auditLogsService.getAuditLogById(params.id, businessId);
 
     if (!log) {
       set.status = 404;
@@ -56,9 +61,10 @@ export async function getAuditLogByIdController({ params, set }) {
 /**
  * Get distinct event types for filter dropdown
  */
-export async function getEventTypesController({ set }) {
+export async function getEventTypesController({ store, set }) {
   try {
-    const eventTypes = await auditLogsService.getEventTypes();
+    const businessId = store.user.businessId;
+    const eventTypes = await auditLogsService.getEventTypes(businessId);
     return successResponse(AUD.GET_TYPES_SUCCESS, { eventTypes });
   } catch (err) {
     logger.error({ err }, "Get event types failed");
@@ -71,9 +77,10 @@ export async function getEventTypesController({ set }) {
 /**
  * Get distinct entity types for filter dropdown
  */
-export async function getEntityTypesController({ set }) {
+export async function getEntityTypesController({ store, set }) {
   try {
-    const entityTypes = await auditLogsService.getEntityTypes();
+    const businessId = store.user.businessId;
+    const entityTypes = await auditLogsService.getEntityTypes(businessId);
     return successResponse(AUD.GET_TYPES_SUCCESS, { entityTypes });
   } catch (err) {
     logger.error({ err }, "Get entity types failed");

@@ -29,14 +29,50 @@ const prisma = new PrismaClient({
   ],
 });
 
-async function main() {
-  console.log("🌱 Starting seed...");
+async function seedBusiness(config) {
+  const {
+    code,
+    name,
+    description,
+    ownerUsername,
+    ownerEmail,
+    outletCode,
+    outletName,
+    warehouseCode,
+    products,
+    supplierName,
+    supplierEmail,
+    customerName,
+    customerEmail,
+  } = config;
 
-  // Create default price tiers
-  const retailTier = await prisma.priceTier.upsert({
-    where: { code: "RETAIL" },
+  console.log(`🌱 Seeding business: ${name} (${code})...`);
+
+  // Create business
+  const business = await prisma.business.upsert({
+    where: { code },
     update: {},
     create: {
+      code,
+      name,
+      description,
+      isActive: true,
+    },
+  });
+
+  console.log(`✅ Created business: ${name}`);
+
+  // Create price tiers
+  const retailTier = await prisma.priceTier.upsert({
+    where: {
+      businessId_code: {
+        businessId: business.id,
+        code: "RETAIL",
+      },
+    },
+    update: {},
+    create: {
+      businessId: business.id,
       code: "RETAIL",
       name: "Retail",
       description: "Standard retail pricing",
@@ -45,9 +81,15 @@ async function main() {
   });
 
   const wholesaleTier = await prisma.priceTier.upsert({
-    where: { code: "WHOLESALE" },
+    where: {
+      businessId_code: {
+        businessId: business.id,
+        code: "WHOLESALE",
+      },
+    },
     update: {},
     create: {
+      businessId: business.id,
       code: "WHOLESALE",
       name: "Wholesale",
       description: "Wholesale pricing for bulk purchases",
@@ -56,9 +98,15 @@ async function main() {
   });
 
   const memberTier = await prisma.priceTier.upsert({
-    where: { code: "MEMBER" },
+    where: {
+      businessId_code: {
+        businessId: business.id,
+        code: "MEMBER",
+      },
+    },
     update: {},
     create: {
+      businessId: business.id,
       code: "MEMBER",
       name: "Member",
       description: "Member discount pricing",
@@ -66,33 +114,38 @@ async function main() {
     },
   });
 
-  console.log("✅ Created price tiers");
-
-  // Create default owner user
+  // Create owner user
   const passwordHash = await bcrypt.hash("password123", 10);
 
   const owner = await prisma.user.upsert({
-    where: { username: "owner" },
+    where: { username: ownerUsername },
     update: {},
     create: {
-      username: "owner",
-      name: "System Owner",
+      businessId: business.id,
+      username: ownerUsername,
+      name: `Owner of ${name}`,
       passwordHash,
-      email: "owner@pos-system.local",
+      email: ownerEmail,
       role: "OWNER",
       isActive: true,
     },
   });
 
-  console.log("✅ Created owner user (username: owner, password: password123)");
+  console.log(`✅ Created user: ${ownerUsername}`);
 
-  // Create default outlet
-  const mainOutlet = await prisma.outlet.upsert({
-    where: { code: "MAIN" },
+  // Create outlet
+  const outlet = await prisma.outlet.upsert({
+    where: {
+      businessId_code: {
+        businessId: business.id,
+        code: outletCode,
+      },
+    },
     update: {},
     create: {
-      code: "MAIN",
-      name: "Main Outlet",
+      businessId: business.id,
+      code: outletCode,
+      name: outletName,
       addressLine1: "123 Main Street",
       city: "Jakarta",
       state: "DKI Jakarta",
@@ -104,35 +157,38 @@ async function main() {
     },
   });
 
-  console.log("✅ Created main outlet");
+  console.log(`✅ Created outlet: ${outletName}`);
 
-  // Create outlet-user mapping
+  // Outlet User
   await prisma.outletUser.upsert({
     where: {
       userId_outletId: {
         userId: owner.id,
-        outletId: mainOutlet.id,
+        outletId: outlet.id,
       },
     },
     update: {},
     create: {
       userId: owner.id,
-      outletId: mainOutlet.id,
+      outletId: outlet.id,
       outletRole: "MANAGER",
       isDefaultForUser: true,
     },
   });
 
-  console.log("✅ Mapped owner to main outlet");
-
-  // Create default warehouse
-  const mainWarehouse = await prisma.warehouse.upsert({
-    where: { code: "WH-MAIN" },
+  // Create warehouse
+  const warehouse = await prisma.warehouse.upsert({
+    where: {
+      outletId_code: {
+        outletId: outlet.id,
+        code: warehouseCode,
+      },
+    },
     update: {},
     create: {
-      code: "WH-MAIN",
-      name: "Main Warehouse",
-      outletId: mainOutlet.id,
+      code: warehouseCode,
+      name: `${outletName} Warehouse`,
+      outletId: outlet.id,
       addressLine1: "123 Main Street",
       city: "Jakarta",
       state: "DKI Jakarta",
@@ -144,104 +200,72 @@ async function main() {
     },
   });
 
-  console.log("✅ Created main warehouse");
-
-  // Create default POS register
+  // Create POS Register
   await prisma.posRegister.upsert({
     where: {
       outletId_code: {
-        outletId: mainOutlet.id,
+        outletId: outlet.id,
         code: "REG-01",
       },
     },
     update: {},
     create: {
-      outletId: mainOutlet.id,
+      outletId: outlet.id,
       code: "REG-01",
       name: "Register 1",
       isActive: true,
     },
   });
 
-  console.log("✅ Created POS register");
-
-  // Create sample products
-  const sampleProducts = [
-    {
-      sku: "PROD-001",
-      barcode: "1234567890001",
-      name: "Sample Product 1",
-      description: "This is a sample product",
-      category: "Electronics",
-      unit: "pcs",
-      basePrice: 100000,
-      costPrice: 75000,
-      taxRate: 11,
-    },
-    {
-      sku: "PROD-002",
-      barcode: "1234567890002",
-      name: "Sample Product 2",
-      description: "Another sample product",
-      category: "Electronics",
-      unit: "pcs",
-      basePrice: 250000,
-      costPrice: 180000,
-      taxRate: 11,
-    },
-    {
-      sku: "PROD-003",
-      barcode: "1234567890003",
-      name: "Sample Product 3",
-      description: "Yet another sample product",
-      category: "Accessories",
-      unit: "pcs",
-      basePrice: 50000,
-      costPrice: 30000,
-      taxRate: 11,
-    },
-  ];
-
-  for (const productData of sampleProducts) {
+  // Create products
+  for (const productData of products) {
     const product = await prisma.product.upsert({
-      where: { sku: productData.sku },
+      where: {
+        businessId_sku: {
+          businessId: business.id,
+          sku: productData.sku,
+        },
+      },
       update: {},
-      create: productData,
+      create: {
+        businessId: business.id,
+        ...productData,
+      },
     });
 
-    // Create inventory records
+    // Inventory
     await prisma.inventory.upsert({
       where: {
         productId_warehouseId: {
           productId: product.id,
-          warehouseId: mainWarehouse.id,
+          warehouseId: warehouse.id,
         },
       },
       update: {},
       create: {
         productId: product.id,
-        warehouseId: mainWarehouse.id,
+        warehouseId: warehouse.id,
         quantityOnHand: 100,
         minimumStock: 10,
         maximumStock: 500,
       },
     });
 
-    // Create price tier prices
+    // Prices
     await prisma.productPriceTier.upsert({
       where: {
         productId_priceTierId_outletId: {
           productId: product.id,
           priceTierId: wholesaleTier.id,
-          outletId: mainOutlet.id,
+          outletId: outlet.id,
         },
       },
       update: {},
       create: {
         productId: product.id,
         priceTierId: wholesaleTier.id,
-        outletId: mainOutlet.id,
-        price: productData.basePrice * 0.9, // 10% discount
+        outletId: outlet.id,
+        price: productData.basePrice * 0.9,
       },
     });
 
@@ -250,63 +274,151 @@ async function main() {
         productId_priceTierId_outletId: {
           productId: product.id,
           priceTierId: memberTier.id,
-          outletId: mainOutlet.id,
+          outletId: outlet.id,
         },
       },
       update: {},
       create: {
         productId: product.id,
         priceTierId: memberTier.id,
-        outletId: mainOutlet.id,
-        price: productData.basePrice * 0.95, // 5% discount
+        outletId: outlet.id,
+        price: productData.basePrice * 0.95,
       },
     });
   }
 
-  console.log("✅ Created sample products with inventory and pricing");
-
-  // Create a sample customer
+  // Customer
   await prisma.customer.upsert({
-    where: { email: "customer@example.com" },
+    where: {
+      businessId_email: {
+        businessId: business.id,
+        email: customerEmail,
+      },
+    },
     update: {},
     create: {
-      name: "John Doe",
-      email: "customer@example.com",
+      businessId: business.id,
+      name: customerName,
+      email: customerEmail,
       phone: "+62 812 3456 7890",
       addressLine1: "456 Customer Street",
       city: "Jakarta",
-      state: "DKI Jakarta",
-      postalCode: "12346",
       country: "Indonesia",
       priceTierId: memberTier.id,
       isMember: true,
     },
   });
 
-  console.log("✅ Created sample customer");
-
-  // Create a sample supplier
-  await prisma.supplier.upsert({
-    where: { id: "seed-supplier-1" },
-    update: {},
-    create: {
-      id: "seed-supplier-1",
-      name: "ABC Suppliers Inc.",
-      contactPerson: "Jane Smith",
-      email: "supplier@abc.com",
-      phone: "+62 21 9876 5432",
-      addressLine1: "789 Supplier Avenue",
-      city: "Jakarta",
-      state: "DKI Jakarta",
-      postalCode: "12347",
-      country: "Indonesia",
-      isActive: true,
+  // Supplier
+  const existingSupplier = await prisma.supplier.findFirst({
+    where: {
+      businessId: business.id,
+      email: supplierEmail,
     },
   });
 
-  console.log("✅ Created sample supplier");
+  if (existingSupplier) {
+    await prisma.supplier.update({
+      where: { id: existingSupplier.id },
+      data: {
+        name: supplierName,
+        contactPerson: "Manager",
+        phone: "+62 21 9876 5432",
+        addressLine1: "789 Supplier Avenue",
+        city: "Jakarta",
+        country: "Indonesia",
+        isActive: true,
+      },
+    });
+  } else {
+    await prisma.supplier.create({
+      data: {
+        businessId: business.id,
+        name: supplierName,
+        contactPerson: "Manager",
+        email: supplierEmail,
+        phone: "+62 21 9876 5432",
+        addressLine1: "789 Supplier Avenue",
+        city: "Jakarta",
+        country: "Indonesia",
+        isActive: true,
+      },
+    });
+  }
 
-  console.log("🎉 Seed completed!");
+  console.log(`✨ Completed seeding business: ${name}\n`);
+}
+
+async function main() {
+  console.log("🚀 Starting multi-business seed...");
+
+  // Business 1: Default
+  await seedBusiness({
+    code: "DEFAULT",
+    name: "Default Business",
+    description: "Default business for development",
+    ownerUsername: "owner",
+    ownerEmail: "owner@pos-system.local",
+    outletCode: "MAIN",
+    outletName: "Main Outlet",
+    warehouseCode: "WH-MAIN",
+    products: [
+      {
+        sku: "PROD-001",
+        barcode: "1234567890001",
+        name: "Sample Product 1",
+        category: "Electronics",
+        unit: "pcs",
+        basePrice: 100000,
+        costPrice: 75000,
+        taxRate: 11,
+      },
+      {
+        sku: "PROD-002",
+        barcode: "1234567890002",
+        name: "Sample Product 2",
+        category: "Electronics",
+        unit: "pcs",
+        basePrice: 250000,
+        costPrice: 180000,
+        taxRate: 11,
+      },
+    ],
+    supplierName: "ABC Suppliers Inc.",
+    supplierEmail: "supplier@abc.com",
+    customerName: "John Doe",
+    customerEmail: "customer@example.com",
+  });
+
+  // Business 2: Retail Corp (Testing Isolation)
+  await seedBusiness({
+    code: "RETAIL_CORP",
+    name: "Retail Corp",
+    description: "Second business for isolation testing",
+    ownerUsername: "retail_owner",
+    ownerEmail: "owner@retail-corp.local",
+    outletCode: "RET-01",
+    outletName: "Retail Store 1",
+    warehouseCode: "WH-RET-01",
+    products: [
+      {
+        sku: "RET-PROD-001",
+        barcode: "9999999990001",
+        name: "Retail Product 1",
+        category: "Clothing",
+        unit: "pcs",
+        basePrice: 150000,
+        costPrice: 80000,
+        taxRate: 11,
+      },
+    ],
+    supplierName: "Global Imports",
+    supplierEmail: "info@globalimports.com",
+    customerName: "Jane Smith",
+    customerEmail: "jane@example.com",
+  });
+
+  console.log("🎉 All seeds completed successfully!");
 }
 
 main()

@@ -7,9 +7,13 @@ import logger from "../../libs/logger.js";
 import { SUP } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
 
-export async function getSuppliersController({ query, set }) {
+export async function getSuppliersController({ query, store, set }) {
   try {
-    const result = await suppliersService.getSuppliers(query);
+    const businessId = store.user.businessId;
+    const result = await suppliersService.getSuppliers({
+      ...query,
+      businessId,
+    });
 
     return successResponse(SUP.LIST_SUCCESS, result);
   } catch (err) {
@@ -20,9 +24,13 @@ export async function getSuppliersController({ query, set }) {
   }
 }
 
-export async function getSupplierByIdController({ params, set }) {
+export async function getSupplierByIdController({ params, store, set }) {
   try {
-    const supplier = await suppliersService.getSupplierById(params.id);
+    const businessId = store.user.businessId;
+    const supplier = await suppliersService.getSupplierById(
+      params.id,
+      businessId,
+    );
 
     return successResponse(SUP.GET_SUCCESS, supplier);
   } catch (err) {
@@ -35,9 +43,10 @@ export async function getSupplierByIdController({ params, set }) {
   }
 }
 
-export async function createSupplierController({ body, set }) {
+export async function createSupplierController({ body, store, set }) {
   try {
-    const supplier = await suppliersService.createSupplier(body);
+    const businessId = store.user.businessId;
+    const supplier = await suppliersService.createSupplier(body, businessId);
 
     set.status = 201;
     return successResponse(SUP.CREATE_SUCCESS, supplier);
@@ -49,9 +58,14 @@ export async function createSupplierController({ body, set }) {
   }
 }
 
-export async function updateSupplierController({ params, body, set }) {
+export async function updateSupplierController({ params, body, store, set }) {
   try {
-    const supplier = await suppliersService.updateSupplier(params.id, body);
+    const businessId = store.user.businessId;
+    const supplier = await suppliersService.updateSupplier(
+      params.id,
+      body,
+      businessId,
+    );
 
     return successResponse(SUP.UPDATE_SUCCESS, supplier);
   } catch (err) {
@@ -62,9 +76,10 @@ export async function updateSupplierController({ params, body, set }) {
   }
 }
 
-export async function deleteSupplierController({ params, set }) {
+export async function deleteSupplierController({ params, store, set }) {
   try {
-    const result = await suppliersService.deleteSupplier(params.id);
+    const businessId = store.user.businessId;
+    const result = await suppliersService.deleteSupplier(params.id, businessId);
 
     return successResponse(SUP.DELETE_SUCCESS, result);
   } catch (err) {

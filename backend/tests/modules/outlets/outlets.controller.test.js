@@ -24,6 +24,10 @@ mock.module("../../../src/libs/logger.js", () => ({ default: loggerMock }));
 const controller =
   await import("../../../src/modules/outlets/outlets.controller.js");
 
+const mockStore = {
+  user: { id: "u1", businessId: "biz-1" },
+};
+
 describe("modules/outlets/outlets.controller", () => {
   beforeEach(() => {
     serviceMock.getOutletById.mockReset();
@@ -47,9 +51,14 @@ describe("modules/outlets/outlets.controller", () => {
 
   it("returns outlets list", async () => {
     const set = {};
-    const res = await controller.getOutletsController({ query: {}, set });
+    const res = await controller.getOutletsController({
+      query: {},
+      store: mockStore,
+      set,
+    });
     expect(res.success).toBe(true);
     expect(serviceMock.getOutlets.calls.length).toBeGreaterThan(0);
+    expect(serviceMock.getOutlets.calls[0][0].businessId).toBe("biz-1");
   });
 
   it("returns error when list fails", async () => {
@@ -58,7 +67,11 @@ describe("modules/outlets/outlets.controller", () => {
       throw new Error("fail");
     });
 
-    const res = await controller.getOutletsController({ query: {}, set });
+    const res = await controller.getOutletsController({
+      query: {},
+      store: mockStore,
+      set,
+    });
     expect(set.status).toBe(500);
     expect(res.error).toBe("Internal Server Error");
   });
@@ -67,11 +80,13 @@ describe("modules/outlets/outlets.controller", () => {
     const set = {};
     const res = await controller.getOutletByIdController({
       params: { id: "o1" },
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(res.data.id).toBe("o1");
+    expect(serviceMock.getOutletById.calls[0][1]).toBe("biz-1");
   });
 
   it("returns 404 when outlet is missing", async () => {
@@ -82,6 +97,7 @@ describe("modules/outlets/outlets.controller", () => {
 
     const res = await controller.getOutletByIdController({
       params: { id: "missing" },
+      store: mockStore,
       set,
     });
 
@@ -99,6 +115,7 @@ describe("modules/outlets/outlets.controller", () => {
 
     const res = await controller.getOutletByIdController({
       params: { id: "o1" },
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(410);
@@ -107,19 +124,18 @@ describe("modules/outlets/outlets.controller", () => {
 
   it("sets 201 when creating outlet", async () => {
     const set = {};
-    const store = { user: { id: "u1" } };
     const res = await controller.createOutletController({
       body: { name: "Outlet" },
-      store,
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(201);
     expect(res.success).toBe(true);
+    expect(serviceMock.createOutlet.calls[0][2]).toBe("biz-1");
   });
 
   it("returns error when create fails with custom status", async () => {
     const set = {};
-    const store = { user: { id: "u1" } };
     const err = new Error("invalid");
     err.statusCode = 422;
     serviceMock.createOutlet.mockImplementation(async () => {
@@ -128,7 +144,7 @@ describe("modules/outlets/outlets.controller", () => {
 
     const res = await controller.createOutletController({
       body: {},
-      store,
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(422);
@@ -137,21 +153,20 @@ describe("modules/outlets/outlets.controller", () => {
 
   it("updates outlet", async () => {
     const set = {};
-    const store = { user: { id: "u1" } };
     const res = await controller.updateOutletController({
       params: { id: "o1" },
       body: { name: "New" },
-      store,
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(serviceMock.updateOutlet.calls.length).toBe(1);
+    expect(serviceMock.updateOutlet.calls[0][3]).toBe("biz-1");
   });
 
   it("returns error when update fails", async () => {
     const set = {};
-    const store = { user: { id: "u1" } };
     serviceMock.updateOutlet.mockImplementation(async () => {
       throw new Error("fail");
     });
@@ -159,7 +174,7 @@ describe("modules/outlets/outlets.controller", () => {
     const res = await controller.updateOutletController({
       params: { id: "o1" },
       body: {},
-      store,
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);
@@ -174,6 +189,7 @@ describe("modules/outlets/outlets.controller", () => {
 
     const res = await controller.deleteOutletController({
       params: { id: "o1" },
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);
@@ -184,11 +200,13 @@ describe("modules/outlets/outlets.controller", () => {
     const set = {};
     const res = await controller.deleteOutletController({
       params: { id: "o1" },
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     expect(serviceMock.deleteOutlet.calls.length).toBe(1);
+    expect(serviceMock.deleteOutlet.calls[0][1]).toBe("biz-1");
   });
 
   it("returns outlet users list", async () => {
@@ -217,11 +235,10 @@ describe("modules/outlets/outlets.controller", () => {
 
   it("sets 201 when assigning user to outlet", async () => {
     const set = {};
-    const store = { user: { id: "admin" } };
     const res = await controller.assignUserToOutletController({
       params: { id: "o1" },
       body: { userId: "u1", outletRole: "MANAGER" },
-      store,
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(201);
@@ -230,7 +247,6 @@ describe("modules/outlets/outlets.controller", () => {
 
   it("returns error when assign fails", async () => {
     const set = {};
-    const store = { user: { id: "admin" } };
     const err = new Error("conflict");
     err.statusCode = 409;
     serviceMock.assignUserToOutlet.mockImplementation(async () => {
@@ -240,7 +256,7 @@ describe("modules/outlets/outlets.controller", () => {
     const res = await controller.assignUserToOutletController({
       params: { id: "o1" },
       body: { userId: "u1", outletRole: "MANAGER" },
-      store,
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(409);
@@ -249,14 +265,13 @@ describe("modules/outlets/outlets.controller", () => {
 
   it("returns error when removing user fails", async () => {
     const set = {};
-    const store = { user: { id: "admin" } };
     serviceMock.removeUserFromOutlet.mockImplementation(async () => {
       throw new Error("fail");
     });
 
     const res = await controller.removeUserFromOutletController({
       params: { id: "o1", userId: "u1" },
-      store,
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);
@@ -265,11 +280,9 @@ describe("modules/outlets/outlets.controller", () => {
 
   it("removes user from outlet", async () => {
     const set = {};
-    const store = { user: { id: "admin" } };
-
     const res = await controller.removeUserFromOutletController({
       params: { id: "o1", userId: "u1" },
-      store,
+      store: mockStore,
       set,
     });
     expect(res.success).toBe(true);

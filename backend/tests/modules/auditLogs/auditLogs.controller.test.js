@@ -33,32 +33,37 @@ describe("modules/auditLogs/auditLogs.controller", () => {
     loggerMock.error.mockReset();
   });
 
+  const mockStore = {
+    user: { businessId: "biz-1" },
+    outletId: "store-out",
+  };
+
   it("passes outletId from store when fetching logs", async () => {
     const set = {};
-    const store = { outletId: "out-1" };
     const res = await controller.getAuditLogsController({
       query: { page: 1, limit: 10 },
-      store,
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     const args = serviceMock.getAuditLogs.calls[0][0];
-    expect(args.outletId).toBe("out-1");
+    expect(args.outletId).toBe("store-out");
+    expect(serviceMock.getAuditLogs.calls[0][1]).toBe("biz-1");
   });
 
-  it("prioritizes query outletId over store outletId", async () => {
+  it("prioritizes store outletId over query outletId", async () => {
     const set = {};
-    const store = { outletId: "store-out" };
     const res = await controller.getAuditLogsController({
       query: { page: 1, limit: 10, outletId: "query-out" },
-      store,
+      store: mockStore,
       set,
     });
 
     expect(res.success).toBe(true);
     const args = serviceMock.getAuditLogs.calls[0][0];
-    expect(args.outletId).toBe("query-out");
+    expect(args.outletId).toBe("store-out");
+    expect(serviceMock.getAuditLogs.calls[0][1]).toBe("biz-1");
   });
 
   it("returns error when get audit logs fails", async () => {
@@ -69,7 +74,7 @@ describe("modules/auditLogs/auditLogs.controller", () => {
 
     const res = await controller.getAuditLogsController({
       query: {},
-      store: {},
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(500);
@@ -82,6 +87,7 @@ describe("modules/auditLogs/auditLogs.controller", () => {
 
     const res = await controller.getAuditLogByIdController({
       params: { id: "missing" },
+      store: mockStore,
       set,
     });
 
@@ -99,6 +105,7 @@ describe("modules/auditLogs/auditLogs.controller", () => {
 
     const res = await controller.getAuditLogByIdController({
       params: { id: "log-1" },
+      store: mockStore,
       set,
     });
     expect(set.status).toBe(418);
@@ -107,9 +114,12 @@ describe("modules/auditLogs/auditLogs.controller", () => {
 
   it("returns event types on success", async () => {
     const set = {};
-    const res = await controller.getEventTypesController({ set });
+    const res = await controller.getEventTypesController({
+      store: mockStore,
+      set,
+    });
     expect(res.success).toBe(true);
-    expect(serviceMock.getEventTypes.calls.length).toBeGreaterThan(0);
+    expect(serviceMock.getEventTypes.calls[0][0]).toBe("biz-1");
   });
 
   it("returns error when get event types fails", async () => {
@@ -118,17 +128,23 @@ describe("modules/auditLogs/auditLogs.controller", () => {
       throw new Error("fail");
     });
 
-    const res = await controller.getEventTypesController({ set });
+    const res = await controller.getEventTypesController({
+      store: mockStore,
+      set,
+    });
     expect(set.status).toBe(500);
     expect(res.success).toBe(false);
   });
 
   it("returns entity types", async () => {
     const set = {};
-    const res = await controller.getEntityTypesController({ set });
+    const res = await controller.getEntityTypesController({
+      store: mockStore,
+      set,
+    });
 
     expect(res.success).toBe(true);
-    expect(serviceMock.getEntityTypes.calls.length).toBe(1);
+    expect(serviceMock.getEntityTypes.calls[0][0]).toBe("biz-1");
   });
 
   it("handles errors from service with 500", async () => {
@@ -137,7 +153,10 @@ describe("modules/auditLogs/auditLogs.controller", () => {
       throw new Error("boom");
     });
 
-    const res = await controller.getEntityTypesController({ set });
+    const res = await controller.getEntityTypesController({
+      store: mockStore,
+      set,
+    });
 
     expect(set.status).toBe(500);
     expect(res.success).toBe(false);

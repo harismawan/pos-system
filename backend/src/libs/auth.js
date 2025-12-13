@@ -143,6 +143,7 @@ export async function authMiddleware({ headers, set, store }) {
     // Build user context and attach to store
     store.user = {
       id: user.id,
+      businessId: user.businessId,
       username: user.username,
       name: user.name,
       role: user.role,

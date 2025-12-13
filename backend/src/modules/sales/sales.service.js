@@ -15,8 +15,32 @@ import logger from "../../libs/logger.js";
 /**
  * Create a new POS order
  */
-export async function createPosOrder(data, userId) {
+/**
+ * Create a new POS order
+ */
+export async function createPosOrder(data, userId, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const { outletId, warehouseId, registerId, customerId, items, notes } = data;
+
+  // Verify outlet belongs to business
+  const outlet = await prisma.outlet.findUnique({ where: { id: outletId } });
+  if (!outlet || outlet.businessId !== businessId) {
+    throw new Error("Outlet not found or access denied");
+  }
+
+  // Verify customer belongs to business (if provided)
+  if (customerId) {
+    const customer = await prisma.customer.findUnique({
+      where: { id: customerId },
+    });
+    if (!customer || customer.businessId !== businessId) {
+      throw new Error("Customer not found");
+    }
+  }
 
   // Generate order number
   const orderNumber = await generateOrderNumber(outletId);
@@ -24,7 +48,20 @@ export async function createPosOrder(data, userId) {
   // Calculate prices for all items
   const itemsWithPrices = await Promise.all(
     items.map(async (item) => {
-      const pricing = await resolvePrice(item.productId, outletId, customerId);
+      // Verify product belongs to business
+      const product = await prisma.product.findUnique({
+        where: { id: item.productId },
+      });
+      if (!product || product.businessId !== businessId) {
+        throw new Error(`Product ${item.productId} not found`);
+      }
+
+      const pricing = await resolvePrice(
+        item.productId,
+        outletId,
+        customerId,
+        businessId,
+      );
 
       const quantity = parseFloat(item.quantity);
       const unitPrice = pricing.effectivePrice;
@@ -107,7 +144,15 @@ export async function createPosOrder(data, userId) {
 /**
  * Get POS order by ID
  */
-export async function getPosOrderById(id) {
+/**
+ * Get POS order by ID
+ */
+export async function getPosOrderById(id, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const order = await prisma.posOrder.findUnique({
     where: { id },
     include: {
@@ -130,13 +175,26 @@ export async function getPosOrderById(id) {
     throw new Error("Order not found");
   }
 
+  // Verify order belongs to business via outlet
+  if (order.outlet.businessId !== businessId) {
+    throw new Error("Order not found"); // Hide existence
+  }
+
   return order;
 }
 
 /**
  * Get POS orders with filters
  */
-export async function getPosOrders(filters = {}) {
+/**
+ * Get POS orders with filters
+ */
+export async function getPosOrders(filters = {}, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const {
     outletId,
     status,
@@ -146,11 +204,34 @@ export async function getPosOrders(filters = {}) {
     limit = 50,
   } = filters;
 
-  const where = {};
+  const where = {
+    outlet: {
+      businessId, // Filter via outlet's business
+    },
+  };
 
-  if (outletId) where.outletId = outletId;
+  if (outletId) {
+    // Verify outlet belongs to business
+    const outlet = await prisma.outlet.findUnique({ where: { id: outletId } });
+    if (!outlet || outlet.businessId !== businessId) {
+      throw new Error("Outlet not found");
+    }
+    where.outletId = outletId;
+  }
+
   if (status) where.status = status;
-  if (customerId) where.customerId = customerId;
+
+  if (customerId) {
+    // Verify customer belongs to business
+    const customer = await prisma.customer.findUnique({
+      where: { id: customerId },
+    });
+    if (!customer || customer.businessId !== businessId) {
+      throw new Error("Customer not found");
+    }
+    where.customerId = customerId;
+  }
+
   if (cashierId) where.cashierId = cashierId;
 
   const skip = (page - 1) * limit;
@@ -190,8 +271,16 @@ export async function getPosOrders(filters = {}) {
 /**
  * Complete a POS order
  */
-export async function completePosOrder(id, userId) {
-  const order = await getPosOrderById(id);
+/**
+ * Complete a POS order
+ */
+export async function completePosOrder(id, userId, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
+  const order = await getPosOrderById(id, businessId);
 
   if (order.status !== "OPEN") {
     throw new Error("Order is not open");
@@ -310,8 +399,16 @@ export async function completePosOrder(id, userId) {
 /**
  * Cancel a POS order
  */
-export async function cancelPosOrder(id, userId) {
-  const order = await getPosOrderById(id);
+/**
+ * Cancel a POS order
+ */
+export async function cancelPosOrder(id, userId, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
+  const order = await getPosOrderById(id, businessId);
 
   if (order.status !== "OPEN") {
     throw new Error("Only open orders can be cancelled");
@@ -357,10 +454,18 @@ export async function cancelPosOrder(id, userId) {
 /**
  * Add payment to order
  */
-export async function addPayment(orderId, paymentData) {
+/**
+ * Add payment to order
+ */
+export async function addPayment(orderId, paymentData, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const { method, amount, reference } = paymentData;
 
-  const order = await getPosOrderById(orderId);
+  const order = await getPosOrderById(orderId, businessId);
 
   if (order.status !== "OPEN") {
     throw new Error("Cannot add payment to non-open order");

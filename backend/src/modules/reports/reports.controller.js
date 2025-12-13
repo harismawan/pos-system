@@ -9,8 +9,12 @@ import logger from "../../libs/logger.js";
 
 export async function getTopProductsController({ query, store, set }) {
   try {
+    const businessId = store.user.businessId;
     const outletId = store.outletId || query.outletId;
-    const result = await reportsService.getTopProducts({ ...query, outletId });
+    const result = await reportsService.getTopProducts(
+      { ...query, outletId },
+      businessId,
+    );
 
     return successResponse(REP.TOP_PRODUCTS_SUCCESS, result);
   } catch (err) {
@@ -21,9 +25,13 @@ export async function getTopProductsController({ query, store, set }) {
   }
 }
 
-export async function getInventoryValuationController({ query, set }) {
+export async function getInventoryValuationController({ query, store, set }) {
   try {
-    const result = await reportsService.getInventoryValuation(query);
+    const businessId = store.user.businessId;
+    const result = await reportsService.getInventoryValuation(
+      query,
+      businessId,
+    );
 
     return successResponse(REP.INVENTORY_VALUATION_SUCCESS, result);
   } catch (err) {
@@ -36,11 +44,15 @@ export async function getInventoryValuationController({ query, set }) {
 
 export async function getStockMovementsController({ query, store, set }) {
   try {
+    const businessId = store.user.businessId;
     const outletId = store.outletId || query.outletId;
-    const result = await reportsService.getStockMovementReport({
-      ...query,
-      outletId,
-    });
+    const result = await reportsService.getStockMovementReport(
+      {
+        ...query,
+        outletId,
+      },
+      businessId,
+    );
 
     return successResponse(REP.STOCK_MOVEMENTS_SUCCESS, result);
   } catch (err) {
@@ -53,8 +65,12 @@ export async function getStockMovementsController({ query, store, set }) {
 
 export async function getOrderHistoryController({ query, store, set }) {
   try {
+    const businessId = store.user.businessId;
     const outletId = store.outletId || query.outletId;
-    const result = await reportsService.getOrderHistory({ ...query, outletId });
+    const result = await reportsService.getOrderHistory(
+      { ...query, outletId },
+      businessId,
+    );
 
     return successResponse(REP.ORDER_HISTORY_SUCCESS, result);
   } catch (err) {
@@ -67,8 +83,12 @@ export async function getOrderHistoryController({ query, store, set }) {
 
 export async function getSalesTrendController({ query, store, set }) {
   try {
+    const businessId = store.user.businessId;
     const outletId = store.outletId || query.outletId;
-    const result = await reportsService.getSalesTrend({ ...query, outletId });
+    const result = await reportsService.getSalesTrend(
+      { ...query, outletId },
+      businessId,
+    );
 
     return successResponse(REP.SALES_TREND_SUCCESS, result);
   } catch (err) {
@@ -81,11 +101,15 @@ export async function getSalesTrendController({ query, store, set }) {
 
 export async function getHourlySalesHeatmapController({ query, store, set }) {
   try {
+    const businessId = store.user.businessId;
     const outletId = store.outletId || query.outletId;
-    const result = await reportsService.getHourlySalesHeatmap({
-      ...query,
-      outletId,
-    });
+    const result = await reportsService.getHourlySalesHeatmap(
+      {
+        ...query,
+        outletId,
+      },
+      businessId,
+    );
 
     return successResponse(REP.HEATMAP_SUCCESS, result);
   } catch (err) {

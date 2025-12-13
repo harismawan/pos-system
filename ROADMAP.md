@@ -12,6 +12,7 @@ Improvement recommendations for features, performance, and system architecture.
 | -------- | ----------------------------------- | ------------------------------------ |
 | ✅ Done  | Add unit tests for backend services | Catch bugs early, enable refactoring |
 | 🔴 High  | Add E2E tests with Playwright       | Ensure critical flows work           |
+| 🔴 High  | Add performance/load tests (k6)     | Validate API scalability             |
 | ✅ Done  | Setup ESLint + Prettier             | Consistent code style                |
 | ✅ Done  | Add Husky pre-commit hooks          | Prevent bad commits                  |
 
@@ -61,6 +62,26 @@ Improvement recommendations for features, performance, and system architecture.
 | ✅ Done  | Role-based permissions (Owner, Manager, Cashier) | Security & access control |
 | ✅ Done  | Password reset via email                         | Self-service accounts     |
 | ✅ Done  | Activity/audit log viewer                        | Track user actions        |
+| 🔴 High  | Super Admin role (cross-business management)     | Platform administration   |
+| 🔴 High  | User invitation via email link                   | Onboard new staff easily  |
+| 🔴 High  | Super Admin: view/manage all users               | User administration       |
+| 🔴 High  | Super Admin: force password reset for users      | Security enforcement      |
+| 🟡 Med   | Super Admin dashboard (all businesses)           | Overview & analytics      |
+| 🟡 Med   | Business suspension/activation by Super Admin    | Account management        |
+| 🟡 Med   | Super Admin: active session management           | View/revoke user sessions |
+| 🟡 Med   | Super Admin: user impersonation (login as user)  | Support & debugging       |
+| 🟢 Low   | Super Admin: bulk user actions (activate/deact)  | Efficient management      |
+
+### Monitoring & Observability
+
+| Priority | Task                                            | Impact                    |
+| -------- | ----------------------------------------------- | ------------------------- |
+| 🔴 High  | Prometheus metrics endpoint                     | System health metrics     |
+| 🔴 High  | Grafana dashboards for metrics                  | Visualize performance     |
+| 🔴 High  | Loki log aggregation                            | Centralized logging       |
+| 🟡 Med   | Custom business metrics (sales/orders per hour) | Business insights         |
+| 🟡 Med   | Alerting rules (high latency, errors, disk)     | Proactive issue detection |
+| 🟢 Low   | Distributed tracing (Jaeger/Tempo)              | Request flow debugging    |
 
 ### POS Enhancements
 

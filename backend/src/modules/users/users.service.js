@@ -15,7 +15,19 @@ const SALT_ROUNDS = 12;
 /**
  * Get users with pagination and filters
  */
-export async function getUsers({ page, limit, search, role, isActive }) {
+export async function getUsers({
+  page,
+  limit,
+  search,
+  role,
+  isActive,
+  businessId,
+}) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   // Normalize pagination with max limit enforcement
   const {
     page: pageNum,
@@ -23,7 +35,7 @@ export async function getUsers({ page, limit, search, role, isActive }) {
     skip,
   } = normalizePagination({ page, limit });
 
-  const where = {};
+  const where = { businessId };
 
   if (search) {
     where.OR = [
@@ -78,7 +90,12 @@ export async function getUsers({ page, limit, search, role, isActive }) {
 /**
  * Get a single user by ID
  */
-export async function getUserById(id) {
+export async function getUserById(id, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   const user = await prisma.user.findUnique({
     where: { id },
     select: {
@@ -101,7 +118,7 @@ export async function getUserById(id) {
     },
   });
 
-  if (!user) {
+  if (!user || user.businessId !== businessId) {
     const error = new Error("User not found");
     error.statusCode = 404;
     throw error;
@@ -120,7 +137,13 @@ export async function createUser({
   phone,
   password,
   role,
+  businessId,
 }) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   // Check if username already exists
   const existingUser = await prisma.user.findUnique({
     where: { username },
@@ -149,6 +172,7 @@ export async function createUser({
 
   const user = await prisma.user.create({
     data: {
+      businessId,
       name,
       username,
       email: email || null,
@@ -178,10 +202,16 @@ export async function createUser({
 export async function updateUser(
   id,
   { name, email, phone, role, isActive, password },
+  businessId,
 ) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   // Check user exists
   const existingUser = await prisma.user.findUnique({ where: { id } });
-  if (!existingUser) {
+  if (!existingUser || existingUser.businessId !== businessId) {
     const error = new Error("User not found");
     error.statusCode = 404;
     throw error;
@@ -231,7 +261,12 @@ export async function updateUser(
 /**
  * Delete (deactivate) a user
  */
-export async function deleteUser(id, requestingUserId) {
+export async function deleteUser(id, requestingUserId, businessId) {
+  // businessId is required for multi-tenant isolation
+  if (!businessId) {
+    throw new Error("businessId is required");
+  }
+
   // Prevent self-deletion
   if (id === requestingUserId) {
     const error = new Error("Cannot delete your own account");
@@ -240,7 +275,7 @@ export async function deleteUser(id, requestingUserId) {
   }
 
   const user = await prisma.user.findUnique({ where: { id } });
-  if (!user) {
+  if (!user || user.businessId !== businessId) {
     const error = new Error("User not found");
     error.statusCode = 404;
     throw error;

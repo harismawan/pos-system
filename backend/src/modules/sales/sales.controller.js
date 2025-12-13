@@ -10,7 +10,8 @@ import { successResponse, errorResponse } from "../../libs/responses.js";
 export async function createPosOrderController({ body, store, set }) {
   try {
     const userId = store.user.id;
-    const order = await salesService.createPosOrder(body, userId);
+    const businessId = store.user.businessId;
+    const order = await salesService.createPosOrder(body, userId, businessId);
 
     set.status = 201;
     return successResponse(SAL.CREATE_ORDER_SUCCESS, order);
@@ -24,8 +25,12 @@ export async function createPosOrderController({ body, store, set }) {
 
 export async function getPosOrdersController({ query, store, set }) {
   try {
+    const businessId = store.user.businessId;
     const outletId = store.outletId || query.outletId;
-    const result = await salesService.getPosOrders({ ...query, outletId });
+    const result = await salesService.getPosOrders(
+      { ...query, outletId },
+      businessId,
+    );
 
     return successResponse(SAL.LIST_SUCCESS, result);
   } catch (err) {
@@ -36,9 +41,10 @@ export async function getPosOrdersController({ query, store, set }) {
   }
 }
 
-export async function getPosOrderByIdController({ params, set }) {
+export async function getPosOrderByIdController({ params, store, set }) {
   try {
-    const order = await salesService.getPosOrderById(params.id);
+    const businessId = store.user.businessId;
+    const order = await salesService.getPosOrderById(params.id, businessId);
 
     return successResponse(SAL.GET_SUCCESS, order);
   } catch (err) {
@@ -54,7 +60,12 @@ export async function getPosOrderByIdController({ params, set }) {
 export async function completePosOrderController({ params, store, set }) {
   try {
     const userId = store.user.id;
-    const order = await salesService.completePosOrder(params.id, userId);
+    const businessId = store.user.businessId;
+    const order = await salesService.completePosOrder(
+      params.id,
+      userId,
+      businessId,
+    );
 
     return successResponse(SAL.COMPLETE_SUCCESS, order);
   } catch (err) {
@@ -70,7 +81,12 @@ export async function completePosOrderController({ params, store, set }) {
 export async function cancelPosOrderController({ params, store, set }) {
   try {
     const userId = store.user.id;
-    const order = await salesService.cancelPosOrder(params.id, userId);
+    const businessId = store.user.businessId;
+    const order = await salesService.cancelPosOrder(
+      params.id,
+      userId,
+      businessId,
+    );
 
     return successResponse(SAL.CANCEL_SUCCESS, order);
   } catch (err) {
@@ -83,9 +99,10 @@ export async function cancelPosOrderController({ params, store, set }) {
   }
 }
 
-export async function addPaymentController({ params, body, set }) {
+export async function addPaymentController({ params, body, store, set }) {
   try {
-    const result = await salesService.addPayment(params.id, body);
+    const businessId = store.user.businessId;
+    const result = await salesService.addPayment(params.id, body, businessId);
 
     set.status = 201;
     return successResponse(SAL.ADD_PAYMENT_SUCCESS, result);

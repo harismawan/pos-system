@@ -7,9 +7,13 @@ import logger from "../../libs/logger.js";
 import { CUS } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
 
-export async function getCustomersController({ query, set }) {
+export async function getCustomersController({ query, store, set }) {
   try {
-    const result = await customersService.getCustomers(query);
+    const businessId = store.user.businessId;
+    const result = await customersService.getCustomers({
+      ...query,
+      businessId,
+    });
 
     return successResponse(CUS.LIST_SUCCESS, result);
   } catch (err) {
@@ -20,9 +24,13 @@ export async function getCustomersController({ query, set }) {
   }
 }
 
-export async function getCustomerByIdController({ params, set }) {
+export async function getCustomerByIdController({ params, store, set }) {
   try {
-    const customer = await customersService.getCustomerById(params.id);
+    const businessId = store.user.businessId;
+    const customer = await customersService.getCustomerById(
+      params.id,
+      businessId,
+    );
 
     return successResponse(CUS.GET_SUCCESS, customer);
   } catch (err) {
@@ -35,9 +43,10 @@ export async function getCustomerByIdController({ params, set }) {
   }
 }
 
-export async function createCustomerController({ body, set }) {
+export async function createCustomerController({ body, store, set }) {
   try {
-    const customer = await customersService.createCustomer(body);
+    const businessId = store.user.businessId;
+    const customer = await customersService.createCustomer(body, businessId);
 
     set.status = 201;
     return successResponse(CUS.CREATE_SUCCESS, customer);
@@ -49,9 +58,14 @@ export async function createCustomerController({ body, set }) {
   }
 }
 
-export async function updateCustomerController({ params, body, set }) {
+export async function updateCustomerController({ params, body, store, set }) {
   try {
-    const customer = await customersService.updateCustomer(params.id, body);
+    const businessId = store.user.businessId;
+    const customer = await customersService.updateCustomer(
+      params.id,
+      body,
+      businessId,
+    );
 
     return successResponse(CUS.UPDATE_SUCCESS, customer);
   } catch (err) {
@@ -62,9 +76,10 @@ export async function updateCustomerController({ params, body, set }) {
   }
 }
 
-export async function deleteCustomerController({ params, set }) {
+export async function deleteCustomerController({ params, store, set }) {
   try {
-    const result = await customersService.deleteCustomer(params.id);
+    const businessId = store.user.businessId;
+    const result = await customersService.deleteCustomer(params.id, businessId);
 
     return successResponse(CUS.DELETE_SUCCESS, result);
   } catch (err) {

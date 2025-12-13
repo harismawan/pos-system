@@ -11,6 +11,7 @@ import { successResponse, errorResponse } from "../../libs/responses.js";
 export async function getUsersController({ query, store, set }) {
   try {
     const { page, limit, search, role, isActive } = query;
+    const businessId = store.user.businessId;
 
     const result = await usersService.getUsers({
       page: parseInt(page) || 1,
@@ -18,6 +19,7 @@ export async function getUsersController({ query, store, set }) {
       search,
       role,
       isActive,
+      businessId,
     });
 
     return successResponse(USR.LIST_SUCCESS, result);
@@ -31,7 +33,8 @@ export async function getUsersController({ query, store, set }) {
 
 export async function getUserByIdController({ params, store, set }) {
   try {
-    const user = await usersService.getUserById(params.id);
+    const businessId = store.user.businessId;
+    const user = await usersService.getUserById(params.id, businessId);
 
     if (!user) {
       set.status = 404;
@@ -49,7 +52,8 @@ export async function getUserByIdController({ params, store, set }) {
 
 export async function createUserController({ body, store, set }) {
   try {
-    const user = await usersService.createUser(body);
+    const businessId = store.user.businessId;
+    const user = await usersService.createUser({ ...body, businessId });
 
     // Audit log
     enqueueAuditLogJob({
@@ -73,7 +77,8 @@ export async function createUserController({ body, store, set }) {
 
 export async function updateUserController({ params, body, store, set }) {
   try {
-    const user = await usersService.updateUser(params.id, body);
+    const businessId = store.user.businessId;
+    const user = await usersService.updateUser(params.id, body, businessId);
 
     // Audit log
     enqueueAuditLogJob({
@@ -96,7 +101,8 @@ export async function updateUserController({ params, body, store, set }) {
 
 export async function deleteUserController({ params, store, set }) {
   try {
-    await usersService.deleteUser(params.id, store.user?.id);
+    const businessId = store.user.businessId;
+    await usersService.deleteUser(params.id, store.user?.id, businessId);
 
     // Audit log
     enqueueAuditLogJob({

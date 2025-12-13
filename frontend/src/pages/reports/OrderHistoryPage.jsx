@@ -163,7 +163,6 @@ function OrderHistoryPage() {
       {
         name: "Cashier",
         selector: (row) => row.cashier?.name,
-        width: "130px",
         cell: (row) => row.cashier?.name || "-",
       },
     ],
