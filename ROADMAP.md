@@ -76,9 +76,9 @@ Improvement recommendations for features, performance, and system architecture.
 
 | Priority | Task                                            | Impact                    |
 | -------- | ----------------------------------------------- | ------------------------- |
-| 🔴 High  | Prometheus metrics endpoint                     | System health metrics     |
-| 🔴 High  | Grafana dashboards for metrics                  | Visualize performance     |
-| 🔴 High  | Loki log aggregation                            | Centralized logging       |
+| ✅ Done  | Prometheus metrics endpoint                     | System health metrics     |
+| ✅ Done  | Grafana dashboards for metrics                  | Visualize performance     |
+| ✅ Done  | Loki log aggregation                            | Centralized logging       |
 | 🟡 Med   | Custom business metrics (sales/orders per hour) | Business insights         |
 | 🟡 Med   | Alerting rules (high latency, errors, disk)     | Proactive issue detection |
 | 🟢 Low   | Distributed tracing (Jaeger/Tempo)              | Request flow debugging    |

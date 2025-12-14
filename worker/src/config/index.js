@@ -43,6 +43,20 @@ const config = {
     password: process.env.SMTP_PASSWORD,
     from: process.env.SMTP_FROM || "noreply@pos-system.local",
   },
+
+  // Metrics (Prometheus)
+  metrics: {
+    enabled: process.env.METRICS_ENABLED !== "false",
+    port: parseInt(process.env.METRICS_PORT || "9100", 10),
+  },
+
+  // Loki (Log aggregation)
+  loki: {
+    enabled: process.env.LOKI_ENABLED === "true",
+    url: process.env.LOKI_URL || "http://localhost:3100",
+    batchSize: parseInt(process.env.LOKI_BATCH_SIZE || "10", 10),
+    batchInterval: parseInt(process.env.LOKI_BATCH_INTERVAL || "5000", 10),
+  },
 };
 
 // Validation

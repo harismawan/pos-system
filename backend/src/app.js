@@ -10,6 +10,12 @@ import { globalErrorHandler } from "./libs/errorHandler.js";
 import { compression } from "./libs/compression.js";
 import redis from "./libs/redis.js";
 import prisma from "./libs/prisma.js";
+import { metricsMiddleware } from "./libs/metricsMiddleware.js";
+import {
+  getMetrics,
+  getMetricsContentType,
+  isMetricsEnabled,
+} from "./libs/metrics.js";
 
 // Import routes
 import { authRoutes } from "./modules/auth/auth.routes.js";
@@ -51,6 +57,19 @@ app.use(
 
 // Global error handler
 app.onError(globalErrorHandler);
+
+// Metrics middleware (tracks HTTP requests)
+app.use(metricsMiddleware);
+
+// Prometheus metrics endpoint
+app.get("/metrics", async ({ set }) => {
+  if (!isMetricsEnabled()) {
+    set.status = 404;
+    return { error: "Metrics disabled" };
+  }
+  set.headers["content-type"] = getMetricsContentType();
+  return await getMetrics();
+});
 
 // Health check
 app.get("/health", async () => {

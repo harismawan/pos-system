@@ -125,6 +125,19 @@ export function buildConfig(env = process.env) {
         10,
       ),
     },
+
+    // Metrics (Prometheus)
+    metrics: {
+      enabled: env.METRICS_ENABLED !== "false",
+    },
+
+    // Loki (Log aggregation)
+    loki: {
+      enabled: env.LOKI_ENABLED === "true",
+      url: env.LOKI_URL || "http://localhost:3100",
+      batchSize: parseInt(env.LOKI_BATCH_SIZE || "10", 10),
+      batchInterval: parseInt(env.LOKI_BATCH_INTERVAL || "5000", 10),
+    },
   };
 }
 

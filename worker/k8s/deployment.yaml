@@ -25,6 +25,10 @@ spec:
         app: pos-worker
         app.kubernetes.io/name: pos-worker
         app.kubernetes.io/component: worker
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9100"
+        prometheus.io/path: "/metrics"
     spec:
       serviceAccountName: pos-worker
       securityContext:
@@ -43,6 +47,10 @@ spec:
                 name: pos-worker-config
             - secretRef:
                 name: pos-worker-secret
+          ports:
+            - name: metrics
+              containerPort: 9100
+              protocol: TCP
           resources:
             requests:
               cpu: "50m"

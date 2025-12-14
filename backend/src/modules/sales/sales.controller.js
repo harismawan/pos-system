@@ -153,13 +153,13 @@ export async function addPaymentController({ params, body, store, set }) {
     enqueueAuditLogJob(
       createAuditLogData(store, {
         eventType: "PAYMENT_ADDED",
-        outletId: result.outletId,
+        outletId: result.order.outletId,
         entityType: "PosOrder",
-        entityId: result.id,
+        entityId: result.order.id,
         payload: {
           amount: body.amount,
           method: body.paymentMethod,
-          orderNumber: result.orderNumber,
+          paymentId: result.payment.id,
         },
       }),
     );

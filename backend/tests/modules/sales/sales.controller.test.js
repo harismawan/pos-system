@@ -27,9 +27,14 @@ const serviceMock = {
     orderNumber: "123",
   })),
   addPayment: createMockFn(async () => ({
-    id: "pay-1",
-    outletId: "store-1",
-    orderNumber: "123",
+    order: {
+      id: "o1",
+      outletId: "store-1",
+      orderNumber: "123",
+    },
+    payment: {
+      id: "pay-1",
+    },
   })),
 };
 
@@ -78,9 +83,14 @@ describe("modules/sales/sales.controller", () => {
     });
     serviceMock.addPayment.mockReset();
     serviceMock.addPayment.mockResolvedValue({
-      id: "pay-1",
-      outletId: "store-1",
-      orderNumber: "123",
+      order: {
+        id: "o1",
+        outletId: "store-1",
+        orderNumber: "123",
+      },
+      payment: {
+        id: "pay-1",
+      },
     });
     loggerMock.error.mockReset();
     jobsMock.enqueueAuditLogJob.mockReset();

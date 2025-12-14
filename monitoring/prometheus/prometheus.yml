@@ -1,0 +1,25 @@
+# Prometheus Configuration for POS System
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Backend metrics (use host.docker.internal for local dev)
+  - job_name: "pos-backend"
+    static_configs:
+      - targets: ["host.docker.internal:3000"]
+    metrics_path: "/metrics"
+    scrape_interval: 10s
+
+  # Worker metrics (use host.docker.internal for local dev)
+  - job_name: "pos-worker"
+    static_configs:
+      - targets: ["host.docker.internal:9100"]
+    metrics_path: "/metrics"
+    scrape_interval: 10s
+
+  # Prometheus self-monitoring
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]

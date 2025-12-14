@@ -10,6 +10,16 @@ import prisma from "./libs/prisma.js";
 import { handleAuditLogJob } from "./jobs/auditLog.job.js";
 import { handleEmailNotificationJob } from "./jobs/emailNotification.job.js";
 import { handleReportGenerationJob } from "./jobs/reportGeneration.job.js";
+import {
+  startJobProcessing,
+  endJobProcessing,
+  recordJobRetry,
+  updateQueueDepth,
+  getMetrics,
+  getMetricsContentType,
+  isMetricsEnabled,
+  getMetricsPort,
+} from "./libs/metrics.js";
 
 const QUEUES = {
   AUDIT_LOG: "queue:audit_log",
@@ -31,6 +41,9 @@ async function processJob(job) {
 
   logger.info({ jobId: id, type, attempts }, "Processing job");
 
+  // Start metrics tracking
+  const startTime = startJobProcessing(type);
+
   try {
     const handler = JOB_HANDLERS[type];
 
@@ -40,13 +53,18 @@ async function processJob(job) {
 
     await handler(payload);
 
+    // Record successful job
+    endJobProcessing(type, startTime, true);
     logger.info({ jobId: id, type }, "Job completed successfully");
   } catch (err) {
+    // Record failed job
+    endJobProcessing(type, startTime, false);
     logger.error({ err, jobId: id, type, attempts }, "Job processing failed");
 
     // Retry logic
     if (attempts < maxAttempts) {
       job.attempts = attempts + 1;
+      recordJobRetry(type);
 
       // Re-queue for retry
       const queueName = Object.values(QUEUES).find((q) =>
@@ -72,11 +90,31 @@ async function processJob(job) {
 }
 
 /**
+ * Update queue depth metrics periodically
+ */
+async function updateQueueMetrics() {
+  if (!isMetricsEnabled()) return;
+
+  try {
+    for (const [name, queueName] of Object.entries(QUEUES)) {
+      const depth = await redis.llen(queueName);
+      updateQueueDepth(queueName, depth);
+    }
+  } catch (err) {
+    logger.debug({ err }, "Failed to update queue metrics");
+  }
+}
+
+/**
  * Worker loop
  */
 async function startWorker() {
   logger.info("Worker started");
   logger.info(`Listening on queues: ${Object.values(QUEUES).join(", ")}`);
+
+  // Update queue metrics every 10 seconds
+  const metricsInterval = setInterval(updateQueueMetrics, 10000);
+  updateQueueMetrics(); // Initial update
 
   while (true) {
     try {
@@ -92,6 +130,9 @@ async function startWorker() {
       const job = JSON.parse(jobData);
 
       logger.debug({ queueName, jobId: job.id }, "Job popped from queue");
+
+      // Update queue metrics after popping
+      updateQueueMetrics();
 
       // Process job
       await processJob(job);
@@ -118,6 +159,43 @@ process.on("SIGTERM", async () => {
   process.exit(0);
 });
 
+/**
+ * Start metrics HTTP server
+ */
+async function startMetricsServer() {
+  if (!isMetricsEnabled()) {
+    logger.info("Metrics disabled, skipping metrics server");
+    return null;
+  }
+
+  const port = getMetricsPort();
+
+  const server = Bun.serve({
+    port,
+    async fetch(req) {
+      const url = new URL(req.url);
+
+      if (url.pathname === "/metrics") {
+        const metrics = await getMetrics();
+        return new Response(metrics, {
+          headers: { "content-type": getMetricsContentType() },
+        });
+      }
+
+      if (url.pathname === "/health") {
+        return new Response(JSON.stringify({ status: "ok" }), {
+          headers: { "content-type": "application/json" },
+        });
+      }
+
+      return new Response("Not Found", { status: 404 });
+    },
+  });
+
+  logger.info(`Metrics server listening on port ${port}`);
+  return server;
+}
+
 // Initialize and start the worker
 async function init() {
   // Test database connection
@@ -137,6 +215,9 @@ async function init() {
     logger.error({ err }, "Failed to connect to Redis");
     process.exit(1);
   }
+
+  // Start metrics server
+  await startMetricsServer();
 
   // Start the worker
   await startWorker();

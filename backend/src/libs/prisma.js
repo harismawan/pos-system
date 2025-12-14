@@ -32,15 +32,50 @@ const prisma = new PrismaClient({
   ],
 });
 
-// Log queries in development
-if (process.env.NODE_ENV === "development") {
-  prisma.$on("query", (e) => {
+// Log queries in development and record metrics
+import {
+  recordDbQuery,
+  recordSlowQuery,
+  updateDbPoolMetrics,
+  isMetricsEnabled,
+} from "./metrics.js";
+
+prisma.$on("query", (e) => {
+  // Extract operation type from query
+  const query = e.query.toLowerCase();
+  let operation = "other";
+  if (query.startsWith("select")) operation = "select";
+  else if (query.startsWith("insert")) operation = "insert";
+  else if (query.startsWith("update")) operation = "update";
+  else if (query.startsWith("delete")) operation = "delete";
+  else if (query.includes("commit")) operation = "commit";
+  else if (query.includes("begin")) operation = "begin";
+  else if (query.includes("rollback")) operation = "rollback";
+
+  // Record query metrics
+  if (isMetricsEnabled()) {
+    recordDbQuery(operation, e.duration, true);
+  }
+
+  // Log in development
+  if (process.env.NODE_ENV === "development") {
     logger.debug(
       { query: e.query, params: e.params, duration: e.duration },
       "Prisma Query",
     );
-  });
-}
+  }
+
+  // Log and record slow queries (> 100ms)
+  if (e.duration > 100) {
+    if (isMetricsEnabled()) {
+      recordSlowQuery(operation);
+    }
+    logger.warn(
+      { query: e.query, params: e.params, duration: e.duration },
+      "Slow Query Detected",
+    );
+  }
+});
 
 // Log errors
 prisma.$on("error", (e) => {
@@ -51,6 +86,28 @@ prisma.$on("error", (e) => {
 prisma.$on("warn", (e) => {
   logger.warn({ target: e.target, message: e.message }, "Prisma Warning");
 });
+
+// ============================================
+// Database Pool Metrics Collection
+// ============================================
+
+// Collect pool metrics periodically
+if (isMetricsEnabled()) {
+  const collectPoolMetrics = () => {
+    const total = pool.totalCount;
+    const idle = pool.idleCount;
+    const waiting = pool.waitingCount;
+    const active = total - idle;
+
+    updateDbPoolMetrics(total, active, idle);
+  };
+
+  // Collect every 5 seconds
+  setInterval(collectPoolMetrics, 5000);
+
+  // Initial collection
+  collectPoolMetrics();
+}
 
 // Graceful shutdown
 process.on("SIGINT", async () => {
