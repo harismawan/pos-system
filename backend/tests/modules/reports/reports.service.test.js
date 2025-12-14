@@ -1,10 +1,14 @@
 import "../../testSetup.js";
 import { describe, it, expect, mock, beforeEach } from "bun:test";
+import { resolve } from "path";
 import { createPrismaMock } from "../../mocks/prisma.js";
 
 const prismaMock = createPrismaMock();
 
-mock.module("../../../src/libs/prisma.js", () => ({ default: prismaMock }));
+// Mock using absolute path to ensure we intercept the service's import
+mock.module(resolve(import.meta.dir, "../../../src/libs/prisma.js"), () => ({
+  default: prismaMock,
+}));
 
 // Mock cache functions - always return null to simulate cache miss
 mock.module("../../../src/libs/cache.js", () => ({

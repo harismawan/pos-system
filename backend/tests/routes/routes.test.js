@@ -1,22 +1,6 @@
 import "../testSetup.js";
 import { describe, it, expect, mock } from "bun:test";
 
-const noop = () => {};
-
-// Stub common middlewares to avoid pulling real auth/redis
-mock.module("../../src/libs/auth.js", () => ({
-  authMiddleware: noop,
-  requireRole: () => noop,
-}));
-mock.module("../../src/libs/permissions.js", () => ({
-  requirePermission: () => noop,
-  requireAnyPermission: () => noop,
-  PERMISSIONS: {},
-}));
-mock.module("../../src/libs/requestLogger.js", () => ({
-  withRequestLogger: () => (app) => app,
-}));
-
 function expectRoute(exported, prefix) {
   expect(exported).toBeDefined();
   const prefixValue = exported.router?.prefix ?? exported.config?.prefix;

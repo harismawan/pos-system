@@ -1,12 +1,16 @@
 import "../../testSetup.js";
 import { describe, it, expect, beforeEach, mock } from "bun:test";
+import { resolve } from "path";
 import { createPrismaMock } from "../../../tests/mocks/prisma.js";
 import { createCacheMock } from "../../../tests/mocks/cache.js";
 
 const prismaMock = createPrismaMock();
 const cacheMock = createCacheMock();
 
-mock.module("../../../src/libs/prisma.js", () => ({ default: prismaMock }));
+// Use absolute path to ensure specific mocking
+mock.module(resolve(import.meta.dir, "../../../src/libs/prisma.js"), () => ({
+  default: prismaMock,
+}));
 
 // Mock cache module directly - this avoids redis dependency issues
 mock.module("../../../src/libs/cache.js", () => cacheMock);

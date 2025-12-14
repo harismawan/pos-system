@@ -1,5 +1,6 @@
 import "../../testSetup.js";
 import { describe, it, expect, beforeEach, mock } from "bun:test";
+import { resolve } from "path";
 import { createPrismaMock } from "../../mocks/prisma.js";
 import { createLoggerMock } from "../../mocks/logger.js";
 import { createMockFn } from "../../mocks/mockFn.js";
@@ -38,7 +39,10 @@ const jobsMock = {
   enqueueEmailNotificationJob: createMockFn(),
 };
 
-mock.module("../../../src/libs/prisma.js", () => ({ default: prismaMock }));
+// Use absolute path to ensure specific mocking
+mock.module(resolve(import.meta.dir, "../../../src/libs/prisma.js"), () => ({
+  default: prismaMock,
+}));
 mock.module("../../../src/libs/logger.js", () => ({ default: loggerMock }));
 mock.module("bcryptjs", () => ({ default: bcryptMock }));
 mock.module("../../../src/libs/auth.js", () => tokenHelpersMock);

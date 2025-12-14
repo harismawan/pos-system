@@ -1,5 +1,6 @@
 import "../../testSetup.js";
 import { describe, it, expect, beforeEach, mock } from "bun:test";
+import { resolve } from "path";
 import { createPrismaMock } from "../../mocks/prisma.js";
 import { createMockFn } from "../../mocks/mockFn.js";
 
@@ -19,7 +20,10 @@ const loggerMock = {
   child: createMockFn(() => loggerMock),
 };
 
-mock.module("../../../src/libs/prisma.js", () => ({ default: prismaMock }));
+// Use absolute path to ensure specific mocking
+mock.module(resolve(import.meta.dir, "../../../src/libs/prisma.js"), () => ({
+  default: prismaMock,
+}));
 mock.module(
   "../../../src/modules/pricing/pricing.service.js",
   () => pricingMock,
