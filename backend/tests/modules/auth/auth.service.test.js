@@ -22,6 +22,8 @@ const tokenStoreMock = {
   storeRefreshToken: createMockFn(async () => undefined),
   validateRefreshToken: createMockFn(async () => true),
   revokeRefreshToken: createMockFn(async () => undefined),
+  storeSession: createMockFn(async () => undefined),
+  revokeSession: createMockFn(async () => undefined),
 };
 
 const otpStoreMock = {
@@ -129,7 +131,6 @@ describe("modules/auth/auth.service login", () => {
     expect(result.refreshToken).toBeDefined();
     expect(tokenStoreMock.storeAccessToken.calls.length).toBeGreaterThan(0);
     expect(tokenStoreMock.storeRefreshToken.calls.length).toBeGreaterThan(0);
-    expect(jobsMock.enqueueAuditLogJob.calls.length).toBe(1);
   });
 
   it("maps outlets and enqueues audit log with payload", async () => {
@@ -159,9 +160,6 @@ describe("modules/auth/auth.service login", () => {
       role: "MANAGER",
       isDefault: true,
     });
-    const auditPayload = jobsMock.enqueueAuditLogJob.calls[0][0];
-    expect(auditPayload.eventType).toBe("USER_LOGIN");
-    expect(auditPayload.entityId).toBe("user-1");
   });
 
   it("stores tokens with TTL values from config", async () => {
@@ -437,10 +435,6 @@ describe("modules/auth/auth.service resetPassword", () => {
       "hashed-new-password",
     );
     expect(otpStoreMock.deleteResetToken.calls[0][0]).toBe("valid-token");
-    expect(jobsMock.enqueueAuditLogJob.calls.length).toBe(1);
-    expect(jobsMock.enqueueAuditLogJob.calls[0][0].eventType).toBe(
-      "PASSWORD_RESET",
-    );
   });
 });
 
@@ -502,10 +496,6 @@ describe("modules/auth/auth.service changePassword", () => {
     expect(prismaMock.user.update.calls[0][0].where.id).toBe("user-1");
     expect(prismaMock.user.update.calls[0][0].data.passwordHash).toBe(
       "hashed-new-password",
-    );
-    expect(jobsMock.enqueueAuditLogJob.calls.length).toBe(1);
-    expect(jobsMock.enqueueAuditLogJob.calls[0][0].eventType).toBe(
-      "PASSWORD_CHANGED",
     );
   });
 });

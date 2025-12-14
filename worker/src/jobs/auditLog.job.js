@@ -8,6 +8,7 @@ import logger from "../libs/logger.js";
 export async function handleAuditLogJob(payload) {
   const {
     eventType,
+    businessId,
     userId,
     outletId,
     entityType,
@@ -19,6 +20,7 @@ export async function handleAuditLogJob(payload) {
     await prisma.auditLog.create({
       data: {
         eventType,
+        businessId,
         userId,
         outletId,
         entityType,

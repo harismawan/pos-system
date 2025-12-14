@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore.js";
 import AuthLayout from "../layouts/AuthLayout.jsx";
 import AppLayout from "../layouts/AppLayout.jsx";
+import SuperAdminLayout from "../layouts/SuperAdminLayout.jsx";
 
 // Lazy-loaded Auth pages
 const LoginPage = lazy(() => import("../pages/auth/LoginPage.jsx"));
@@ -22,9 +23,6 @@ const PosScreen = lazy(() => import("../pages/pos/PosScreen.jsx"));
 // Lazy-loaded Products
 const ProductsListPage = lazy(
   () => import("../pages/products/ProductsListPage.jsx"),
-);
-const ProductFormPage = lazy(
-  () => import("../pages/products/ProductFormPage.jsx"),
 );
 
 // Lazy-loaded Inventory
@@ -84,6 +82,22 @@ const InventoryReportPage = lazy(
   () => import("../pages/reports/InventoryReportPage.jsx"),
 );
 
+// Lazy-loaded Super Admin pages
+const SuperAdminDashboardPage = lazy(
+  () => import("../pages/super-admin/SuperAdminDashboardPage.jsx"),
+);
+const BusinessesPage = lazy(
+  () => import("../pages/super-admin/BusinessesPage.jsx"),
+);
+const SuperAdminUsersPage = lazy(
+  () => import("../pages/super-admin/SuperAdminUsersPage.jsx"),
+);
+
+// Lazy-loaded Invitation pages
+const AcceptInvitationPage = lazy(
+  () => import("../pages/auth/AcceptInvitationPage.jsx"),
+);
+
 // Loading fallback component
 function PageLoader() {
   return (
@@ -113,6 +127,21 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+function SuperAdminRoute({ children }) {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const user = useAuthStore((state) => state.user);
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user?.role !== "SUPER_ADMIN") {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
+}
+
 function AppRoutes() {
   return (
     <Suspense fallback={<PageLoader />}>
@@ -121,6 +150,20 @@ function AppRoutes() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
+        </Route>
+
+        {/* Super Admin routes */}
+        <Route
+          element={
+            <SuperAdminRoute>
+              <SuperAdminLayout />
+            </SuperAdminRoute>
+          }
+        >
+          <Route path="/super-admin" element={<SuperAdminDashboardPage />} />
+          <Route path="/super-admin/businesses" element={<BusinessesPage />} />
+          <Route path="/super-admin/users" element={<SuperAdminUsersPage />} />
         </Route>
 
         <Route
@@ -136,8 +179,6 @@ function AppRoutes() {
 
           {/* Products */}
           <Route path="/products" element={<ProductsListPage />} />
-          <Route path="/products/new" element={<ProductFormPage />} />
-          <Route path="/products/:id/edit" element={<ProductFormPage />} />
 
           {/* Inventory */}
           <Route path="/inventory" element={<InventoryOverviewPage />} />

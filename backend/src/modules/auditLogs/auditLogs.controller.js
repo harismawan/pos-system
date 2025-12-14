@@ -20,7 +20,6 @@ export async function getAuditLogsController({ query, store, set }) {
         eventType: query.eventType,
         entityType: query.entityType,
         userId: query.userId,
-        outletId: store.outletId || query.outletId,
         startDate: query.startDate,
         endDate: query.endDate,
       },

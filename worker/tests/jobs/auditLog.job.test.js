@@ -23,6 +23,7 @@ describe("jobs/auditLog", () => {
 
     const payload = {
       eventType: "ORDER_CREATED",
+      businessId: "business-1",
       userId: "user-1",
       outletId: "outlet-1",
       entityType: "PosOrder",
@@ -35,6 +36,7 @@ describe("jobs/auditLog", () => {
     expect(prismaMock.auditLog.create.calls.length).toBe(1);
     expect(prismaMock.auditLog.create.calls[0][0].data).toEqual({
       eventType: "ORDER_CREATED",
+      businessId: "business-1",
       userId: "user-1",
       outletId: "outlet-1",
       entityType: "PosOrder",

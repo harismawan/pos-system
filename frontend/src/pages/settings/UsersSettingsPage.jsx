@@ -341,7 +341,6 @@ function UsersSettingsPage() {
               )}
           </div>
         ),
-        right: true,
       },
     ],
     [currentUser, can],

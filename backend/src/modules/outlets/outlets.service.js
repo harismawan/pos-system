@@ -3,7 +3,6 @@
  */
 
 import prisma from "../../libs/prisma.js";
-import { enqueueAuditLogJob } from "../../libs/jobs.js";
 
 export async function getOutlets(filters = {}) {
   const { isActive, page = 1, limit = 50, businessId } = filters;
@@ -103,18 +102,6 @@ export async function createOutlet(data, userId, businessId) {
     },
   });
 
-  enqueueAuditLogJob({
-    eventType: "OUTLET_CREATED",
-    userId,
-    outletId: outlet.id,
-    entityType: "Outlet",
-    entityId: outlet.id,
-    payload: {
-      name: outlet.name,
-      code: outlet.code,
-    },
-  });
-
   return outlet;
 }
 
@@ -135,18 +122,6 @@ export async function updateOutlet(id, data, userId, businessId) {
     data,
     include: {
       defaultPriceTier: true,
-    },
-  });
-
-  enqueueAuditLogJob({
-    eventType: "OUTLET_UPDATED",
-    userId,
-    outletId: outlet.id,
-    entityType: "Outlet",
-    entityId: outlet.id,
-    payload: {
-      name: outlet.name,
-      code: outlet.code,
     },
   });
 
@@ -252,18 +227,6 @@ export async function assignUserToOutlet(data, adminUserId) {
     },
   });
 
-  enqueueAuditLogJob({
-    eventType: "USER_ASSIGNED_TO_OUTLET",
-    userId: adminUserId,
-    outletId,
-    entityType: "OutletUser",
-    entityId: outletUser.id,
-    payload: {
-      assignedUserId: userId,
-      outletRole,
-    },
-  });
-
   return outletUser;
 }
 
@@ -277,17 +240,6 @@ export async function removeUserFromOutlet(userId, outletId, adminUserId) {
         userId,
         outletId,
       },
-    },
-  });
-
-  enqueueAuditLogJob({
-    eventType: "USER_REMOVED_FROM_OUTLET",
-    userId: adminUserId,
-    outletId,
-    entityType: "OutletUser",
-    entityId: `${userId}-${outletId}`,
-    payload: {
-      removedUserId: userId,
     },
   });
 

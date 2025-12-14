@@ -37,3 +37,9 @@ export const changePasswordSchema = {
     newPassword: t.String({ minLength: 6 }),
   }),
 };
+
+export const logoutSchema = {
+  body: t.Object({
+    refreshToken: t.String({ minLength: 1 }),
+  }),
+};

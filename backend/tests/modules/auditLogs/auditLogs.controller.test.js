@@ -48,11 +48,12 @@ describe("modules/auditLogs/auditLogs.controller", () => {
 
     expect(res.success).toBe(true);
     const args = serviceMock.getAuditLogs.calls[0][0];
-    expect(args.outletId).toBe("store-out");
+    // outletId is no longer passed from store to service
+    expect(args.outletId).toBeUndefined();
     expect(serviceMock.getAuditLogs.calls[0][1]).toBe("biz-1");
   });
 
-  it("prioritizes store outletId over query outletId", async () => {
+  it("ignores store outletId", async () => {
     const set = {};
     const res = await controller.getAuditLogsController({
       query: { page: 1, limit: 10, outletId: "query-out" },
@@ -62,7 +63,7 @@ describe("modules/auditLogs/auditLogs.controller", () => {
 
     expect(res.success).toBe(true);
     const args = serviceMock.getAuditLogs.calls[0][0];
-    expect(args.outletId).toBe("store-out");
+    expect(args.outletId).toBeUndefined();
     expect(serviceMock.getAuditLogs.calls[0][1]).toBe("biz-1");
   });
 

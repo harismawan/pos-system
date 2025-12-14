@@ -104,16 +104,22 @@ function DashboardPage() {
       ).toISOString();
 
       const [salesData, productsData, lowStockData] = await Promise.all([
-        reportsApi.getSalesSummary({ startDate, endDate }),
+        reportsApi.getSalesTrend({ startDate, endDate }),
         productsApi.getProducts({ limit: 1 }),
         inventoryApi.getInventory({ lowStock: "true", limit: 1 }),
       ]);
 
       setStats({
         totalSales:
-          salesData?.summary?.totalRevenue || salesData?.totalRevenue || 0,
+          salesData?.current?.totals?.revenue ||
+          salesData?.summary?.totalRevenue ||
+          salesData?.totalRevenue ||
+          0,
         ordersToday:
-          salesData?.summary?.totalOrders || salesData?.totalOrders || 0,
+          salesData?.current?.totals?.orders ||
+          salesData?.summary?.totalOrders ||
+          salesData?.totalOrders ||
+          0,
         productsCount: productsData?.pagination?.total || 0,
         lowStockCount: lowStockData?.pagination?.total || 0,
       });
@@ -133,45 +139,105 @@ function DashboardPage() {
 
   return (
     <div className="page-container">
-      {/* Welcome Header */}
+      {/* Hero Header */}
       <div
         style={{
           background:
-            "linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%)",
+            "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)",
           borderRadius: "var(--radius-xl)",
           padding: "32px",
           marginBottom: "24px",
           color: "white",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
-        <div style={{ marginBottom: "8px", fontSize: "14px", opacity: 0.9 }}>
-          {getGreeting()},
-        </div>
-        <h1 style={{ fontSize: "28px", fontWeight: 700, marginBottom: "12px" }}>
-          {user?.name || "User"}! 👋
-        </h1>
+        {/* Background pattern */}
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "24px",
-            fontSize: "14px",
+            position: "absolute",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: "40%",
+            background:
+              "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
+            opacity: 0.5,
           }}
-        >
-          <span
+        />
+
+        <div style={{ position: "relative", zIndex: 1 }}>
+          <div style={{ marginBottom: "6px", fontSize: "13px", opacity: 0.85 }}>
+            {getGreeting()},
+          </div>
+          <h1
             style={{
-              background: "rgba(255,255,255,0.2)",
-              padding: "4px 12px",
-              borderRadius: "var(--radius-full)",
+              fontSize: "26px",
+              fontWeight: 700,
+              marginBottom: "6px",
+              letterSpacing: "-0.02em",
             }}
           >
-            {user?.role}
-          </span>
-          {activeOutlet ? (
-            <span>📍 {activeOutlet.name}</span>
-          ) : (
-            <span style={{ opacity: 0.7 }}>No outlet selected</span>
-          )}
+            {user?.name || "User"}! 👋
+          </h1>
+          <p style={{ fontSize: "13px", opacity: 0.8, maxWidth: "500px" }}>
+            {activeOutlet
+              ? `You're managing ${activeOutlet.name}. Here's your daily overview.`
+              : "Select an outlet to view your daily stats and start selling."}
+          </p>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "16px",
+              marginTop: "20px",
+              flexWrap: "wrap",
+            }}
+          >
+            <div
+              style={{
+                background: "rgba(255,255,255,0.15)",
+                backdropFilter: "blur(10px)",
+                padding: "6px 12px",
+                borderRadius: "var(--radius-full)",
+                fontSize: "12px",
+                fontWeight: 500,
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              <span style={{ fontSize: "14px" }}>👤</span>
+              {user?.role}
+            </div>
+            {activeOutlet && (
+              <div
+                style={{
+                  background: "rgba(255,255,255,0.15)",
+                  backdropFilter: "blur(10px)",
+                  padding: "6px 12px",
+                  borderRadius: "var(--radius-full)",
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+              >
+                <span style={{ fontSize: "14px" }}>📍</span>
+                {activeOutlet.name}
+              </div>
+            )}
+            <div style={{ fontSize: "12px", opacity: 0.8 }}>
+              {new Date().toLocaleDateString("en-US", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </div>
+          </div>
         </div>
       </div>
 

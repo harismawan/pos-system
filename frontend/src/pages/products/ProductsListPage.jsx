@@ -5,6 +5,7 @@ import { useUiStore } from "../../store/uiStore.js";
 import * as productsApi from "../../api/productsApi.js";
 import ConfirmModal from "../../components/ConfirmModal.jsx";
 import ProductDetailModal from "../../components/products/ProductDetailModal.jsx";
+import ProductEditModal from "../../components/products/ProductEditModal.jsx";
 import { useDebounce } from "../../hooks/useDebounce.js";
 
 // Custom styles for react-data-table-component
@@ -82,9 +83,23 @@ function ProductsListPage() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
+  // Edit modal state
+  const [editProduct, setEditProduct] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+
   const handleRowClick = (row) => {
     setSelectedProduct(row);
     setShowDetailModal(true);
+  };
+
+  const handleEditClick = (product) => {
+    setEditProduct(product);
+    setShowEditModal(true);
+  };
+
+  const handleAddNew = () => {
+    setEditProduct(null);
+    setShowEditModal(true);
   };
 
   const loadProducts = async (page, limit, search, category, isActive) => {
@@ -237,7 +252,7 @@ function ProductsListPage() {
           <div className="action-buttons">
             <button
               className="action-btn edit"
-              onClick={() => navigate(`/products/${row.id}/edit`)}
+              onClick={() => handleEditClick(row)}
             >
               Edit
             </button>
@@ -267,10 +282,7 @@ function ProductsListPage() {
           <h1 className="page-title">Products</h1>
           <p className="page-subtitle">Manage your product catalog</p>
         </div>
-        <button
-          className="btn-primary btn-lg"
-          onClick={() => navigate("/products/new")}
-        >
+        <button className="btn-primary btn-lg" onClick={handleAddNew}>
           <svg
             width="20"
             height="20"
@@ -367,6 +379,21 @@ function ProductsListPage() {
         isOpen={showDetailModal}
         onClose={() => setShowDetailModal(false)}
         product={selectedProduct}
+      />
+
+      <ProductEditModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        product={editProduct}
+        onSuccess={() => {
+          loadProducts(
+            currentPage,
+            perPage,
+            searchTerm,
+            filterCategory,
+            filterStatus,
+          );
+        }}
       />
     </div>
   );

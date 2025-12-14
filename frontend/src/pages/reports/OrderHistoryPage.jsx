@@ -267,11 +267,7 @@ function OrderHistoryPage() {
               <h2 className="modal-title">Order {selectedOrder.orderNumber}</h2>
               <button
                 onClick={() => setSelectedOrder(null)}
-                style={{
-                  background: "none",
-                  fontSize: "24px",
-                  color: "var(--gray-400)",
-                }}
+                className="modal-close"
               >
                 ×
               </button>

@@ -21,12 +21,19 @@ const serviceMock = {
 const tokenStoreMock = {
   revokeAccessToken: createMockFn(async () => {}),
   revokeRefreshToken: createMockFn(async () => {}),
+  revokeSession: createMockFn(async () => {}),
+  storeSession: createMockFn(async () => {}),
 };
 const loggerMock = { error: createMockFn(), info: createMockFn() };
+const jobsMock = {
+  enqueueAuditLogJob: createMockFn(),
+  createAuditLogData: (s, p) => p,
+};
 
 mock.module("../../../src/modules/auth/auth.service.js", () => serviceMock);
 mock.module("../../../src/libs/tokenStore.js", () => tokenStoreMock);
 mock.module("../../../src/libs/logger.js", () => ({ default: loggerMock }));
+mock.module("../../../src/libs/jobs.js", () => jobsMock);
 
 const controller = await import("../../../src/modules/auth/auth.controller.js");
 
@@ -36,6 +43,7 @@ describe("modules/auth/auth.controller", () => {
     serviceMock.login.mockResolvedValue({
       accessToken: "a",
       refreshToken: "r",
+      user: { id: "u1", businessId: "b1", username: "u" },
     });
     serviceMock.refresh.mockReset();
     serviceMock.refresh.mockResolvedValue({
@@ -45,7 +53,8 @@ describe("modules/auth/auth.controller", () => {
     tokenStoreMock.revokeAccessToken.mockReset();
     tokenStoreMock.revokeRefreshToken.mockReset();
     loggerMock.error.mockReset();
-    loggerMock.info.mockReset();
+
+    jobsMock.enqueueAuditLogJob.mockReset();
   });
 
   it("returns success on login", async () => {

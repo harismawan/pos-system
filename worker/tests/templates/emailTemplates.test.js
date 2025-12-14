@@ -160,8 +160,28 @@ describe("templates/emailTemplates", () => {
     it("falls back to general notification for unknown template", () => {
       const result = renderTemplate("unknown_template", {});
 
-      expect(result.subject).toBe("Notification");
-      expect(result.html).toContain("notification from POS System");
+      expect(result.html).toContain("Notification");
+      expect(result.html).toContain("This is a notification from POS System.");
+    });
+
+    it("renders user invitation template correctly", () => {
+      const data = {
+        businessName: "Test Busines",
+        inviterName: "John Doe",
+        role: "MANAGER",
+        inviteLink: "https://pos.example.com/invite?token=123",
+        expiryHours: 48,
+      };
+
+      const result = renderTemplate("user_invitation", data);
+
+      expect(result.subject).toBe("You're invited to join Test Busines!");
+      expect(result.html).toContain("You're Invited!");
+      expect(result.html).toContain("Test Busines");
+      expect(result.html).toContain("John Doe");
+      expect(result.html).toContain("Manager");
+      expect(result.html).toContain("https://pos.example.com/invite?token=123");
+      expect(result.html).toContain("48 hours");
     });
   });
 });

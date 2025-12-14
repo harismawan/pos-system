@@ -6,6 +6,7 @@ import * as productsService from "./products.service.js";
 import logger from "../../libs/logger.js";
 import { PRD } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
+import { enqueueAuditLogJob, createAuditLogData } from "../../libs/jobs.js";
 
 export async function getProductsController({ query, store, set }) {
   try {
@@ -47,6 +48,22 @@ export async function createProductController({ body, store, set }) {
     const businessId = store.user.businessId;
     const product = await productsService.createProduct(body, businessId);
 
+    // Audit Log
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "PRODUCT_CREATED",
+        outletId: null,
+        entityType: "Product",
+        entityId: product.id,
+        payload: {
+          name: product.name,
+          sku: product.sku,
+          barcode: product.barcode,
+          price: product.price,
+        },
+      }),
+    );
+
     set.status = 201;
     return successResponse(PRD.CREATE_SUCCESS, product);
   } catch (err) {
@@ -66,6 +83,19 @@ export async function updateProductController({ params, body, store, set }) {
       businessId,
     );
 
+    // Audit Log
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "PRODUCT_UPDATED",
+        outletId: null,
+        entityType: "Product",
+        entityId: params.id,
+        payload: {
+          changes: Object.keys(body),
+        },
+      }),
+    );
+
     return successResponse(PRD.UPDATE_SUCCESS, product);
   } catch (err) {
     logger.error({ err }, "Update product failed");
@@ -79,6 +109,17 @@ export async function deleteProductController({ params, store, set }) {
   try {
     const businessId = store.user.businessId;
     const result = await productsService.deleteProduct(params.id, businessId);
+
+    // Audit Log
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "PRODUCT_DELETED",
+        outletId: null,
+        entityType: "Product",
+        entityId: params.id,
+        payload: {},
+      }),
+    );
 
     return successResponse(PRD.DELETE_SUCCESS, result);
   } catch (err) {

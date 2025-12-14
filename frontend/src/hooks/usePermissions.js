@@ -44,11 +44,54 @@ export const PERMISSIONS = {
   SETTINGS_SUPPLIERS: "settings.suppliers",
   SETTINGS_WAREHOUSES: "settings.warehouses",
   SETTINGS_AUDIT: "settings.audit",
+
+  // Super Admin (platform-level)
+  SUPER_ADMIN_DASHBOARD: "super_admin.dashboard",
+  SUPER_ADMIN_BUSINESSES: "super_admin.businesses",
+  SUPER_ADMIN_USERS: "super_admin.users",
+  SUPER_ADMIN_SESSIONS: "super_admin.sessions",
+  SUPER_ADMIN_IMPERSONATE: "super_admin.impersonate",
+
+  // Invitations
+  INVITATIONS_VIEW: "invitations.view",
+  INVITATIONS_CREATE: "invitations.create",
+  INVITATIONS_CANCEL: "invitations.cancel",
 };
 
 // Role to permissions mapping
 const ROLE_PERMISSIONS = {
-  OWNER: Object.values(PERMISSIONS),
+  SUPER_ADMIN: Object.values(PERMISSIONS),
+
+  OWNER: [
+    PERMISSIONS.USERS_VIEW,
+    PERMISSIONS.USERS_CREATE,
+    PERMISSIONS.USERS_EDIT,
+    PERMISSIONS.USERS_DELETE,
+    PERMISSIONS.PRODUCTS_VIEW,
+    PERMISSIONS.PRODUCTS_CREATE,
+    PERMISSIONS.PRODUCTS_EDIT,
+    PERMISSIONS.PRODUCTS_DELETE,
+    PERMISSIONS.INVENTORY_VIEW,
+    PERMISSIONS.INVENTORY_ADJUST,
+    PERMISSIONS.INVENTORY_TRANSFER,
+    PERMISSIONS.POS_ACCESS,
+    PERMISSIONS.POS_VOID,
+    PERMISSIONS.PURCHASE_VIEW,
+    PERMISSIONS.PURCHASE_CREATE,
+    PERMISSIONS.PURCHASE_EDIT,
+    PERMISSIONS.PURCHASE_RECEIVE,
+    PERMISSIONS.REPORTS_VIEW,
+    PERMISSIONS.REPORTS_EXPORT,
+    PERMISSIONS.SETTINGS_OUTLETS,
+    PERMISSIONS.SETTINGS_PRICING,
+    PERMISSIONS.SETTINGS_CUSTOMERS,
+    PERMISSIONS.SETTINGS_SUPPLIERS,
+    PERMISSIONS.SETTINGS_WAREHOUSES,
+    PERMISSIONS.SETTINGS_AUDIT,
+    PERMISSIONS.INVITATIONS_VIEW,
+    PERMISSIONS.INVITATIONS_CREATE,
+    PERMISSIONS.INVITATIONS_CANCEL,
+  ],
 
   ADMIN: [
     PERMISSIONS.USERS_VIEW,
@@ -146,6 +189,11 @@ export function usePermissions() {
      * Check if user has all of the specified permissions
      */
     canAll: (permissions) => permissions.every((p) => hasPermission(role, p)),
+
+    /**
+     * Check if user is Super Admin
+     */
+    isSuperAdmin: role === "SUPER_ADMIN",
 
     /**
      * Current user role

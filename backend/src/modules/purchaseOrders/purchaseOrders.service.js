@@ -4,7 +4,7 @@
 
 import { Prisma } from "@prisma/client";
 import prisma from "../../libs/prisma.js";
-import { enqueueAuditLogJob } from "../../libs/jobs.js";
+
 import logger from "../../libs/logger.js";
 
 /**
@@ -250,21 +250,6 @@ export async function createPurchaseOrder(data, userId, businessId) {
     },
   });
 
-  enqueueAuditLogJob({
-    eventType: "PURCHASE_ORDER_CREATED",
-    userId,
-    outletId,
-    entityType: "PurchaseOrder",
-    entityId: order.id,
-    payload: {
-      orderNumber: order.orderNumber,
-      supplierId,
-      totalAmount: parseFloat(totalAmount),
-    },
-  });
-
-  logger.info({ orderId: order.id, orderNumber }, "Purchase order created");
-
   return order;
 }
 
@@ -420,23 +405,6 @@ export async function receivePurchaseOrder(
     return updatedOrder;
   });
 
-  enqueueAuditLogJob({
-    eventType: "PURCHASE_ORDER_RECEIVED",
-    userId,
-    outletId: order.outletId,
-    entityType: "PurchaseOrder",
-    entityId: order.id,
-    payload: {
-      orderNumber: order.orderNumber,
-      receivedItems: receivedItems.length,
-    },
-  });
-
-  logger.info(
-    { orderId: order.id, orderNumber: order.orderNumber },
-    "Purchase order received",
-  );
-
   return result;
 }
 
@@ -471,22 +439,6 @@ export async function cancelPurchaseOrder(id, userId, businessId) {
       },
     },
   });
-
-  enqueueAuditLogJob({
-    eventType: "PURCHASE_ORDER_CANCELLED",
-    userId,
-    outletId: order.outletId,
-    entityType: "PurchaseOrder",
-    entityId: order.id,
-    payload: {
-      orderNumber: order.orderNumber,
-    },
-  });
-
-  logger.info(
-    { orderId: order.id, orderNumber: order.orderNumber },
-    "Purchase order cancelled",
-  );
 
   return cancelled;
 }

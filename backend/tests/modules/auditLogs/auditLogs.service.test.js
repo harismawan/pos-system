@@ -53,15 +53,15 @@ describe("modules/auditLogs/auditLogs.service", () => {
 
     // Fix: Mock user validation for userId filter
     prismaMock.user.findUnique.mockResolvedValue({ id: "u1", businessId });
-    // Fix: Mock outlet validation for outletId filter
-    prismaMock.outlet.findUnique.mockResolvedValue({ id: "out1", businessId });
+    // outletId filter support removed
+    // prismaMock.outlet.findUnique.mockResolvedValue({ id: "out1", businessId });
 
     const res = await auditLogsService.getAuditLogs(
       {
         eventType: "USER_CREATED",
         entityType: "User",
         userId: "u1",
-        outletId: "out1",
+        userId: "u1",
         page: 2,
         limit: 5,
       },
@@ -70,7 +70,7 @@ describe("modules/auditLogs/auditLogs.service", () => {
 
     const args = prismaMock.auditLog.findMany.calls[0][0];
     expect(args.where.userId).toBe("u1");
-    expect(args.where.outletId).toBe("out1");
+    expect(args.where.userId).toBe("u1");
     expect(args.skip).toBe(5);
     expect(res.logs[0].user).toBeNull();
     expect(res.pagination.totalPages).toBe(1);
@@ -140,15 +140,15 @@ describe("modules/auditLogs/auditLogs.service", () => {
     ).rejects.toThrow("User not found");
   });
 
-  it("throws when outletId filter does not belong to business", async () => {
-    prismaMock.outlet.findUnique.mockResolvedValue({
-      id: "o2",
-      businessId: "other-biz",
-    });
-    await expect(
-      auditLogsService.getAuditLogs({ outletId: "o2" }, businessId),
-    ).rejects.toThrow("Outlet not found");
-  });
+  // it("throws when outletId filter does not belong to business", async () => {
+  //   prismaMock.outlet.findUnique.mockResolvedValue({
+  //     id: "o2",
+  //     businessId: "other-biz",
+  //   });
+  //   await expect(
+  //     auditLogsService.getAuditLogs({ outletId: "o2" }, businessId),
+  //   ).rejects.toThrow("Outlet not found");
+  // });
 
   it("throws when businessId is missing in getAuditLogById", async () => {
     await expect(auditLogsService.getAuditLogById("1")).rejects.toThrow(
@@ -159,6 +159,7 @@ describe("modules/auditLogs/auditLogs.service", () => {
   it("throws when accessing audit log from another business", async () => {
     prismaMock.auditLog.findUnique.mockResolvedValue({
       id: "log2",
+      businessId: "other-biz",
       outlet: { businessId: "other-biz" },
       user: { businessId: "other-biz" },
     });

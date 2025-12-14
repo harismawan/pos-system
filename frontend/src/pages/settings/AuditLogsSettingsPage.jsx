@@ -220,7 +220,6 @@ function AuditLogsSettingsPage() {
           </button>
         ),
         width: "100px",
-        right: true,
       },
     ],
     [],
@@ -370,10 +369,10 @@ function AuditLogsSettingsPage() {
             style={{ maxWidth: "600px" }}
           >
             <div className="modal-header">
-              <h3 className="modal-title">Audit Log Details</h3>
+              <h3 className="modal-title">Audit Log</h3>
               <button
                 className="modal-close"
-                onClick={() => setShowModal(false)}
+                onClick={() => setSelectedLog(null)}
               >
                 ×
               </button>

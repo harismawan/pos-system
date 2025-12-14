@@ -147,6 +147,7 @@ export async function authMiddleware({ headers, set, store }) {
       username: user.username,
       name: user.name,
       role: user.role,
+      impersonatedBy: payload.impersonatedBy || null, // Super Admin ID if impersonating
       outlets: user.outletUsers.map((ou) => ({
         id: ou.outlet.id,
         name: ou.outlet.name,

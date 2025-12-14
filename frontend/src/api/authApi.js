@@ -14,8 +14,8 @@ export async function refresh(refreshToken) {
   return response.data;
 }
 
-export async function logout() {
-  const response = await apiClient.post("/auth/logout", {});
+export async function logout(refreshToken) {
+  const response = await apiClient.post("/auth/logout", { refreshToken });
   return response.data;
 }
 

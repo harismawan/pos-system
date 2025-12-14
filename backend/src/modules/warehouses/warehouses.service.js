@@ -3,7 +3,6 @@
  */
 
 import prisma from "../../libs/prisma.js";
-import { enqueueAuditLogJob } from "../../libs/jobs.js";
 
 export async function getWarehouses(filters = {}, businessId) {
   // businessId is required for multi-tenant isolation
@@ -134,19 +133,6 @@ export async function createWarehouse(data, userId, businessId) {
     },
   });
 
-  enqueueAuditLogJob({
-    eventType: "WAREHOUSE_CREATED",
-    userId,
-    outletId: warehouse.outletId,
-    entityType: "Warehouse",
-    entityId: warehouse.id,
-    payload: {
-      name: warehouse.name,
-      code: warehouse.code,
-      type: warehouse.type,
-    },
-  });
-
   return warehouse;
 }
 
@@ -187,18 +173,6 @@ export async function updateWarehouse(id, data, userId, businessId) {
     data,
     include: {
       outlet: true,
-    },
-  });
-
-  enqueueAuditLogJob({
-    eventType: "WAREHOUSE_UPDATED",
-    userId,
-    outletId: warehouse.outletId,
-    entityType: "Warehouse",
-    entityId: warehouse.id,
-    payload: {
-      name: warehouse.name,
-      code: warehouse.code,
     },
   });
 

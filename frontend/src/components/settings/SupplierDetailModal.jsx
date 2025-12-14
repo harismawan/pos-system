@@ -112,16 +112,7 @@ function SupplierDetailModal({ isOpen, onClose, supplier: initialSupplier }) {
               Code: {supplier.code || "-"} • {supplier.contactName}
             </div>
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: "none",
-              fontSize: "24px",
-              color: "var(--gray-400)",
-              padding: 0,
-              lineHeight: 1,
-            }}
-          >
+          <button onClick={onClose} className="modal-close">
             ×
           </button>
         </div>

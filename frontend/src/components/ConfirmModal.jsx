@@ -29,13 +29,7 @@ function ConfirmModal({
           <button
             onClick={() => !loading && onClose()}
             disabled={loading}
-            style={{
-              background: "none",
-              fontSize: "24px",
-              color: "var(--gray-400)",
-              padding: 0,
-              lineHeight: 1,
-            }}
+            className="modal-close"
           >
             ×
           </button>

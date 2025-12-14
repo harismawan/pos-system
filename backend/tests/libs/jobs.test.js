@@ -36,6 +36,26 @@ describe("libs/jobs", () => {
     expect(loggerMock.debug.calls.length).toBe(1);
   });
 
+  it("merges impersonatedBy into payload for audit logs", async () => {
+    redisMock.lpush.mockReset();
+    redisMock.lpush.mockImplementation(async () => 1);
+
+    const auditData = {
+      payload: { action: "update" },
+      impersonatedBy: "admin-1",
+    };
+
+    jobs.enqueueAuditLogJob(auditData);
+
+    const [, payload] = redisMock.lpush.calls[0];
+    const parsed = JSON.parse(payload);
+
+    expect(parsed.payload.payload).toEqual({
+      action: "update",
+      impersonatedBy: "admin-1",
+    });
+  });
+
   it("supports other job types", async () => {
     redisMock.lpush.mockReset();
     redisMock.lpush.mockImplementation(async () => 1);
@@ -58,5 +78,31 @@ describe("libs/jobs", () => {
     expect(loggerMock.error.calls.length).toBe(1);
     const [logArgs] = loggerMock.error.calls[0];
     expect(logArgs.queueName).toBe(jobs.QUEUES.REPORT_GENERATION);
+  });
+
+  it("creates audit log data from store and options", () => {
+    const store = {
+      user: { id: "u1", businessId: "b1", impersonatedBy: "admin" },
+      outletId: "o1",
+    };
+    const options = {
+      eventType: "TEST",
+      entityType: "THING",
+      entityId: "t1",
+      payload: { foo: "bar" },
+    };
+
+    const data = jobs.createAuditLogData(store, options);
+
+    expect(data).toEqual({
+      eventType: "TEST",
+      businessId: "b1",
+      userId: "u1",
+      outletId: "o1",
+      entityType: "THING",
+      entityId: "t1",
+      payload: { foo: "bar" },
+      impersonatedBy: "admin",
+    });
   });
 });

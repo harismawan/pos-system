@@ -3,20 +3,37 @@
  * Handles HTTP requests for authentication
  */
 
+import crypto from "crypto";
 import * as authService from "./auth.service.js";
 import {
   revokeAccessToken,
   revokeRefreshToken,
+  revokeSession,
 } from "../../libs/tokenStore.js";
 import logger from "../../libs/logger.js";
 import { AUT } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
+import { enqueueAuditLogJob, createAuditLogData } from "../../libs/jobs.js";
 
 export async function loginController({ body, set }) {
   try {
     const { username, password } = body;
 
     const result = await authService.login(username, password);
+
+    // Audit Log - Manual since no store.user context yet
+    enqueueAuditLogJob({
+      eventType: "USER_LOGIN",
+      businessId: result.user.businessId,
+      userId: result.user.id,
+      outletId: null,
+      entityType: "User",
+      entityId: result.user.id,
+      payload: {
+        username: result.user.username,
+        timestamp: new Date().toISOString(),
+      },
+    });
 
     return successResponse(AUT.LOGIN_SUCCESS, result);
   } catch (err) {
@@ -105,11 +122,27 @@ export async function logoutController({ headers, body, store }) {
     // Revoke refresh token if provided in body
     if (body?.refreshToken) {
       await revokeRefreshToken(store.user.id, body.refreshToken);
+
+      // Also delete the session from Redis
+      const sessionId = crypto
+        .createHash("sha256")
+        .update(body.refreshToken)
+        .digest("hex")
+        .substring(0, 16);
+      await revokeSession(store.user.id, sessionId);
     }
 
-    logger.info(
-      { userId: store.user?.id },
-      "User logged out and tokens revoked",
+    // Audit Log
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "USER_LOGGED_OUT",
+        entityType: "User",
+        entityId: store.user.id,
+        payload: {
+          timestamp: new Date().toISOString(),
+          refreshTokenProvided: !!body?.refreshToken,
+        },
+      }),
     );
 
     return successResponse(AUT.LOGOUT_SUCCESS, {
@@ -141,6 +174,21 @@ export async function resetPasswordController({ body, set }) {
   try {
     const { token, newPassword } = body;
     const result = await authService.resetPassword(token, newPassword);
+
+    // Audit Log - Manual
+    enqueueAuditLogJob({
+      eventType: "PASSWORD_RESET",
+      businessId: result.businessId,
+      userId: result.userId,
+      outletId: null,
+      entityType: "User",
+      entityId: result.userId,
+      payload: {
+        method: "email_link",
+        timestamp: new Date().toISOString(),
+      },
+    });
+
     return successResponse(AUT.RESET_PASSWORD_SUCCESS, result);
   } catch (err) {
     logger.error({ err }, "Reset password failed");
@@ -158,6 +206,19 @@ export async function changePasswordController({ body, store, set }) {
       currentPassword,
       newPassword,
     );
+
+    // Audit Log
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "PASSWORD_CHANGED",
+        entityType: "User",
+        entityId: store.user.id,
+        payload: {
+          timestamp: new Date().toISOString(),
+        },
+      }),
+    );
+
     return successResponse(AUT.CHANGE_PASSWORD_SUCCESS, result);
   } catch (err) {
     logger.error({ err, userId: store.user?.id }, "Change password failed");

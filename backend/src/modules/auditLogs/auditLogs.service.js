@@ -12,7 +12,7 @@ import {
  * Get audit logs with pagination and filters
  */
 export async function getAuditLogs(
-  { page, limit, eventType, entityType, userId, outletId, startDate, endDate },
+  { page, limit, eventType, entityType, userId, startDate, endDate },
   businessId,
 ) {
   // businessId is required for multi-tenant isolation
@@ -27,7 +27,7 @@ export async function getAuditLogs(
   } = normalizePagination({ page, limit });
 
   const where = {
-    OR: [{ outlet: { businessId } }, { user: { businessId } }],
+    businessId,
   };
 
   if (eventType) {
@@ -48,14 +48,14 @@ export async function getAuditLogs(
     where.userId = userId;
   }
 
-  if (outletId) {
-    // Verify outlet belongs to business
-    const outlet = await prisma.outlet.findUnique({ where: { id: outletId } });
-    if (!outlet || outlet.businessId !== businessId) {
-      throw new Error("Outlet not found");
-    }
-    where.outletId = outletId;
-  }
+  // if (outletId) {
+  //   // Verify outlet belongs to business
+  //   const outlet = await prisma.outlet.findUnique({ where: { id: outletId } });
+  //   if (!outlet || outlet.businessId !== businessId) {
+  //     throw new Error("Outlet not found");
+  //   }
+  //   where.outletId = outletId;
+  // }
 
   // Date range filter
   if (startDate || endDate) {
@@ -126,11 +126,8 @@ export async function getAuditLogById(id, businessId) {
     throw error;
   }
 
-  // Check ownership: Either outlet is in business OR user is in business
-  const logOutletBusinessId = log.outlet?.businessId;
-  const logUserBusinessId = log.user?.businessId;
-
-  if (logOutletBusinessId !== businessId && logUserBusinessId !== businessId) {
+  // Check ownership: audit log must belong to this business
+  if (log.businessId !== businessId) {
     const error = new Error("Audit log not found");
     error.statusCode = 404;
     throw error;
@@ -160,9 +157,7 @@ export async function getEventTypes(businessId) {
     throw new Error("businessId is required");
   }
   const result = await prisma.auditLog.findMany({
-    where: {
-      OR: [{ outlet: { businessId } }, { user: { businessId } }],
-    },
+    where: { businessId },
     select: { eventType: true },
     distinct: ["eventType"],
     orderBy: { eventType: "asc" },
@@ -179,9 +174,7 @@ export async function getEntityTypes(businessId) {
     throw new Error("businessId is required");
   }
   const result = await prisma.auditLog.findMany({
-    where: {
-      OR: [{ outlet: { businessId } }, { user: { businessId } }],
-    },
+    where: { businessId },
     select: { entityType: true },
     distinct: ["entityType"],
     orderBy: { entityType: "asc" },

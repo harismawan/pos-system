@@ -427,6 +427,12 @@ function OutletsSettingsPage() {
                 >
                   Cancel
                 </button>
+                <button
+                  className="modal-close"
+                  onClick={() => setShowModal(false)}
+                >
+                  ×
+                </button>
                 <button type="submit" className="btn-primary" disabled={saving}>
                   {saving ? "Saving..." : "Save"}
                 </button>

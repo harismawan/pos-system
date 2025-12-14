@@ -191,21 +191,12 @@ function ProfileModal({ isOpen, onClose }) {
           {/* Close button */}
           <button
             onClick={onClose}
+            className="modal-close"
             style={{
               position: "absolute",
               top: "12px",
               right: "12px",
-              background: "rgba(255,255,255,0.2)",
-              border: "none",
-              borderRadius: "50%",
-              width: "32px",
-              height: "32px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
               color: "white",
-              fontSize: "18px",
             }}
           >
             ×

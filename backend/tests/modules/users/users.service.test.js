@@ -258,7 +258,6 @@ describe("modules/users/users.service", () => {
     expect(prismaMock.user.update.calls[0][0].data.passwordHash).toBe(
       "new-hash",
     );
-    expect(loggerMock.info.calls.length).toBe(1);
   });
 
   it("throws when update email already exists", async () => {
@@ -293,7 +292,6 @@ describe("modules/users/users.service", () => {
 
     expect(res.success).toBe(true);
     expect(prismaMock.user.update.calls[0][0].data.isActive).toBe(false);
-    expect(loggerMock.info.calls.length).toBe(1);
   });
 
   it("assigns user to outlet and unsets defaults when needed", async () => {
@@ -314,7 +312,6 @@ describe("modules/users/users.service", () => {
 
     expect(outletUser.id).toBe("ou1");
     expect(prismaMock.outletUser.updateMany.calls.length).toBe(1);
-    expect(loggerMock.info.calls.length).toBe(1);
   });
 
   it("throws when assigning outlet for missing user or outlet", async () => {
@@ -340,7 +337,6 @@ describe("modules/users/users.service", () => {
     const res = await usersService.removeUserFromOutlet("u1", "out1");
     expect(res.success).toBe(true);
     expect(res.success).toBe(true);
-    expect(loggerMock.info.calls.length).toBe(1);
   });
 
   describe("Validation & Error Handling", () => {

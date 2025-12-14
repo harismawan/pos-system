@@ -155,11 +155,13 @@ export async function revokeAllUserTokens(userId) {
     // Get all keys matching the pattern
     const accessPattern = `token:access:${userId}:*`;
     const refreshPattern = `token:refresh:${userId}:*`;
+    const sessionPattern = `session:${userId}:*`;
 
     const accessKeys = await redis.keys(accessPattern);
     const refreshKeys = await redis.keys(refreshPattern);
+    const sessionKeys = await redis.keys(sessionPattern);
 
-    const allKeys = [...accessKeys, ...refreshKeys];
+    const allKeys = [...accessKeys, ...refreshKeys, ...sessionKeys];
 
     if (allKeys.length > 0) {
       await redis.del(...allKeys);
@@ -176,5 +178,117 @@ export async function revokeAllUserTokens(userId) {
       "Failed to revoke all user tokens from Redis",
     );
     throw err;
+  }
+}
+
+// ============================================
+// SESSION MANAGEMENT (for Super Admin)
+// ============================================
+
+/**
+ * Store a user session with metadata
+ * @param {string} userId - User ID
+ * @param {string} sessionId - Session ID (derived from token hash)
+ * @param {Object} metadata - Session metadata (userAgent, ipAddress, etc.)
+ * @param {number} ttl - Time to live in seconds
+ * @returns {Promise<void>}
+ */
+export async function storeSession(userId, sessionId, metadata, ttl) {
+  try {
+    const key = `session:${userId}:${sessionId}`;
+
+    await redis.hset(key, {
+      ...metadata,
+      createdAt: metadata.createdAt || new Date().toISOString(),
+      lastActiveAt: new Date().toISOString(),
+    });
+    await redis.expire(key, ttl);
+
+    logger.debug({ userId, sessionId, ttl }, "Stored session in Redis");
+  } catch (err) {
+    logger.error({ err, userId }, "Failed to store session in Redis");
+    throw err;
+  }
+}
+
+/**
+ * Get all active sessions for a user
+ * @param {string} userId - User ID
+ * @returns {Promise<Array>} Array of session objects
+ */
+export async function getActiveSessions(userId) {
+  try {
+    const pattern = `session:${userId}:*`;
+    const sessionKeys = await redis.keys(pattern);
+
+    if (sessionKeys.length === 0) {
+      return [];
+    }
+
+    const sessions = await Promise.all(
+      sessionKeys.map(async (key) => {
+        const sessionId = key.split(":")[2];
+        const data = await redis.hgetall(key);
+        const ttl = await redis.ttl(key);
+
+        return {
+          sessionId,
+          ...data,
+          expiresIn: ttl,
+        };
+      }),
+    );
+
+    return sessions;
+  } catch (err) {
+    logger.error({ err, userId }, "Failed to get active sessions from Redis");
+    return [];
+  }
+}
+
+/**
+ * Revoke a specific session
+ * @param {string} userId - User ID
+ * @param {string} sessionId - Session ID
+ * @returns {Promise<void>}
+ */
+export async function revokeSession(userId, sessionId) {
+  try {
+    const sessionKey = `session:${userId}:${sessionId}`;
+    const accessKey = `token:access:${userId}:${sessionId}`;
+    const refreshKey = `token:refresh:${userId}:${sessionId}`;
+
+    await redis.del(sessionKey, accessKey, refreshKey);
+
+    logger.debug({ userId, sessionId }, "Revoked session from Redis");
+  } catch (err) {
+    logger.error(
+      { err, userId, sessionId },
+      "Failed to revoke session from Redis",
+    );
+    throw err;
+  }
+}
+
+/**
+ * Update session's last active time
+ * @param {string} userId - User ID
+ * @param {string} sessionId - Session ID
+ * @returns {Promise<void>}
+ */
+export async function updateSessionActivity(userId, sessionId) {
+  try {
+    const key = `session:${userId}:${sessionId}`;
+    const exists = await redis.exists(key);
+
+    if (exists) {
+      await redis.hset(key, "lastActiveAt", new Date().toISOString());
+    }
+  } catch (err) {
+    logger.debug(
+      { err, userId, sessionId },
+      "Failed to update session activity",
+    );
+    // Non-critical error, don't throw
   }
 }

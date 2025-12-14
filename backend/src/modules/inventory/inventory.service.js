@@ -4,7 +4,7 @@
 
 import { Prisma } from "@prisma/client";
 import prisma from "../../libs/prisma.js";
-import { enqueueAuditLogJob } from "../../libs/jobs.js";
+
 import logger from "../../libs/logger.js";
 
 /**
@@ -265,25 +265,6 @@ export async function adjustInventory(data, userId, businessId) {
     return updated;
   });
 
-  enqueueAuditLogJob({
-    eventType: "INVENTORY_ADJUSTED",
-    userId,
-    outletId,
-    entityType: "Inventory",
-    entityId: result.id,
-    payload: {
-      productId,
-      warehouseId,
-      type,
-      quantity: adjustmentQuantity,
-    },
-  });
-
-  logger.info(
-    { productId, warehouseId, quantity: adjustmentQuantity, type },
-    "Inventory adjusted",
-  );
-
   return result;
 }
 
@@ -412,25 +393,6 @@ export async function transferInventory(data, userId, businessId) {
       destination: updatedDest,
     };
   });
-
-  enqueueAuditLogJob({
-    eventType: "INVENTORY_TRANSFERRED",
-    userId,
-    outletId,
-    entityType: "StockMovement",
-    entityId: `${productId}-${fromWarehouseId}-${toWarehouseId}`,
-    payload: {
-      productId,
-      fromWarehouseId,
-      toWarehouseId,
-      quantity: parseFloat(quantity),
-    },
-  });
-
-  logger.info(
-    { productId, fromWarehouseId, toWarehouseId, quantity },
-    "Inventory transferred",
-  );
 
   return result;
 }

@@ -23,6 +23,7 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
     authSchemas.resetPasswordSchema,
   )
   .post("/logout", authController.logoutController, {
+    ...authSchemas.logoutSchema,
     beforeHandle: authMiddleware,
   })
   .get("/me", authController.getMeController, {

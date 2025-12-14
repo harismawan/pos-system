@@ -6,6 +6,7 @@ import * as outletsService from "./outlets.service.js";
 import logger from "../../libs/logger.js";
 import { OUT } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
+import { enqueueAuditLogJob, createAuditLogData } from "../../libs/jobs.js";
 
 export async function getOutletsController({ query, store, set }) {
   try {
@@ -43,6 +44,20 @@ export async function createOutletController({ body, store, set }) {
     const businessId = store.user.businessId;
     const outlet = await outletsService.createOutlet(body, userId, businessId);
 
+    // Audit Log
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "OUTLET_CREATED",
+        outletId: outlet.id,
+        entityType: "Outlet",
+        entityId: outlet.id,
+        payload: {
+          name: outlet.name,
+          code: outlet.code,
+        },
+      }),
+    );
+
     set.status = 201;
     return successResponse(OUT.CREATE_SUCCESS, outlet);
   } catch (err) {
@@ -62,6 +77,20 @@ export async function updateOutletController({ params, body, store, set }) {
       body,
       userId,
       businessId,
+    );
+
+    // Audit Log
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "OUTLET_UPDATED",
+        outletId: outlet.id,
+        entityType: "Outlet",
+        entityId: outlet.id,
+        payload: {
+          name: outlet.name,
+          code: outlet.code,
+        },
+      }),
     );
 
     return successResponse(OUT.UPDATE_SUCCESS, outlet);
@@ -113,6 +142,20 @@ export async function assignUserToOutletController({
       adminUserId,
     );
 
+    // Audit Log
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "USER_ASSIGNED_TO_OUTLET",
+        outletId: params.id,
+        entityType: "OutletUser",
+        entityId: outletUser.id,
+        payload: {
+          assignedUserId: body.userId,
+          outletRole: body.outletRole,
+        },
+      }),
+    );
+
     set.status = 201;
     return successResponse(OUT.ASSIGN_USER_SUCCESS, outletUser);
   } catch (err) {
@@ -130,6 +173,19 @@ export async function removeUserFromOutletController({ params, store, set }) {
       params.userId,
       params.id,
       adminUserId,
+    );
+
+    // Audit Log
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "USER_REMOVED_FROM_OUTLET",
+        outletId: params.id,
+        entityType: "OutletUser",
+        entityId: `${params.userId}-${params.id}`,
+        payload: {
+          removedUserId: params.userId,
+        },
+      }),
     );
 
     return successResponse(OUT.REMOVE_USER_SUCCESS, result);

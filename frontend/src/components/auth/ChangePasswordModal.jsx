@@ -99,16 +99,7 @@ function ChangePasswordModal({ isOpen, onClose }) {
           }}
         >
           <h2 style={{ fontSize: "18px", fontWeight: 600 }}>Change Password</h2>
-          <button
-            onClick={handleClose}
-            style={{
-              background: "none",
-              border: "none",
-              fontSize: "24px",
-              cursor: "pointer",
-              color: "var(--gray-500)",
-            }}
-          >
+          <button onClick={handleClose} className="modal-close">
             ×
           </button>
         </div>

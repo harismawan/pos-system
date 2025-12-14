@@ -9,5 +9,9 @@ export function createRedisMock() {
     del: createMockFn(async () => true),
     keys: createMockFn(async () => []),
     lpush: createMockFn(async () => 1),
+    hset: createMockFn(async () => 1),
+    expire: createMockFn(async () => 1),
+    hgetall: createMockFn(async () => ({})),
+    ttl: createMockFn(async () => 3600),
   };
 }

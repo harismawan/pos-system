@@ -501,6 +501,28 @@ input::placeholder {
   gap: var(--space-3);
 }
 
+.modal-close {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  color: var(--gray-400);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.modal-close:hover {
+  background: var(--gray-100);
+  color: var(--gray-600);
+}
+
 /* Empty state */
 .empty-state {
   text-align: center;

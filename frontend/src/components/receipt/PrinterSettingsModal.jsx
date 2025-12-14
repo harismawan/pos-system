@@ -101,16 +101,7 @@ function PrinterSettingsModal({ isOpen, onClose }) {
       >
         <div className="modal-header">
           <h2 className="modal-title">🖨️ Printer Settings</h2>
-          <button
-            onClick={onClose}
-            style={{
-              background: "var(--gray-100)",
-              fontSize: "18px",
-              width: "32px",
-              height: "32px",
-              borderRadius: "var(--radius-full)",
-            }}
-          >
+          <button onClick={onClose} className="modal-close">
             ×
           </button>
         </div>

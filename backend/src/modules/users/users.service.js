@@ -192,7 +192,6 @@ export async function createUser({
     },
   });
 
-  logger.info({ userId: user.id, username: user.username }, "User created");
   return user;
 }
 
@@ -254,7 +253,6 @@ export async function updateUser(
     },
   });
 
-  logger.info({ userId: user.id }, "User updated");
   return user;
 }
 
@@ -287,7 +285,6 @@ export async function deleteUser(id, requestingUserId, businessId) {
     data: { isActive: false },
   });
 
-  logger.info({ userId: id }, "User deactivated");
   return { success: true };
 }
 
@@ -344,7 +341,6 @@ export async function assignUserToOutlet(
     },
   });
 
-  logger.info({ userId, outletId, outletRole }, "User assigned to outlet");
   return outletUser;
 }
 
@@ -362,6 +358,5 @@ export async function removeUserFromOutlet(userId, outletId) {
     throw error;
   }
 
-  logger.info({ userId, outletId }, "User removed from outlet");
   return { success: true };
 }

@@ -46,9 +46,36 @@ function enqueueJob(queueName, type, payload, options = {}) {
 /**
  * Enqueue an audit log job (non-blocking)
  * @param {Object} data - Audit log data
+ * @param {string} [data.impersonatedBy] - Super Admin ID if action is done while impersonating
  */
 export function enqueueAuditLogJob(data) {
+  // If impersonatedBy is provided, merge it into payload
+  if (data.impersonatedBy) {
+    data.payload = {
+      ...data.payload,
+      impersonatedBy: data.impersonatedBy,
+    };
+  }
   return enqueueJob(QUEUES.AUDIT_LOG, "AUDIT_LOG", data);
+}
+
+/**
+ * Helper to create audit log data with impersonation support
+ * @param {Object} store - Elysia store with user context
+ * @param {Object} options - Audit log options
+ * @returns {Object} Audit log data
+ */
+export function createAuditLogData(store, options) {
+  return {
+    eventType: options.eventType,
+    businessId: options.businessId || store.user?.businessId || null,
+    userId: store.user?.id,
+    outletId: options.outletId ?? store.outletId ?? null,
+    entityType: options.entityType,
+    entityId: options.entityId,
+    payload: options.payload || {},
+    impersonatedBy: store.user?.impersonatedBy || null,
+  };
 }
 
 /**

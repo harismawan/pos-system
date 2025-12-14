@@ -6,6 +6,7 @@ import * as inventoryService from "./inventory.service.js";
 import logger from "../../libs/logger.js";
 import { INV } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
+import { enqueueAuditLogJob, createAuditLogData } from "../../libs/jobs.js";
 
 export async function getInventoryController({ query, store, set }) {
   try {
@@ -37,6 +38,28 @@ export async function adjustInventoryController({ body, store, set }) {
       businessId,
     );
 
+    // Calculate signed quantity for consistency with previous implementation
+    const adjustmentQuantity =
+      body.type === "ADJUSTMENT_IN"
+        ? Math.abs(body.quantity)
+        : -Math.abs(body.quantity);
+
+    // Audit Log
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "INVENTORY_ADJUSTED",
+        outletId: outletId,
+        entityType: "Inventory",
+        entityId: result.id,
+        payload: {
+          productId: body.productId,
+          warehouseId: body.warehouseId,
+          type: body.type,
+          quantity: adjustmentQuantity,
+        },
+      }),
+    );
+
     return successResponse(INV.ADJUST_SUCCESS, result);
   } catch (err) {
     logger.error({ err }, "Adjust inventory failed");
@@ -56,6 +79,22 @@ export async function transferInventoryController({ body, store, set }) {
       { ...body, outletId },
       userId,
       businessId,
+    );
+
+    // Audit Log
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "INVENTORY_TRANSFERRED",
+        outletId: outletId,
+        entityType: "StockMovement",
+        entityId: `${body.productId}-${body.fromWarehouseId}-${body.toWarehouseId}`,
+        payload: {
+          productId: body.productId,
+          fromWarehouseId: body.fromWarehouseId,
+          toWarehouseId: body.toWarehouseId,
+          quantity: parseFloat(body.quantity),
+        },
+      }),
     );
 
     return successResponse(INV.TRANSFER_SUCCESS, result);

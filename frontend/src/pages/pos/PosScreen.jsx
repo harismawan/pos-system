@@ -629,14 +629,8 @@ function PosScreen() {
               <h2 className="modal-title">Complete Order</h2>
               <button
                 onClick={() => !processing && setShowCheckoutModal(false)}
-                style={{
-                  background: "rgba(255,255,255,0.2)",
-                  fontSize: "18px",
-                  color: "white",
-                  width: "32px",
-                  height: "32px",
-                  borderRadius: "var(--radius-full)",
-                }}
+                className="modal-close"
+                style={{ color: "white" }}
                 disabled={processing}
               >
                 ×
@@ -888,14 +882,8 @@ function PosScreen() {
               <h2 className="modal-title">✓ Order Complete</h2>
               <button
                 onClick={handleNewOrder}
-                style={{
-                  background: "rgba(255,255,255,0.2)",
-                  fontSize: "18px",
-                  color: "white",
-                  width: "32px",
-                  height: "32px",
-                  borderRadius: "var(--radius-full)",
-                }}
+                className="modal-close"
+                style={{ color: "white" }}
               >
                 ×
               </button>

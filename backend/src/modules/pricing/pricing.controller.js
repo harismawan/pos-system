@@ -6,6 +6,7 @@ import * as pricingService from "./pricing.service.js";
 import logger from "../../libs/logger.js";
 import { PRC } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
+import { enqueueAuditLogJob, createAuditLogData } from "../../libs/jobs.js";
 
 export async function getPriceQuoteController({ query, store, set }) {
   try {
@@ -56,6 +57,20 @@ export async function createPriceTierController({ body, store, set }) {
     const businessId = store.user.businessId;
     const tier = await pricingService.createPriceTier(body, businessId);
 
+    // Audit Log
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "PRICE_TIER_CREATED",
+        outletId: null,
+        entityType: "PriceTier",
+        entityId: tier.id,
+        payload: {
+          name: tier.name,
+          code: tier.code,
+        },
+      }),
+    );
+
     set.status = 201;
     return successResponse(PRC.CREATE_TIER_SUCCESS, tier);
   } catch (err) {
@@ -73,6 +88,20 @@ export async function updatePriceTierController({ params, body, store, set }) {
       params.id,
       body,
       businessId,
+    );
+
+    // Audit Log
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "PRICE_TIER_UPDATED",
+        outletId: null,
+        entityType: "PriceTier",
+        entityId: params.id,
+        payload: {
+          name: tier.name,
+          code: tier.code,
+        },
+      }),
     );
 
     return successResponse(PRC.UPDATE_TIER_SUCCESS, tier);
@@ -110,6 +139,21 @@ export async function setProductPriceController({ params, body, store, set }) {
         ...body,
       },
       businessId,
+    );
+
+    // Audit Log
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "PRODUCT_PRICE_UPDATED",
+        outletId: body.outletId || null,
+        entityType: "ProductPriceTier",
+        entityId: `${params.productId}-${body.priceTierId}-${body.outletId || "global"}`,
+        payload: {
+          productId: params.productId,
+          priceTierId: body.priceTierId,
+          price: body.price,
+        },
+      }),
     );
 
     return successResponse(PRC.SET_PRICE_SUCCESS, price);

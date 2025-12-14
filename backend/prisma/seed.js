@@ -349,6 +349,33 @@ async function seedBusiness(config) {
   console.log(`✨ Completed seeding business: ${name}\n`);
 }
 
+/**
+ * Seed Super Admin user (platform-level admin with no business)
+ */
+async function seedSuperAdmin() {
+  console.log("🔐 Seeding Super Admin user...");
+
+  const passwordHash = await bcrypt.hash("superadmin123", 10);
+
+  const superAdmin = await prisma.user.upsert({
+    where: { username: "superadmin" },
+    update: {},
+    create: {
+      businessId: null, // Super Admin has no business
+      username: "superadmin",
+      name: "Super Admin",
+      passwordHash,
+      email: "superadmin@pos-system.local",
+      role: "SUPER_ADMIN",
+      isActive: true,
+    },
+  });
+
+  console.log(`✅ Created Super Admin: ${superAdmin.username}`);
+  console.log(`   Email: ${superAdmin.email}`);
+  console.log(`   Password: superadmin123 (change immediately!)\n`);
+}
+
 async function main() {
   console.log("🚀 Starting multi-business seed...");
 
@@ -417,6 +444,9 @@ async function main() {
     customerName: "Jane Smith",
     customerEmail: "jane@example.com",
   });
+
+  // Super Admin (platform-level admin)
+  await seedSuperAdmin();
 
   console.log("🎉 All seeds completed successfully!");
 }

@@ -6,6 +6,7 @@ import * as customersService from "./customers.service.js";
 import logger from "../../libs/logger.js";
 import { CUS } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
+import { enqueueAuditLogJob, createAuditLogData } from "../../libs/jobs.js";
 
 export async function getCustomersController({ query, store, set }) {
   try {
@@ -48,6 +49,21 @@ export async function createCustomerController({ body, store, set }) {
     const businessId = store.user.businessId;
     const customer = await customersService.createCustomer(body, businessId);
 
+    // Audit Log
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "CUSTOMER_CREATED",
+        outletId: null,
+        entityType: "Customer",
+        entityId: customer.id,
+        payload: {
+          name: customer.name,
+          phone: customer.phone,
+          email: customer.email,
+        },
+      }),
+    );
+
     set.status = 201;
     return successResponse(CUS.CREATE_SUCCESS, customer);
   } catch (err) {
@@ -67,6 +83,19 @@ export async function updateCustomerController({ params, body, store, set }) {
       businessId,
     );
 
+    // Audit Log
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "CUSTOMER_UPDATED",
+        outletId: null,
+        entityType: "Customer",
+        entityId: params.id,
+        payload: {
+          changes: Object.keys(body),
+        },
+      }),
+    );
+
     return successResponse(CUS.UPDATE_SUCCESS, customer);
   } catch (err) {
     logger.error({ err }, "Update customer failed");
@@ -80,6 +109,17 @@ export async function deleteCustomerController({ params, store, set }) {
   try {
     const businessId = store.user.businessId;
     const result = await customersService.deleteCustomer(params.id, businessId);
+
+    // Audit Log
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "CUSTOMER_DELETED",
+        outletId: null,
+        entityType: "Customer",
+        entityId: params.id,
+        payload: {},
+      }),
+    );
 
     return successResponse(CUS.DELETE_SUCCESS, result);
   } catch (err) {

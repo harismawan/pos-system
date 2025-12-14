@@ -11,6 +11,10 @@ describe("tests/mocks/redis", () => {
     await redis.del("key1", "key2");
     await redis.keys("pattern:*");
     await redis.lpush("queue", "item");
+    await redis.hset("hash", "field", "val");
+    await redis.expire("key", 100);
+    await redis.hgetall("hash");
+    await redis.ttl("key");
 
     expect(redis.ping.calls.length).toBe(1);
     expect(redis.setex.calls[0]).toEqual(["key", 10, "val"]);
@@ -18,6 +22,10 @@ describe("tests/mocks/redis", () => {
     expect(redis.del.calls[0]).toEqual(["key1", "key2"]);
     expect(redis.keys.calls[0][0]).toBe("pattern:*");
     expect(redis.lpush.calls[0]).toEqual(["queue", "item"]);
+    expect(redis.hset.calls[0]).toEqual(["hash", "field", "val"]);
+    expect(redis.expire.calls[0]).toEqual(["key", 100]);
+    expect(redis.hgetall.calls[0][0]).toBe("hash");
+    expect(redis.ttl.calls[0][0]).toBe("key");
   });
 
   it("supports mockReset on functions", async () => {

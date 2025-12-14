@@ -3,21 +3,45 @@ import { describe, it, expect, mock, beforeEach } from "bun:test";
 import { createMockFn } from "../../mocks/mockFn.js";
 
 const serviceMock = {
-  createPosOrder: createMockFn(async () => ({ id: "o1" })),
+  createPosOrder: createMockFn(async () => ({
+    id: "o1",
+    outletId: "store-1",
+    orderNumber: "123",
+    totalAmount: 100,
+    items: [],
+  })),
   getPosOrderById: createMockFn(async () => ({ id: "o1" })),
   completePosOrder: createMockFn(async () => ({
     id: "o1",
     status: "COMPLETED",
+    outletId: "store-1",
+    orderNumber: "123",
+    totalAmount: 100,
+    items: [],
   })),
   getPosOrders: createMockFn(async () => ({ orders: [], pagination: {} })),
-  cancelPosOrder: createMockFn(async () => ({ id: "o1", status: "CANCELLED" })),
-  addPayment: createMockFn(async () => ({ id: "pay-1" })),
+  cancelPosOrder: createMockFn(async () => ({
+    id: "o1",
+    status: "CANCELLED",
+    outletId: "store-1",
+    orderNumber: "123",
+  })),
+  addPayment: createMockFn(async () => ({
+    id: "pay-1",
+    outletId: "store-1",
+    orderNumber: "123",
+  })),
 };
 
 const loggerMock = { error: createMockFn() };
+const jobsMock = {
+  enqueueAuditLogJob: createMockFn(),
+  createAuditLogData: (s, p) => p,
+};
 
 mock.module("../../../src/modules/sales/sales.service.js", () => serviceMock);
 mock.module("../../../src/libs/logger.js", () => ({ default: loggerMock }));
+mock.module("../../../src/libs/jobs.js", () => jobsMock);
 
 const controller =
   await import("../../../src/modules/sales/sales.controller.js");
@@ -25,7 +49,13 @@ const controller =
 describe("modules/sales/sales.controller", () => {
   beforeEach(() => {
     serviceMock.createPosOrder.mockReset();
-    serviceMock.createPosOrder.mockResolvedValue({ id: "o1" });
+    serviceMock.createPosOrder.mockResolvedValue({
+      id: "o1",
+      outletId: "store-1",
+      orderNumber: "123",
+      totalAmount: 100,
+      items: [],
+    });
     serviceMock.getPosOrders.mockReset();
     serviceMock.getPosOrders.mockResolvedValue({ orders: [], pagination: {} });
     serviceMock.getPosOrderById.mockReset();
@@ -34,15 +64,26 @@ describe("modules/sales/sales.controller", () => {
     serviceMock.completePosOrder.mockResolvedValue({
       id: "o1",
       status: "COMPLETED",
+      outletId: "store-1",
+      orderNumber: "123",
+      totalAmount: 100,
+      items: [],
     });
     serviceMock.cancelPosOrder.mockReset();
     serviceMock.cancelPosOrder.mockResolvedValue({
       id: "o1",
       status: "CANCELLED",
+      outletId: "store-1",
+      orderNumber: "123",
     });
     serviceMock.addPayment.mockReset();
-    serviceMock.addPayment.mockResolvedValue({ id: "pay-1" });
+    serviceMock.addPayment.mockResolvedValue({
+      id: "pay-1",
+      outletId: "store-1",
+      orderNumber: "123",
+    });
     loggerMock.error.mockReset();
+    jobsMock.enqueueAuditLogJob.mockReset();
   });
 
   const mockStore = {
@@ -173,6 +214,10 @@ describe("modules/sales/sales.controller", () => {
     serviceMock.completePosOrder.mockImplementation(async () => ({
       id: "o1",
       status: "COMPLETED",
+      outletId: "store-1",
+      orderNumber: "123",
+      totalAmount: 100,
+      items: [],
     }));
   });
 

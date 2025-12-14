@@ -4,6 +4,7 @@
  */
 
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import prisma from "../../libs/prisma.js";
 import {
   generateAccessToken,
@@ -15,6 +16,7 @@ import {
   storeRefreshToken,
   validateRefreshToken,
   revokeRefreshToken,
+  storeSession,
 } from "../../libs/tokenStore.js";
 import {
   generateResetToken,
@@ -22,10 +24,7 @@ import {
   verifyResetToken,
   deleteResetToken,
 } from "../../libs/otpStore.js";
-import {
-  enqueueAuditLogJob,
-  enqueueEmailNotificationJob,
-} from "../../libs/jobs.js";
+import { enqueueEmailNotificationJob } from "../../libs/jobs.js";
 import logger from "../../libs/logger.js";
 import config from "../../config/index.js";
 
@@ -70,9 +69,27 @@ export async function login(username, password) {
     userId: user.id,
   });
 
+  // Generate session ID from token hash
+  const sessionId = crypto
+    .createHash("sha256")
+    .update(refreshToken)
+    .digest("hex")
+    .substring(0, 16);
+
   // Store tokens in Redis with TTL
   await storeAccessToken(user.id, accessToken, config.jwt.accessTokenTTL);
   await storeRefreshToken(user.id, refreshToken, config.jwt.refreshTokenTTL);
+
+  // Store session for tracking (Super Admin can view/revoke sessions)
+  await storeSession(
+    user.id,
+    sessionId,
+    {
+      tokenHash: sessionId,
+      createdAt: new Date().toISOString(),
+    },
+    config.jwt.refreshTokenTTL,
+  );
 
   const outlets = user.outletUsers.map((ou) => ({
     id: ou.outlet.id,
@@ -81,19 +98,6 @@ export async function login(username, password) {
     role: ou.outletRole,
     isDefault: ou.isDefaultForUser,
   }));
-
-  // Enqueue audit log
-  enqueueAuditLogJob({
-    eventType: "USER_LOGIN",
-    userId: user.id,
-    outletId: null,
-    entityType: "User",
-    entityId: user.id,
-    payload: {
-      username: user.username,
-      timestamp: new Date().toISOString(),
-    },
-  });
 
   return {
     accessToken,
@@ -104,6 +108,7 @@ export async function login(username, password) {
       name: user.name,
       email: user.email,
       role: user.role,
+      businessId: user.businessId,
     },
     outlets,
   };
@@ -234,8 +239,6 @@ export async function requestPasswordReset(
     },
   });
 
-  logger.info({ userId: user.id, email }, "Password reset link sent");
-
   return { message: "Password reset link has been sent to your email" };
 }
 
@@ -274,22 +277,11 @@ export async function resetPassword(token, newPassword) {
   // Delete token after successful reset
   await deleteResetToken(token);
 
-  // Audit log
-  enqueueAuditLogJob({
-    eventType: "PASSWORD_RESET",
+  return {
+    message: "Password has been reset successfully",
     userId: user.id,
-    outletId: null,
-    entityType: "User",
-    entityId: user.id,
-    payload: {
-      method: "email_link",
-      timestamp: new Date().toISOString(),
-    },
-  });
-
-  logger.info({ userId: user.id }, "Password reset successful");
-
-  return { message: "Password has been reset successfully" };
+    businessId: user.businessId,
+  };
 }
 
 /**
@@ -327,20 +319,6 @@ export async function changePassword(userId, currentPassword, newPassword) {
     where: { id: userId },
     data: { passwordHash },
   });
-
-  // Audit log
-  enqueueAuditLogJob({
-    eventType: "PASSWORD_CHANGED",
-    userId: user.id,
-    outletId: null,
-    entityType: "User",
-    entityId: user.id,
-    payload: {
-      timestamp: new Date().toISOString(),
-    },
-  });
-
-  logger.info({ userId }, "Password changed successfully");
 
   return { message: "Password has been changed successfully" };
 }

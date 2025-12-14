@@ -6,6 +6,7 @@ import * as warehousesService from "./warehouses.service.js";
 import logger from "../../libs/logger.js";
 import { WAR } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
+import { enqueueAuditLogJob, createAuditLogData } from "../../libs/jobs.js";
 
 export async function getWarehousesController({ query, store, set }) {
   try {
@@ -50,6 +51,21 @@ export async function createWarehouseController({ body, store, set }) {
       businessId,
     );
 
+    // Audit Log
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "WAREHOUSE_CREATED",
+        outletId: warehouse.outletId,
+        entityType: "Warehouse",
+        entityId: warehouse.id,
+        payload: {
+          name: warehouse.name,
+          code: warehouse.code,
+          type: warehouse.type,
+        },
+      }),
+    );
+
     set.status = 201;
     return successResponse(WAR.CREATE_SUCCESS, warehouse);
   } catch (err) {
@@ -71,6 +87,20 @@ export async function updateWarehouseController({ params, body, store, set }) {
       businessId,
     );
 
+    // Audit Log
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "WAREHOUSE_UPDATED",
+        outletId: warehouse.outletId,
+        entityType: "Warehouse",
+        entityId: warehouse.id,
+        payload: {
+          name: warehouse.name,
+          code: warehouse.code,
+        },
+      }),
+    );
+
     return successResponse(WAR.UPDATE_SUCCESS, warehouse);
   } catch (err) {
     logger.error({ err }, "Update warehouse failed");
@@ -86,6 +116,17 @@ export async function deleteWarehouseController({ params, store, set }) {
     const result = await warehousesService.deleteWarehouse(
       params.id,
       businessId,
+    );
+
+    // Audit Log
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "WAREHOUSE_DELETED",
+        outletId: null,
+        entityType: "Warehouse",
+        entityId: params.id,
+        payload: {},
+      }),
     );
 
     return successResponse(WAR.DELETE_SUCCESS, result);

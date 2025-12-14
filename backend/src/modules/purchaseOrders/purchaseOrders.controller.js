@@ -6,6 +6,7 @@ import * as purchaseOrdersService from "./purchaseOrders.service.js";
 import logger from "../../libs/logger.js";
 import { POR } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
+import { enqueueAuditLogJob, createAuditLogData } from "../../libs/jobs.js";
 
 export async function getPurchaseOrdersController({ query, store, set }) {
   try {
@@ -58,6 +59,21 @@ export async function createPurchaseOrderController({ body, store, set }) {
       businessId,
     );
 
+    // Audit Log
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "PURCHASE_ORDER_CREATED",
+        outletId: order.outletId,
+        entityType: "PurchaseOrder",
+        entityId: order.id,
+        payload: {
+          orderNumber: order.orderNumber,
+          supplierId: order.supplierId,
+          totalAmount: parseFloat(order.totalAmount),
+        },
+      }),
+    );
+
     set.status = 201;
     return successResponse(POR.CREATE_SUCCESS, order);
   } catch (err) {
@@ -82,6 +98,21 @@ export async function updatePurchaseOrderController({
       body,
       userId,
       businessId,
+    );
+
+    // Audit Log
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "PURCHASE_ORDER_UPDATED",
+        outletId: order.outletId,
+        entityType: "PurchaseOrder",
+        entityId: order.id,
+        payload: {
+          status: order.status,
+          totalAmount: order.totalAmount,
+          changes: Object.keys(body),
+        },
+      }),
     );
 
     return successResponse(POR.UPDATE_SUCCESS, order);
@@ -109,6 +140,20 @@ export async function receivePurchaseOrderController({
       businessId,
     );
 
+    // Audit Log
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "PURCHASE_ORDER_RECEIVED",
+        outletId: order.outletId,
+        entityType: "PurchaseOrder",
+        entityId: order.id,
+        payload: {
+          orderNumber: order.orderNumber,
+          receivedItems: body.receivedItems.length,
+        },
+      }),
+    );
+
     return successResponse(POR.RECEIVE_SUCCESS, order);
   } catch (err) {
     logger.error({ err }, "Receive purchase order failed");
@@ -126,6 +171,19 @@ export async function cancelPurchaseOrderController({ params, store, set }) {
       params.id,
       userId,
       businessId,
+    );
+
+    // Audit Log
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "PURCHASE_ORDER_CANCELLED",
+        outletId: order.outletId,
+        entityType: "PurchaseOrder",
+        entityId: order.id,
+        payload: {
+          orderNumber: order.orderNumber,
+        },
+      }),
     );
 
     return successResponse(POR.CANCEL_SUCCESS, order);

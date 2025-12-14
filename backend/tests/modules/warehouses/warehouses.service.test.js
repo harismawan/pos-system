@@ -126,7 +126,6 @@ describe("modules/warehouses/warehouses.service", () => {
 
     expect(unsetCalled).toBe(true);
     expect(result.id).toBe("w1");
-    expect(jobsMock.enqueueAuditLogJob.calls.length).toBeGreaterThan(0);
   });
 
   it("creates warehouse without changing defaults when not requested", async () => {
@@ -172,7 +171,6 @@ describe("modules/warehouses/warehouses.service", () => {
 
     expect(res.name).toBe("Updated");
     expect(prismaMock.warehouse.updateMany.calls.length).toBe(1);
-    expect(jobsMock.enqueueAuditLogJob.calls.length).toBe(1);
   });
 
   it("deletes warehouse when no inventory exists", async () => {

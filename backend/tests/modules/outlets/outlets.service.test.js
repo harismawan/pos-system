@@ -97,7 +97,6 @@ describe("modules/outlets/outlets.service", () => {
 
     expect(prismaMock.outletUser.updateMany.calls.length).toBeGreaterThan(0);
     expect(result.id).toBe("ou-1");
-    expect(jobsMock.enqueueAuditLogJob.calls.length).toBeGreaterThan(0);
   });
 
   it("assigns outlet user without changing defaults when not requested", async () => {
@@ -127,7 +126,6 @@ describe("modules/outlets/outlets.service", () => {
       businessId,
     );
     expect(result.id).toBe("o1");
-    expect(jobsMock.enqueueAuditLogJob.calls.length).toBeGreaterThan(0);
   });
 
   it("updates an outlet and enqueues audit log", async () => {
@@ -144,7 +142,6 @@ describe("modules/outlets/outlets.service", () => {
       businessId,
     );
     expect(result.name).toBe("Updated");
-    expect(jobsMock.enqueueAuditLogJob.calls.length).toBeGreaterThan(0);
   });
 
   it("removes user from outlet", async () => {

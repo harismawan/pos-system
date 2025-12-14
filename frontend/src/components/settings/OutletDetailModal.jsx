@@ -115,16 +115,7 @@ function OutletDetailModal({ isOpen, onClose, outlet: initialOutlet }) {
               Code: {outlet.code} • {outlet.city || outlet.addressLine1}
             </div>
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: "none",
-              fontSize: "24px",
-              color: "var(--gray-400)",
-              padding: 0,
-              lineHeight: 1,
-            }}
-          >
+          <button onClick={onClose} className="modal-close">
             ×
           </button>
         </div>

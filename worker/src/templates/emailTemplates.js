@@ -355,6 +355,59 @@ export function generalNotificationTemplate(data) {
 }
 
 /**
+ * User invitation template
+ */
+export function userInvitationTemplate(data) {
+  const {
+    businessName,
+    inviterName,
+    role,
+    inviteLink,
+    expiryHours = 72,
+  } = data;
+
+  const roleDisplayName = {
+    OWNER: "Owner",
+    ADMIN: "Administrator",
+    MANAGER: "Manager",
+    CASHIER: "Cashier",
+    WAREHOUSE_STAFF: "Warehouse Staff",
+  };
+
+  const content = `
+        <div class="email-header">
+            <h1>✉️ You're Invited!</h1>
+        </div>
+        <div class="email-body">
+            <p>You've been invited to join <strong>${businessName}</strong> on POS System!</p>
+            
+            <div class="info-box">
+                <p style="margin: 5px 0;"><strong>Invited by:</strong> ${inviterName}</p>
+                <p style="margin: 5px 0;"><strong>Role:</strong> ${roleDisplayName[role] || role}</p>
+            </div>
+
+            <p>Click the button below to accept this invitation and create your account:</p>
+
+            <div class="text-center">
+                <a href="${inviteLink}" class="button">Accept Invitation</a>
+            </div>
+
+            <div class="alert alert-warning">
+                <strong>⚠️ Important:</strong> This invitation link will expire in ${expiryHours} hours.
+            </div>
+
+            <p class="text-muted">If you weren't expecting this invitation or don't recognize the business, you can safely ignore this email.</p>
+        </div>
+    `;
+
+  return {
+    subject: `You're invited to join ${businessName}!`,
+    html: baseTemplate(content),
+    text: `You're Invited!\n\nYou've been invited to join ${businessName} as a ${roleDisplayName[role] || role}.\n\nInvited by: ${inviterName}\n\nClick this link to accept: ${inviteLink}\n\nThis link expires in ${expiryHours} hours.`,
+  };
+}
+
+/**
  * Render email template by name
  */
 export function renderTemplate(templateName, data) {
@@ -364,6 +417,7 @@ export function renderTemplate(templateName, data) {
     password_reset: passwordResetTemplate,
     low_stock_alert: lowStockAlertTemplate,
     general_notification: generalNotificationTemplate,
+    user_invitation: userInvitationTemplate,
   };
 
   const templateFn = templates[templateName];

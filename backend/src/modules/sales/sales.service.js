@@ -6,10 +6,7 @@
 import { Prisma } from "@prisma/client";
 import prisma from "../../libs/prisma.js";
 import { resolvePrice } from "../pricing/pricing.service.js";
-import {
-  enqueueAuditLogJob,
-  enqueueEmailNotificationJob,
-} from "../../libs/jobs.js";
+import { enqueueEmailNotificationJob } from "../../libs/jobs.js";
 import logger from "../../libs/logger.js";
 
 /**
@@ -135,8 +132,6 @@ export async function createPosOrder(data, userId, businessId) {
 
     return newOrder;
   });
-
-  logger.info({ orderId: order.id, orderNumber }, "POS order created");
 
   return order;
 }
@@ -358,18 +353,6 @@ export async function completePosOrder(id, userId, businessId) {
   });
 
   // Enqueue background jobs
-  enqueueAuditLogJob({
-    eventType: "SALE_COMPLETED",
-    userId,
-    outletId: order.outletId,
-    entityType: "PosOrder",
-    entityId: order.id,
-    payload: {
-      orderNumber: order.orderNumber,
-      totalAmount: parseFloat(order.totalAmount),
-      itemCount: order.items.length,
-    },
-  });
 
   // Send email receipt if customer has email
   if (order.customer?.email) {
@@ -387,11 +370,6 @@ export async function completePosOrder(id, userId, businessId) {
       relatedEntityId: order.id,
     });
   }
-
-  logger.info(
-    { orderId: order.id, orderNumber: order.orderNumber },
-    "POS order completed",
-  );
 
   return completedOrder;
 }
@@ -430,23 +408,6 @@ export async function cancelPosOrder(id, userId, businessId) {
       cashier: true,
     },
   });
-
-  enqueueAuditLogJob({
-    eventType: "SALE_CANCELLED",
-    userId,
-    outletId: order.outletId,
-    entityType: "PosOrder",
-    entityId: order.id,
-    payload: {
-      orderNumber: order.orderNumber,
-      reason: "Cancelled by user",
-    },
-  });
-
-  logger.info(
-    { orderId: order.id, orderNumber: order.orderNumber },
-    "POS order cancelled",
-  );
 
   return cancelled;
 }
@@ -507,11 +468,6 @@ export async function addPayment(orderId, paymentData, businessId) {
 
     return { payment, order: updatedOrder };
   });
-
-  logger.info(
-    { orderId, paymentId: result.payment.id, method, amount },
-    "Payment added",
-  );
 
   return result;
 }

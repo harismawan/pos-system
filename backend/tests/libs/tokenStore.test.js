@@ -22,6 +22,10 @@ describe("libs/tokenStore", () => {
     redisMock.exists.mockReset?.();
     redisMock.del.mockReset?.();
     redisMock.keys.mockReset?.();
+    redisMock.hset.mockReset?.();
+    redisMock.expire.mockReset?.();
+    redisMock.hgetall.mockReset?.();
+    redisMock.ttl.mockReset?.();
     loggerMock.error.mockReset?.();
     loggerMock.debug.mockReset?.();
   });
@@ -162,5 +166,110 @@ describe("libs/tokenStore", () => {
       "keys failed",
     );
     expect(loggerMock.error.calls.length).toBe(1);
+  });
+
+  describe("session management", () => {
+    const sessionId = "session-123";
+
+    it("stores session with metadata and ttl", async () => {
+      const metadata = { userAgent: "Mozilla", ipAddress: "127.0.0.1" };
+      await tokenStore.storeSession(userId, sessionId, metadata, 3600);
+
+      expect(redisMock.hset.calls[0][0]).toBe(`session:${userId}:${sessionId}`);
+      expect(redisMock.hset.calls[0][1]).toEqual(
+        expect.objectContaining({
+          userAgent: "Mozilla",
+          ipAddress: "127.0.0.1",
+          createdAt: expect.any(String),
+          lastActiveAt: expect.any(String),
+        }),
+      );
+      expect(redisMock.expire.calls[0]).toEqual([
+        `session:${userId}:${sessionId}`,
+        3600,
+      ]);
+    });
+
+    it("logs and rethrows when storing session fails", async () => {
+      redisMock.hset.mockRejectedValue(new Error("redis fail"));
+      await expect(
+        tokenStore.storeSession(userId, sessionId, {}, 1),
+      ).rejects.toThrow("redis fail");
+      expect(loggerMock.error.calls.length).toBe(1);
+    });
+
+    it("gets active sessions", async () => {
+      const sessionKey = `session:${userId}:${sessionId}`;
+      redisMock.keys.mockResolvedValue([sessionKey]);
+      redisMock.hgetall.mockResolvedValue({
+        userAgent: "Agent",
+        createdAt: "2024-01-01",
+      });
+      redisMock.ttl.mockResolvedValue(100);
+
+      const sessions = await tokenStore.getActiveSessions(userId);
+
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0]).toEqual({
+        sessionId,
+        userAgent: "Agent",
+        createdAt: "2024-01-01",
+        expiresIn: 100,
+      });
+    });
+
+    it("returns empty array if no sessions found", async () => {
+      redisMock.keys.mockResolvedValue([]);
+      const sessions = await tokenStore.getActiveSessions(userId);
+      expect(sessions).toHaveLength(0);
+    });
+
+    it("returns empty array and logs error when getting sessions fails", async () => {
+      redisMock.keys.mockRejectedValue(new Error("keys fail"));
+      const sessions = await tokenStore.getActiveSessions(userId);
+      expect(sessions).toHaveLength(0);
+      expect(loggerMock.error.calls.length).toBe(1);
+    });
+
+    it("revokes session and related tokens", async () => {
+      await tokenStore.revokeSession(userId, sessionId);
+      expect(redisMock.del.calls[0]).toContain(
+        `session:${userId}:${sessionId}`,
+      );
+      expect(redisMock.del.calls[0]).toContain(
+        `token:access:${userId}:${sessionId}`,
+      );
+      expect(redisMock.del.calls[0]).toContain(
+        `token:refresh:${userId}:${sessionId}`,
+      );
+    });
+
+    it("logs and throws when revoking session fails", async () => {
+      redisMock.del.mockRejectedValue(new Error("del fail"));
+      await expect(tokenStore.revokeSession(userId, sessionId)).rejects.toThrow(
+        "del fail",
+      );
+      expect(loggerMock.error.calls.length).toBe(1);
+    });
+
+    it("updates session activity if session exists", async () => {
+      redisMock.exists.mockResolvedValue(true);
+      await tokenStore.updateSessionActivity(userId, sessionId);
+      expect(redisMock.hset.calls[0][0]).toBe(`session:${userId}:${sessionId}`);
+      expect(redisMock.hset.calls[0][1]).toBe("lastActiveAt");
+      expect(redisMock.hset.calls[0][2]).toEqual(expect.any(String));
+    });
+
+    it("does not update activity if session missing", async () => {
+      redisMock.exists.mockResolvedValue(false);
+      await tokenStore.updateSessionActivity(userId, sessionId);
+      expect(redisMock.hset.calls.length).toBe(0);
+    });
+
+    it("logs debug error and does not throw when update activity fails", async () => {
+      redisMock.exists.mockRejectedValue(new Error("exists fail"));
+      await tokenStore.updateSessionActivity(userId, sessionId);
+      expect(loggerMock.debug.calls.length).toBe(1);
+    });
   });
 });

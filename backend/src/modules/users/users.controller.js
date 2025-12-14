@@ -3,7 +3,7 @@
  */
 
 import * as usersService from "./users.service.js";
-import { enqueueAuditLogJob } from "../../libs/jobs.js";
+import { enqueueAuditLogJob, createAuditLogData } from "../../libs/jobs.js";
 import logger from "../../libs/logger.js";
 import { USR } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
@@ -56,14 +56,14 @@ export async function createUserController({ body, store, set }) {
     const user = await usersService.createUser({ ...body, businessId });
 
     // Audit log
-    enqueueAuditLogJob({
-      eventType: "USER_CREATED",
-      userId: store.user?.id,
-      outletId: store.outletId,
-      entityType: "User",
-      entityId: user.id,
-      payload: { name: user.name, username: user.username, role: user.role },
-    });
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "USER_CREATED",
+        entityType: "User",
+        entityId: user.id,
+        payload: { name: user.name, username: user.username, role: user.role },
+      }),
+    );
 
     set.status = 201;
     return successResponse(USR.CREATE_SUCCESS, { user });
@@ -81,14 +81,14 @@ export async function updateUserController({ params, body, store, set }) {
     const user = await usersService.updateUser(params.id, body, businessId);
 
     // Audit log
-    enqueueAuditLogJob({
-      eventType: "USER_UPDATED",
-      userId: store.user?.id,
-      outletId: store.outletId,
-      entityType: "User",
-      entityId: user.id,
-      payload: { changes: Object.keys(body) },
-    });
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "USER_UPDATED",
+        entityType: "User",
+        entityId: user.id,
+        payload: { changes: Object.keys(body) },
+      }),
+    );
 
     return successResponse(USR.UPDATE_SUCCESS, { user });
   } catch (err) {
@@ -105,14 +105,14 @@ export async function deleteUserController({ params, store, set }) {
     await usersService.deleteUser(params.id, store.user?.id, businessId);
 
     // Audit log
-    enqueueAuditLogJob({
-      eventType: "USER_DELETED",
-      userId: store.user?.id,
-      outletId: store.outletId,
-      entityType: "User",
-      entityId: params.id,
-      payload: {},
-    });
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "USER_DELETED",
+        entityType: "User",
+        entityId: params.id,
+        payload: {},
+      }),
+    );
 
     return successResponse(USR.DELETE_SUCCESS, null);
   } catch (err) {
@@ -133,14 +133,14 @@ export async function assignOutletController({ params, body, store, set }) {
     );
 
     // Audit log
-    enqueueAuditLogJob({
-      eventType: "USER_OUTLET_ASSIGNED",
-      userId: store.user?.id,
-      outletId: body.outletId,
-      entityType: "OutletUser",
-      entityId: outletUser.id,
-      payload: { userId: params.id, outletRole: body.outletRole },
-    });
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "USER_OUTLET_ASSIGNED",
+        entityType: "OutletUser",
+        entityId: outletUser.id,
+        payload: { userId: params.id, outletRole: body.outletRole },
+      }),
+    );
 
     return successResponse(USR.ASSIGN_OUTLET_SUCCESS, { outletUser });
   } catch (err) {
@@ -156,14 +156,14 @@ export async function removeOutletController({ params, store, set }) {
     await usersService.removeUserFromOutlet(params.id, params.outletId);
 
     // Audit log
-    enqueueAuditLogJob({
-      eventType: "USER_OUTLET_REMOVED",
-      userId: store.user?.id,
-      outletId: params.outletId,
-      entityType: "OutletUser",
-      entityId: `${params.id}_${params.outletId}`,
-      payload: { userId: params.id },
-    });
+    enqueueAuditLogJob(
+      createAuditLogData(store, {
+        eventType: "USER_OUTLET_REMOVED",
+        entityType: "OutletUser",
+        entityId: `${params.id}_${params.outletId}`,
+        payload: { userId: params.id },
+      }),
+    );
 
     return successResponse(USR.REMOVE_OUTLET_SUCCESS, null);
   } catch (err) {

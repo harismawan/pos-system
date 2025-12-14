@@ -25,6 +25,8 @@ import { purchaseOrdersRoutes } from "./modules/purchaseOrders/purchaseOrders.ro
 import { reportsRoutes } from "./modules/reports/reports.routes.js";
 import { usersRoutes } from "./modules/users/users.routes.js";
 import { auditLogsRoutes } from "./modules/auditLogs/auditLogs.routes.js";
+import { superAdminRoutes } from "./modules/superAdmin/superAdmin.routes.js";
+import { invitationsRoutes } from "./modules/invitations/invitations.routes.js";
 
 const app = new Elysia();
 
@@ -98,7 +100,9 @@ app.group("/api", (app) =>
     .use(purchaseOrdersRoutes)
     .use(reportsRoutes)
     .use(usersRoutes)
-    .use(auditLogsRoutes),
+    .use(auditLogsRoutes)
+    .use(superAdminRoutes)
+    .use(invitationsRoutes),
 );
 
 export default app;
