@@ -1,13 +1,14 @@
 import "../testSetup.js";
 import { describe, it, expect } from "bun:test";
-import {
+const {
   renderTemplate,
   orderReceiptTemplate,
   welcomeTemplate,
   passwordResetTemplate,
   lowStockAlertTemplate,
   generalNotificationTemplate,
-} from "../../src/templates/emailTemplates.js";
+  userInvitationTemplate,
+} = await import("../../src/templates/emailTemplates.js?real");
 
 describe("templates/emailTemplates", () => {
   describe("orderReceiptTemplate", () => {
