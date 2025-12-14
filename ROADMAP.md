@@ -62,14 +62,14 @@ Improvement recommendations for features, performance, and system architecture.
 | ✅ Done  | Role-based permissions (Owner, Manager, Cashier) | Security & access control |
 | ✅ Done  | Password reset via email                         | Self-service accounts     |
 | ✅ Done  | Activity/audit log viewer                        | Track user actions        |
-| 🔴 High  | Super Admin role (cross-business management)     | Platform administration   |
-| 🔴 High  | User invitation via email link                   | Onboard new staff easily  |
-| 🔴 High  | Super Admin: view/manage all users               | User administration       |
-| 🔴 High  | Super Admin: force password reset for users      | Security enforcement      |
-| 🟡 Med   | Super Admin dashboard (all businesses)           | Overview & analytics      |
-| 🟡 Med   | Business suspension/activation by Super Admin    | Account management        |
-| 🟡 Med   | Super Admin: active session management           | View/revoke user sessions |
-| 🟡 Med   | Super Admin: user impersonation (login as user)  | Support & debugging       |
+| ✅ Done  | Super Admin role (cross-business management)     | Platform administration   |
+| ✅ Done  | User invitation via email link                   | Onboard new staff easily  |
+| ✅ Done  | Super Admin: view/manage all users               | User administration       |
+| ✅ Done  | Super Admin: force password reset for users      | Security enforcement      |
+| ✅ Done  | Super Admin dashboard (all businesses)           | Overview & analytics      |
+| ✅ Done  | Business suspension/activation by Super Admin    | Account management        |
+| ✅ Done  | Super Admin: active session management           | View/revoke user sessions |
+| ✅ Done  | Super Admin: user impersonation (login as user)  | Support & debugging       |
 | 🟢 Low   | Super Admin: bulk user actions (activate/deact)  | Efficient management      |
 
 ### Monitoring & Observability
@@ -161,7 +161,7 @@ Improvement recommendations for features, performance, and system architecture.
 | Priority | Task                            | Impact                  |
 | -------- | ------------------------------- | ----------------------- |
 | ✅ Done  | Docker production configs       | Consistent deploys      |
-| 🔴 High  | CI/CD pipeline (GitHub Actions) | Automated testing       |
+| ✅ Done  | CI/CD pipeline (GitHub Actions) | Automated testing       |
 | 🟡 Med   | Environment-based configs       | Dev/staging/prod        |
 | 🟡 Med   | Database backup automation      | Data safety             |
 | 🟢 Low   | Kubernetes manifests            | Container orchestration |

@@ -57,10 +57,50 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Parsed version: $VERSION"
 
+  test-backend:
+    name: Test Backend
+    runs-on: ubuntu-latest
+    needs: prepare
+    if: github.event_name == 'pull_request' || (needs.prepare.result == 'success' && needs.prepare.outputs.build_backend == 'true')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: cd backend && bun install
+
+      - name: Run tests
+        run: cd backend && bun test
+
+  test-worker:
+    name: Test Worker
+    runs-on: ubuntu-latest
+    needs: prepare
+    if: github.event_name == 'pull_request' || (needs.prepare.result == 'success' && needs.prepare.outputs.build_worker == 'true')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: cd worker && bun install
+
+      - name: Run tests
+        run: cd worker && bun test
+
   build-backend:
     name: Build Backend
     runs-on: ubuntu-latest
-    needs: prepare
+    needs: [prepare, test-backend]
     if: needs.prepare.outputs.build_backend == 'true'
     permissions:
       contents: read
@@ -144,7 +184,7 @@ jobs:
   build-worker:
     name: Build Worker
     runs-on: ubuntu-latest
-    needs: prepare
+    needs: [prepare, test-worker]
     if: needs.prepare.outputs.build_worker == 'true'
     permissions:
       contents: read
