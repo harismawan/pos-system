@@ -209,14 +209,14 @@ export async function createPurchaseOrder(data, userId, businessId) {
   // Calculate totals
   let totalAmount = new Prisma.Decimal(0);
   const orderItems = items.map((item) => {
-    const lineTotal = new Prisma.Decimal(item.quantity).mul(
+    const lineTotal = new Prisma.Decimal(item.quantityOrdered).mul(
       new Prisma.Decimal(item.unitCost),
     );
     totalAmount = totalAmount.add(lineTotal);
 
     return {
       productId: item.productId,
-      quantityOrdered: item.quantity,
+      quantityOrdered: item.quantityOrdered,
       quantityReceived: 0,
       unitCost: item.unitCost,
       lineTotal,

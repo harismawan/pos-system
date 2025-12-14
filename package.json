@@ -34,6 +34,9 @@
     "deploy:microk8s:frontend": "microk8s kubectl apply -k frontend/k8s",
     "deploy:microk8s:worker": "microk8s kubectl apply -k worker/k8s",
     "deploy:microk8s": "bun run deploy:microk8s:backend && bun run deploy:microk8s:frontend && bun run deploy:microk8s:worker",
+    "k6:smoke": "k6 run k6/scenarios/smoke.js",
+    "k6:load": "k6 run k6/scenarios/load.js",
+    "k6:stress": "k6 run k6/scenarios/stress.js",
     "prepare": "husky"
   },
   "devDependencies": {

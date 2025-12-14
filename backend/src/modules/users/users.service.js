@@ -10,7 +10,7 @@ import {
   buildPaginationMeta,
 } from "../../libs/pagination.js";
 
-const SALT_ROUNDS = 12;
+const SALT_ROUNDS = 10;
 
 /**
  * Get users with pagination and filters
@@ -144,10 +144,15 @@ export async function createUser({
     throw new Error("businessId is required");
   }
 
-  // Check if username already exists
-  const existingUser = await prisma.user.findUnique({
-    where: { username },
-  });
+  // Parallelize uniqueness checks
+  const checks = [prisma.user.findUnique({ where: { username } })];
+  if (email) {
+    checks.push(prisma.user.findUnique({ where: { email } }));
+  }
+
+  const results = await Promise.all(checks);
+  const existingUser = results[0];
+  const existingEmail = email ? results[1] : null;
 
   if (existingUser) {
     const error = new Error("Username already exists");
@@ -155,16 +160,10 @@ export async function createUser({
     throw error;
   }
 
-  // Check if email already exists (if provided)
-  if (email) {
-    const existingEmail = await prisma.user.findUnique({
-      where: { email },
-    });
-    if (existingEmail) {
-      const error = new Error("Email already exists");
-      error.statusCode = 400;
-      throw error;
-    }
+  if (existingEmail) {
+    const error = new Error("Email already exists");
+    error.statusCode = 400;
+    throw error;
   }
 
   // Hash password

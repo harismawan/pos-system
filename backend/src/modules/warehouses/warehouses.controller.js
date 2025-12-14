@@ -11,7 +11,15 @@ import { enqueueAuditLogJob, createAuditLogData } from "../../libs/jobs.js";
 export async function getWarehousesController({ query, store, set }) {
   try {
     const businessId = store.user.businessId;
-    const result = await warehousesService.getWarehouses(query, businessId);
+
+    // Parse isActive from string to boolean if provided
+    const filters = { ...query };
+    if (filters.isActive !== undefined) {
+      filters.isActive =
+        filters.isActive === "true" || filters.isActive === true;
+    }
+
+    const result = await warehousesService.getWarehouses(filters, businessId);
 
     return successResponse(WAR.LIST_SUCCESS, result);
   } catch (err) {

@@ -11,7 +11,15 @@ import { enqueueAuditLogJob, createAuditLogData } from "../../libs/jobs.js";
 export async function getOutletsController({ query, store, set }) {
   try {
     const businessId = store.user.businessId;
-    const result = await outletsService.getOutlets({ ...query, businessId });
+
+    // Parse isActive from string to boolean if provided
+    const filters = { ...query, businessId };
+    if (filters.isActive !== undefined) {
+      filters.isActive =
+        filters.isActive === "true" || filters.isActive === true;
+    }
+
+    const result = await outletsService.getOutlets(filters);
 
     return successResponse(OUT.LIST_SUCCESS, result);
   } catch (err) {

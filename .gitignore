@@ -49,3 +49,6 @@ bun.lockb
 .cache/
 tmp/
 temp/
+
+reports/*
+!reports/.gitkeep

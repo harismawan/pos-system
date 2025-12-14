@@ -12,11 +12,15 @@ export async function getProductsController({ query, store, set }) {
   try {
     const businessId = store.user.businessId;
     const outletId = store.outletId || query.outletId;
-    const result = await productsService.getProducts({
-      ...query,
-      outletId,
-      businessId,
-    });
+
+    // Parse isActive from string to boolean if provided
+    const filters = { ...query, outletId, businessId };
+    if (filters.isActive !== undefined) {
+      filters.isActive =
+        filters.isActive === "true" || filters.isActive === true;
+    }
+
+    const result = await productsService.getProducts(filters);
 
     return successResponse(PRD.LIST_SUCCESS, result);
   } catch (err) {

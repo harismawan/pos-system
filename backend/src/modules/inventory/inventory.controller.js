@@ -12,10 +12,15 @@ export async function getInventoryController({ query, store, set }) {
   try {
     const businessId = store.user.businessId;
     const outletId = store.outletId || query.outletId;
-    const result = await inventoryService.getInventory(
-      { ...query, outletId },
-      businessId,
-    );
+
+    // Parse lowStock from string to boolean if provided
+    const filters = { ...query, outletId };
+    if (filters.lowStock !== undefined) {
+      filters.lowStock =
+        filters.lowStock === "true" || filters.lowStock === true;
+    }
+
+    const result = await inventoryService.getInventory(filters, businessId);
 
     return successResponse(INV.GET_SUCCESS, result);
   } catch (err) {

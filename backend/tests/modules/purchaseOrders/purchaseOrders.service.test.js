@@ -166,7 +166,7 @@ describe("modules/purchaseOrders/purchaseOrders.service", () => {
         {
           outletId: "out-1",
           supplierId: "sup-1",
-          items: [{ productId: "p1", quantity: 5, unitCost: 10 }], // Fix: Added unitCost
+          items: [{ productId: "p1", quantityOrdered: 5, unitCost: 10 }], // Fix: Added unitCost
         },
         "u1",
         businessId,
