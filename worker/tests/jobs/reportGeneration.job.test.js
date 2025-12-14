@@ -1,3 +1,4 @@
+import { resolve } from "path";
 import "../testSetup.js";
 import { describe, it, expect, beforeEach, mock } from "bun:test";
 import { createPrismaMock } from "../mocks/prisma.js";
@@ -5,11 +6,15 @@ import { loggerMock } from "../mocks/logger.js";
 
 const prismaMock = createPrismaMock();
 
-mock.module("../../src/libs/prisma.js", () => ({ default: prismaMock }));
-mock.module("../../src/libs/logger.js", () => ({ default: loggerMock }));
+mock.module(resolve(import.meta.dir, "../../src/libs/prisma.js"), () => ({
+  default: prismaMock,
+}));
+mock.module(resolve(import.meta.dir, "../../src/libs/logger.js"), () => ({
+  default: loggerMock,
+}));
 
 const { handleReportGenerationJob } =
-  await import("../../src/jobs/reportGeneration.job.js");
+  await import("../../src/jobs/reportGeneration.job.js?real");
 
 describe("jobs/reportGeneration", () => {
   beforeEach(() => {

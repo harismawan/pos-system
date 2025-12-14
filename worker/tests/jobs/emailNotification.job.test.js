@@ -1,3 +1,4 @@
+import { resolve } from "path";
 import "../testSetup.js";
 import { describe, it, expect, beforeEach, mock } from "bun:test";
 import { createEmailMock } from "../mocks/email.js";
@@ -5,20 +6,28 @@ import { loggerMock } from "../mocks/logger.js";
 
 const emailMock = createEmailMock();
 
-mock.module("../../src/libs/email.js", () => emailMock);
-mock.module("../../src/libs/logger.js", () => ({ default: loggerMock }));
-
-// Mock email templates
-mock.module("../../src/templates/emailTemplates.js", () => ({
-  renderTemplate: (templateName, data) => ({
-    subject: `Test Subject for ${templateName}`,
-    html: `<p>Test HTML for ${templateName}</p>`,
-    text: `Test text for ${templateName}`,
-  }),
+mock.module(
+  resolve(import.meta.dir, "../../src/libs/email.js"),
+  () => emailMock,
+);
+mock.module(resolve(import.meta.dir, "../../src/libs/logger.js"), () => ({
+  default: loggerMock,
 }));
 
+// Mock email templates
+mock.module(
+  resolve(import.meta.dir, "../../src/templates/emailTemplates.js"),
+  () => ({
+    renderTemplate: (templateName, data) => ({
+      subject: `Test Subject for ${templateName}`,
+      html: `<p>Test HTML for ${templateName}</p>`,
+      text: `Test text for ${templateName}`,
+    }),
+  }),
+);
+
 const { handleEmailNotificationJob } =
-  await import("../../src/jobs/emailNotification.job.js");
+  await import("../../src/jobs/emailNotification.job.js?real");
 
 describe("jobs/emailNotification", () => {
   beforeEach(() => {
