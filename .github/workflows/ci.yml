@@ -74,6 +74,9 @@ jobs:
       - name: Install dependencies
         run: cd backend && bun install
 
+      - name: Generate Prisma Client
+        run: cd backend && bun run db:generate
+
       - name: Run tests
         run: cd backend && bun test
 
@@ -93,6 +96,9 @@ jobs:
 
       - name: Install dependencies
         run: cd worker && bun install
+
+      - name: Generate Prisma Client
+        run: cd worker && bun run db:generate
 
       - name: Run tests
         run: cd worker && bun test
