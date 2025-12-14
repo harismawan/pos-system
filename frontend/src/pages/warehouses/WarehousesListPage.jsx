@@ -6,6 +6,7 @@ import { useOutletStore } from "../../store/outletStore.js";
 import * as warehousesApi from "../../api/warehousesApi.js";
 import ConfirmModal from "../../components/ConfirmModal.jsx";
 import WarehouseDetailModal from "../../components/warehouses/WarehouseDetailModal.jsx";
+import WarehouseFormModal from "../../components/warehouses/WarehouseFormModal.jsx";
 
 const customStyles = {
   headRow: {
@@ -67,6 +68,24 @@ function WarehousesListPage() {
   // Detail modal state
   const [selectedWarehouse, setSelectedWarehouse] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+
+  // Form modal state
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [editingWarehouse, setEditingWarehouse] = useState(null);
+
+  const handleOpenCreate = () => {
+    setEditingWarehouse(null);
+    setShowFormModal(true);
+  };
+
+  const handleOpenEdit = (warehouse) => {
+    setEditingWarehouse(warehouse);
+    setShowFormModal(true);
+  };
+
+  const handleFormSuccess = () => {
+    loadWarehouses();
+  };
 
   const handleRowClick = (row) => {
     setSelectedWarehouse(row);
@@ -186,7 +205,10 @@ function WarehousesListPage() {
           <div className="action-buttons">
             <button
               className="action-btn edit"
-              onClick={() => navigate(`/warehouses/${row.id}/edit`)}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenEdit(row);
+              }}
             >
               Edit
             </button>
@@ -210,10 +232,7 @@ function WarehousesListPage() {
           <h1 className="page-title">Warehouses</h1>
           <p className="page-subtitle">Manage storage locations</p>
         </div>
-        <button
-          className="btn-primary btn-lg"
-          onClick={() => navigate("/warehouses/new")}
-        >
+        <button className="btn-primary btn-lg" onClick={handleOpenCreate}>
           <svg
             width="20"
             height="20"
@@ -300,6 +319,13 @@ function WarehousesListPage() {
         isOpen={showDetailModal}
         onClose={() => setShowDetailModal(false)}
         warehouse={selectedWarehouse}
+      />
+
+      <WarehouseFormModal
+        isOpen={showFormModal}
+        onClose={() => setShowFormModal(false)}
+        warehouse={editingWarehouse}
+        onSuccess={handleFormSuccess}
       />
     </div>
   );

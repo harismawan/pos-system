@@ -71,10 +71,11 @@ describe("libs/tokenStore", () => {
   });
 
   it("validates access tokens using hashed keys", async () => {
-    redisMock.get.mockImplementation(async () => "1");
+    const userData = { id: "user-1" };
+    redisMock.get.mockImplementation(async () => JSON.stringify(userData));
     const result = await tokenStore.validateAccessToken(userId, token);
     expect(result.valid).toBe(true);
-    expect(result.userData).toBe(null);
+    expect(result.userData).toEqual(userData);
     expect(redisMock.get.calls[0]).toEqual([
       `token:access:${userId}:${tokenHash}`,
     ]);

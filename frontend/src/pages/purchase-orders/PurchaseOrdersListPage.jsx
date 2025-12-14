@@ -4,6 +4,7 @@ import DataTable from "react-data-table-component";
 import { useUiStore } from "../../store/uiStore.js";
 import * as purchaseOrdersApi from "../../api/purchaseOrdersApi.js";
 import { formatDateOnly } from "../../utils/dateUtils.js";
+import PurchaseOrderFormModal from "../../components/purchase-orders/PurchaseOrderFormModal.jsx";
 
 const customStyles = {
   headRow: {
@@ -60,6 +61,24 @@ function PurchaseOrdersListPage() {
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [filterStatus, setFilterStatus] = useState("");
+
+  // Modal state
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [editingOrder, setEditingOrder] = useState(null);
+
+  const handleOpenCreate = () => {
+    setEditingOrder(null);
+    setShowFormModal(true);
+  };
+
+  const handleOpenEdit = (order) => {
+    setEditingOrder(order);
+    setShowFormModal(true);
+  };
+
+  const handleModalSuccess = () => {
+    loadOrders();
+  };
 
   useEffect(() => {
     loadOrders();
@@ -165,7 +184,10 @@ function PurchaseOrdersListPage() {
             {row.status === "DRAFT" && (
               <button
                 className="action-btn edit"
-                onClick={() => navigate(`/purchase-orders/${row.id}/edit`)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpenEdit(row);
+                }}
               >
                 Edit
               </button>
@@ -184,10 +206,7 @@ function PurchaseOrdersListPage() {
           <h1 className="page-title">Purchase Orders</h1>
           <p className="page-subtitle">Manage your procurement</p>
         </div>
-        <button
-          className="btn-primary btn-lg"
-          onClick={() => navigate("/purchase-orders/new")}
-        >
+        <button className="btn-primary btn-lg" onClick={handleOpenCreate}>
           <svg
             width="20"
             height="20"
@@ -251,6 +270,13 @@ function PurchaseOrdersListPage() {
           }
         />
       </div>
+
+      <PurchaseOrderFormModal
+        isOpen={showFormModal}
+        onClose={() => setShowFormModal(false)}
+        order={editingOrder}
+        onSuccess={handleModalSuccess}
+      />
     </div>
   );
 }

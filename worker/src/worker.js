@@ -5,7 +5,6 @@
 
 import redis from "./libs/redis.js";
 import logger from "./libs/logger.js";
-import config from "./config/index.js";
 import prisma from "./libs/prisma.js";
 import { handleAuditLogJob } from "./jobs/auditLog.job.js";
 import { handleEmailNotificationJob } from "./jobs/emailNotification.job.js";

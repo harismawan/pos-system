@@ -23,6 +23,10 @@ let dbQueriesTotal = null;
 let dbSlowQueriesTotal = null;
 let ordersTotal = null;
 let salesAmountTotal = null;
+let redisCacheHits = null;
+let redisCacheMisses = null;
+let redisOperationsTotal = null;
+let redisOperationDuration = null;
 
 if (metricsEnabled) {
   // Dynamically import prom-client only when metrics are enabled
@@ -126,6 +130,51 @@ if (metricsEnabled) {
     name: "pos_backend_db_slow_queries_total",
     help: "Total number of slow database queries (> 100ms)",
     labelNames: ["operation"],
+    registers: [register],
+  });
+
+  // ============================================
+  // Redis Cache Metrics
+  // ============================================
+
+  /**
+   * Redis cache hits counter
+   */
+  redisCacheHits = new client.default.Counter({
+    name: "pos_backend_redis_cache_hits_total",
+    help: "Total number of Redis cache hits",
+    labelNames: ["operation"], // user_cache, token_validation, etc.
+    registers: [register],
+  });
+
+  /**
+   * Redis cache misses counter
+   */
+  redisCacheMisses = new client.default.Counter({
+    name: "pos_backend_redis_cache_misses_total",
+    help: "Total number of Redis cache misses",
+    labelNames: ["operation"],
+    registers: [register],
+  });
+
+  /**
+   * Redis operations counter
+   */
+  redisOperationsTotal = new client.default.Counter({
+    name: "pos_backend_redis_operations_total",
+    help: "Total number of Redis operations",
+    labelNames: ["command", "status"], // get, set, del, etc. + success/error
+    registers: [register],
+  });
+
+  /**
+   * Redis operation duration histogram
+   */
+  redisOperationDuration = new client.default.Histogram({
+    name: "pos_backend_redis_operation_duration_seconds",
+    help: "Duration of Redis operations in seconds",
+    labelNames: ["command"],
+    buckets: [0.0005, 0.001, 0.005, 0.01, 0.025, 0.05, 0.1],
     registers: [register],
   });
 
@@ -271,6 +320,32 @@ export function recordSale(amount, currency = "IDR") {
 }
 
 /**
+ * Record Redis cache hit
+ */
+export function recordRedisCacheHit(operation) {
+  if (!metricsEnabled) return;
+  redisCacheHits.inc({ operation });
+}
+
+/**
+ * Record Redis cache miss
+ */
+export function recordRedisCacheMiss(operation) {
+  if (!metricsEnabled) return;
+  redisCacheMisses.inc({ operation });
+}
+
+/**
+ * Record Redis operation
+ */
+export function recordRedisOperation(command, durationMs, success = true) {
+  if (!metricsEnabled) return;
+  const durationSeconds = durationMs / 1000;
+  redisOperationDuration.observe({ command }, durationSeconds);
+  redisOperationsTotal.inc({ command, status: success ? "success" : "error" });
+}
+
+/**
  * Get metrics in Prometheus format
  */
 export async function getMetrics() {
@@ -304,6 +379,10 @@ export {
   dbQueriesTotal,
   ordersTotal,
   salesAmountTotal,
+  redisCacheHits,
+  redisCacheMisses,
+  redisOperationsTotal,
+  redisOperationDuration,
 };
 
 export default {
@@ -317,6 +396,10 @@ export default {
   dbQueriesTotal,
   ordersTotal,
   salesAmountTotal,
+  redisCacheHits,
+  redisCacheMisses,
+  redisOperationsTotal,
+  redisOperationDuration,
   recordHttpRequest,
   incrementActiveConnections,
   decrementActiveConnections,
@@ -324,6 +407,9 @@ export default {
   recordDbQuery,
   recordOrder,
   recordSale,
+  recordRedisCacheHit,
+  recordRedisCacheMiss,
+  recordRedisOperation,
   getMetrics,
   getMetricsContentType,
   isMetricsEnabled,

@@ -34,16 +34,10 @@ const InventoryOverviewPage = lazy(
 const WarehousesListPage = lazy(
   () => import("../pages/warehouses/WarehousesListPage.jsx"),
 );
-const WarehouseFormPage = lazy(
-  () => import("../pages/warehouses/WarehouseFormPage.jsx"),
-);
 
 // Lazy-loaded Purchase Orders
 const PurchaseOrdersListPage = lazy(
   () => import("../pages/purchase-orders/PurchaseOrdersListPage.jsx"),
-);
-const PurchaseOrderFormPage = lazy(
-  () => import("../pages/purchase-orders/PurchaseOrderFormPage.jsx"),
 );
 const PurchaseOrderDetailPage = lazy(
   () => import("../pages/purchase-orders/PurchaseOrderDetailPage.jsx"),
@@ -185,22 +179,12 @@ function AppRoutes() {
 
           {/* Warehouses */}
           <Route path="/warehouses" element={<WarehousesListPage />} />
-          <Route path="/warehouses/new" element={<WarehouseFormPage />} />
-          <Route path="/warehouses/:id/edit" element={<WarehouseFormPage />} />
 
           {/* Purchase Orders */}
           <Route path="/purchase-orders" element={<PurchaseOrdersListPage />} />
           <Route
-            path="/purchase-orders/new"
-            element={<PurchaseOrderFormPage />}
-          />
-          <Route
             path="/purchase-orders/:id"
             element={<PurchaseOrderDetailPage />}
-          />
-          <Route
-            path="/purchase-orders/:id/edit"
-            element={<PurchaseOrderFormPage />}
           />
 
           {/* Settings */}

@@ -78,25 +78,14 @@ export async function validateAccessToken(userId, token) {
     const data = await redis.get(key);
 
     if (!data) {
+      redis.recordCacheMiss("user_cache");
       logger.debug({ userId, key }, "Access token not found in Redis");
       return { valid: false, userData: null };
     }
 
-    // Try to parse as JSON (user data), fallback to legacy "1" format
-    let userData = null;
-    if (data !== "1") {
-      try {
-        userData = JSON.parse(data);
-        logger.debug(
-          { userId, key },
-          "Access token valid with cached user data",
-        );
-      } catch {
-        logger.debug({ userId, key }, "Access token valid (legacy format)");
-      }
-    } else {
-      logger.debug({ userId, key }, "Access token valid (legacy format)");
-    }
+    const userData = JSON.parse(data);
+    redis.recordCacheHit("user_cache");
+    logger.debug({ userId, key }, "Access token valid with cached user data");
 
     return { valid: true, userData };
   } catch (err) {

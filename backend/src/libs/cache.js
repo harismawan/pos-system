@@ -48,8 +48,10 @@ export async function getCache(key) {
   try {
     const value = await redis.get(key);
     if (value === null) {
+      redis.recordCacheMiss("data_cache");
       return null;
     }
+    redis.recordCacheHit("data_cache");
     return JSON.parse(value);
   } catch (err) {
     logger.debug({ err, key }, "Cache get failed");
