@@ -16,6 +16,7 @@ import { superAdminTests } from "../tests/super-admin.k6.js";
 import { invitationsTests } from "../tests/invitations.k6.js";
 import { logout } from "../helpers/auth.js";
 import { getSummary } from "../helpers/reporting.js";
+import config from "../config.js";
 
 export const options = {
   // Load test: Gradual ramp up to 50 VUs

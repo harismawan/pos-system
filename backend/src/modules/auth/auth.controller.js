@@ -14,6 +14,10 @@ import logger from "../../libs/logger.js";
 import { AUT } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
 import { enqueueAuditLogJob, createAuditLogData } from "../../libs/jobs.js";
+import {
+  AUDIT_EVENT_TYPES,
+  AUDIT_ENTITY_TYPES,
+} from "../../libs/auditConstants.js";
 
 export async function loginController({ body, set }) {
   try {
@@ -23,11 +27,11 @@ export async function loginController({ body, set }) {
 
     // Audit Log - Manual since no store.user context yet
     enqueueAuditLogJob({
-      eventType: "USER_LOGIN",
+      eventType: AUDIT_EVENT_TYPES.USER_LOGIN,
       businessId: result.user.businessId,
       userId: result.user.id,
       outletId: null,
-      entityType: "User",
+      entityType: AUDIT_ENTITY_TYPES.USER,
       entityId: result.user.id,
       payload: {
         username: result.user.username,
@@ -135,8 +139,8 @@ export async function logoutController({ headers, body, store }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "USER_LOGGED_OUT",
-        entityType: "User",
+        eventType: AUDIT_EVENT_TYPES.USER_LOGGED_OUT,
+        entityType: AUDIT_ENTITY_TYPES.USER,
         entityId: store.user.id,
         payload: {
           timestamp: new Date().toISOString(),
@@ -177,11 +181,11 @@ export async function resetPasswordController({ body, set }) {
 
     // Audit Log - Manual
     enqueueAuditLogJob({
-      eventType: "PASSWORD_RESET",
+      eventType: AUDIT_EVENT_TYPES.PASSWORD_RESET,
       businessId: result.businessId,
       userId: result.userId,
       outletId: null,
-      entityType: "User",
+      entityType: AUDIT_ENTITY_TYPES.USER,
       entityId: result.userId,
       payload: {
         method: "email_link",
@@ -210,8 +214,8 @@ export async function changePasswordController({ body, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "PASSWORD_CHANGED",
-        entityType: "User",
+        eventType: AUDIT_EVENT_TYPES.PASSWORD_CHANGED,
+        entityType: AUDIT_ENTITY_TYPES.USER,
         entityId: store.user.id,
         payload: {
           timestamp: new Date().toISOString(),

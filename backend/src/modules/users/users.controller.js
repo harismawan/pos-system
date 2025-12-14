@@ -4,6 +4,10 @@
 
 import * as usersService from "./users.service.js";
 import { enqueueAuditLogJob, createAuditLogData } from "../../libs/jobs.js";
+import {
+  AUDIT_EVENT_TYPES,
+  AUDIT_ENTITY_TYPES,
+} from "../../libs/auditConstants.js";
 import logger from "../../libs/logger.js";
 import { USR } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
@@ -58,8 +62,8 @@ export async function createUserController({ body, store, set }) {
     // Audit log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "USER_CREATED",
-        entityType: "User",
+        eventType: AUDIT_EVENT_TYPES.USER_CREATED,
+        entityType: AUDIT_ENTITY_TYPES.USER,
         entityId: user.id,
         payload: { name: user.name, username: user.username, role: user.role },
       }),
@@ -83,8 +87,8 @@ export async function updateUserController({ params, body, store, set }) {
     // Audit log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "USER_UPDATED",
-        entityType: "User",
+        eventType: AUDIT_EVENT_TYPES.USER_UPDATED,
+        entityType: AUDIT_ENTITY_TYPES.USER,
         entityId: user.id,
         payload: { changes: Object.keys(body) },
       }),
@@ -107,8 +111,8 @@ export async function deleteUserController({ params, store, set }) {
     // Audit log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "USER_DELETED",
-        entityType: "User",
+        eventType: AUDIT_EVENT_TYPES.USER_DELETED,
+        entityType: AUDIT_ENTITY_TYPES.USER,
         entityId: params.id,
         payload: {},
       }),
@@ -135,8 +139,8 @@ export async function assignOutletController({ params, body, store, set }) {
     // Audit log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "USER_OUTLET_ASSIGNED",
-        entityType: "OutletUser",
+        eventType: AUDIT_EVENT_TYPES.USER_OUTLET_ASSIGNED,
+        entityType: AUDIT_ENTITY_TYPES.OUTLET_USER,
         entityId: outletUser.id,
         payload: { userId: params.id, outletRole: body.outletRole },
       }),
@@ -158,8 +162,8 @@ export async function removeOutletController({ params, store, set }) {
     // Audit log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "USER_OUTLET_REMOVED",
-        entityType: "OutletUser",
+        eventType: AUDIT_EVENT_TYPES.USER_OUTLET_REMOVED,
+        entityType: AUDIT_ENTITY_TYPES.OUTLET_USER,
         entityId: `${params.id}_${params.outletId}`,
         payload: { userId: params.id },
       }),

@@ -7,6 +7,10 @@ import logger from "../../libs/logger.js";
 import { SUP } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
 import { enqueueAuditLogJob, createAuditLogData } from "../../libs/jobs.js";
+import {
+  AUDIT_EVENT_TYPES,
+  AUDIT_ENTITY_TYPES,
+} from "../../libs/auditConstants.js";
 
 export async function getSuppliersController({ query, store, set }) {
   try {
@@ -57,9 +61,9 @@ export async function createSupplierController({ body, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "SUPPLIER_CREATED",
+        eventType: AUDIT_EVENT_TYPES.SUPPLIER_CREATED,
         outletId: null,
-        entityType: "Supplier",
+        entityType: AUDIT_ENTITY_TYPES.SUPPLIER,
         entityId: supplier.id,
         payload: {
           name: supplier.name,
@@ -91,9 +95,9 @@ export async function updateSupplierController({ params, body, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "SUPPLIER_UPDATED",
+        eventType: AUDIT_EVENT_TYPES.SUPPLIER_UPDATED,
         outletId: null,
-        entityType: "Supplier",
+        entityType: AUDIT_ENTITY_TYPES.SUPPLIER,
         entityId: params.id,
         payload: {
           changes: Object.keys(body),
@@ -118,9 +122,9 @@ export async function deleteSupplierController({ params, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "SUPPLIER_DELETED",
+        eventType: AUDIT_EVENT_TYPES.SUPPLIER_DELETED,
         outletId: null,
-        entityType: "Supplier",
+        entityType: AUDIT_ENTITY_TYPES.SUPPLIER,
         entityId: params.id,
         payload: {},
       }),

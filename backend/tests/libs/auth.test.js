@@ -132,7 +132,10 @@ describe("libs/auth middleware", () => {
 
   it("rejects revoked tokens", async () => {
     const token = jwt.sign({ userId: "user-1" }, process.env.JWT_SECRET);
-    tokenStoreMock.validateAccessToken.mockImplementation(async () => false);
+    tokenStoreMock.validateAccessToken.mockImplementation(async () => ({
+      valid: false,
+      userData: null,
+    }));
     prismaMock.user.findUnique.mockImplementation(async () => ({
       outletUsers: [],
       isActive: true,
@@ -151,7 +154,11 @@ describe("libs/auth middleware", () => {
 
   it("rejects inactive user", async () => {
     const token = jwt.sign({ userId: "user-1" }, process.env.JWT_SECRET);
-    tokenStoreMock.validateAccessToken.mockResolvedValue(true);
+    // Return valid token but no cached user data - will fetch from DB
+    tokenStoreMock.validateAccessToken.mockResolvedValue({
+      valid: true,
+      userData: null,
+    });
     prismaMock.user.findUnique.mockResolvedValue({
       isActive: false,
       outletUsers: [],
@@ -171,21 +178,24 @@ describe("libs/auth middleware", () => {
       { userId: "user-1", role: "CASHIER" },
       process.env.JWT_SECRET,
     );
-    tokenStoreMock.validateAccessToken.mockResolvedValue(true);
-    prismaMock.user.findUnique.mockResolvedValue({
-      id: "user-1",
-      username: "joe",
-      name: "Joe",
-      role: "CASHIER",
-      isActive: true,
-      outletUsers: [
-        {
-          outlet: { id: "out-1", name: "Outlet", code: "O1" },
-          outletId: "out-1",
-          outletRole: "CASHIER",
-          isDefaultForUser: false,
-        },
-      ],
+    // Return valid with cached user data including outlet info
+    tokenStoreMock.validateAccessToken.mockResolvedValue({
+      valid: true,
+      userData: {
+        id: "user-1",
+        username: "joe",
+        name: "Joe",
+        role: "CASHIER",
+        isActive: true,
+        outletUsers: [
+          {
+            outletId: "out-1",
+            outletRole: "CASHIER",
+            isDefaultForUser: false,
+            outlet: { id: "out-1", name: "Outlet", code: "O1" },
+          },
+        ],
+      },
     });
     const set = {};
     const store = {};
@@ -203,21 +213,24 @@ describe("libs/auth middleware", () => {
       { userId: "user-1", role: "ADMIN" },
       process.env.JWT_SECRET,
     );
-    tokenStoreMock.validateAccessToken.mockImplementation(async () => true);
-    prismaMock.user.findUnique.mockImplementation(async () => ({
-      id: "user-1",
-      username: "jane",
-      name: "Jane Doe",
-      role: "ADMIN",
-      isActive: true,
-      outletUsers: [
-        {
-          outlet: { id: "out-1", name: "Outlet 1", code: "OUT1" },
-          outletId: "out-1",
-          outletRole: "MANAGER",
-          isDefaultForUser: true,
-        },
-      ],
+    // Return valid with cached user data
+    tokenStoreMock.validateAccessToken.mockImplementation(async () => ({
+      valid: true,
+      userData: {
+        id: "user-1",
+        username: "jane",
+        name: "Jane Doe",
+        role: "ADMIN",
+        isActive: true,
+        outletUsers: [
+          {
+            outletId: "out-1",
+            outletRole: "MANAGER",
+            isDefaultForUser: true,
+            outlet: { id: "out-1", name: "Outlet 1", code: "OUT1" },
+          },
+        ],
+      },
     }));
 
     const store = {};

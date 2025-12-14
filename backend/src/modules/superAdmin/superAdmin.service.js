@@ -426,9 +426,34 @@ export async function impersonateUser(targetUserId, superAdminId) {
     impersonatedBy: superAdminId,
   });
 
-  // Store tokens with shorter TTL (1 hour)
+  // Build user data for caching (matches auth middleware format)
+  const userDataForCache = {
+    id: targetUser.id,
+    businessId: targetUser.businessId,
+    username: targetUser.username,
+    name: targetUser.name,
+    role: targetUser.role,
+    isActive: targetUser.isActive,
+    outletUsers: targetUser.outletUsers.map((ou) => ({
+      outletId: ou.outletId,
+      outletRole: ou.outletRole,
+      isDefaultForUser: ou.isDefaultForUser,
+      outlet: {
+        id: ou.outlet.id,
+        name: ou.outlet.name,
+        code: ou.outlet.code,
+      },
+    })),
+  };
+
+  // Store tokens with shorter TTL (1 hour), include user data for caching
   const impersonationTTL = 3600; // 1 hour
-  await storeAccessToken(targetUser.id, accessToken, impersonationTTL);
+  await storeAccessToken(
+    targetUser.id,
+    accessToken,
+    impersonationTTL,
+    userDataForCache,
+  );
   await storeRefreshToken(targetUser.id, refreshToken, impersonationTTL);
 
   const outlets = targetUser.outletUsers.map((ou) => ({

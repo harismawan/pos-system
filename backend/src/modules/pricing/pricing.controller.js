@@ -7,6 +7,10 @@ import logger from "../../libs/logger.js";
 import { PRC } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
 import { enqueueAuditLogJob, createAuditLogData } from "../../libs/jobs.js";
+import {
+  AUDIT_EVENT_TYPES,
+  AUDIT_ENTITY_TYPES,
+} from "../../libs/auditConstants.js";
 
 export async function getPriceQuoteController({ query, store, set }) {
   try {
@@ -60,9 +64,9 @@ export async function createPriceTierController({ body, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "PRICE_TIER_CREATED",
+        eventType: AUDIT_EVENT_TYPES.PRICE_TIER_CREATED,
         outletId: null,
-        entityType: "PriceTier",
+        entityType: AUDIT_ENTITY_TYPES.PRICE_TIER,
         entityId: tier.id,
         payload: {
           name: tier.name,
@@ -93,9 +97,9 @@ export async function updatePriceTierController({ params, body, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "PRICE_TIER_UPDATED",
+        eventType: AUDIT_EVENT_TYPES.PRICE_TIER_UPDATED,
         outletId: null,
-        entityType: "PriceTier",
+        entityType: AUDIT_ENTITY_TYPES.PRICE_TIER,
         entityId: params.id,
         payload: {
           name: tier.name,
@@ -144,9 +148,9 @@ export async function setProductPriceController({ params, body, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "PRODUCT_PRICE_UPDATED",
+        eventType: AUDIT_EVENT_TYPES.PRODUCT_PRICE_SET,
         outletId: body.outletId || null,
-        entityType: "ProductPriceTier",
+        entityType: AUDIT_ENTITY_TYPES.PRODUCT_PRICE_TIER,
         entityId: `${params.productId}-${body.priceTierId}-${body.outletId || "global"}`,
         payload: {
           productId: params.productId,

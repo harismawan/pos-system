@@ -8,6 +8,7 @@ import { commonSchemas, addressFields } from "../../libs/validation.js";
 // GET /warehouses query parameters
 export const getWarehousesQuerySchema = {
   query: t.Object({
+    search: t.Optional(t.String()),
     outletId: t.Optional(t.String()),
     type: t.Optional(t.Union([t.Literal("CENTRAL"), t.Literal("OUTLET")])),
     isActive: commonSchemas.booleanString,

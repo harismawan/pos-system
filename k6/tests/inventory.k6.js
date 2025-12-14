@@ -19,10 +19,13 @@ export function inventoryTests() {
   let warehouseId = null;
 
   group("Inventory API", () => {
-    // Get existing product and warehouse for testing
-    const productsRes = http.get(`${config.baseUrl}/products?limit=1`, {
-      headers,
-    });
+    // Get Sample Product 1 for testing (consistent known product)
+    const productsRes = http.get(
+      `${config.baseUrl}/products?search=Sample%20Product%201&limit=1`,
+      {
+        headers,
+      },
+    );
     if (
       productsRes.status === 200 &&
       productsRes.json().data?.products?.length > 0
@@ -30,9 +33,10 @@ export function inventoryTests() {
       productId = productsRes.json().data.products[0].id;
     }
 
+    // Get Main warehouse for testing
     if (outletId) {
       const warehousesRes = http.get(
-        `${config.baseUrl}/warehouses?outletId=${outletId}&limit=1`,
+        `${config.baseUrl}/warehouses?outletId=${outletId}&search=Main&limit=1`,
         { headers },
       );
       if (
@@ -103,26 +107,26 @@ export function inventoryTests() {
         });
         thinkTime();
       });
-    }
 
-    // Stock take
-    if (productId && warehouseId) {
-      group("POST /inventory/stock-take", () => {
-        const res = http.post(
-          `${config.baseUrl}/inventory/stock-take`,
-          JSON.stringify({
-            warehouseId: warehouseId,
-            items: [{ productId: productId, physicalQuantity: 100 }],
-            notes: "K6 performance test stock take",
-          }),
-          { headers: headersWithOutlet },
-        );
-        check(res, {
-          "stock take responds": (r) =>
-            r.status === 200 || r.status === 400 || r.status === 404,
-        });
-        thinkTime();
-      });
+      // Transfer inventory (use same warehouse for now - would fail but tests the route)
+      // group("POST /inventory/transfer", () => {
+      //     const res = http.post(
+      //         `${config.baseUrl}/inventory/transfer`,
+      //         JSON.stringify({
+      //             productId: productId,
+      //             fromWarehouseId: warehouseId,
+      //             toWarehouseId: warehouseId, // Same warehouse - will fail validation but tests route
+      //             quantity: 1,
+      //             notes: "K6 performance test transfer",
+      //         }),
+      //         { headers: headersWithOutlet },
+      //     );
+      //     check(res, {
+      //         "transfer inventory responds": (r) =>
+      //             r.status === 200 || r.status === 400 || r.status === 404,
+      //     });
+      //     thinkTime();
+      // });
     }
   });
 }

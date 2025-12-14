@@ -13,6 +13,11 @@ mock.module(resolve(import.meta.dir, "../../../src/libs/prisma.js"), () => ({
 const auditLogsService =
   await import("../../../src/modules/auditLogs/auditLogs.service.js?service");
 
+import {
+  AUDIT_EVENT_TYPES,
+  AUDIT_ENTITY_TYPES,
+} from "../../../src/libs/auditConstants.js";
+
 const businessId = "biz-1";
 
 describe("modules/auditLogs/auditLogs.service", () => {
@@ -107,25 +112,15 @@ describe("modules/auditLogs/auditLogs.service", () => {
   });
 
   it("returns event types list", async () => {
-    prismaMock.auditLog.findMany.mockResolvedValue([
-      { eventType: "A" },
-      { eventType: "B" },
-    ]);
-
     const types = await auditLogsService.getEventTypes(businessId);
-
-    expect(types).toEqual(["A", "B"]);
+    const expected = Object.values(AUDIT_EVENT_TYPES).sort();
+    expect(types).toEqual(expected);
   });
 
   it("returns entity types list", async () => {
-    prismaMock.auditLog.findMany.mockResolvedValue([
-      { entityType: "User" },
-      { entityType: "Order" },
-    ]);
-
     const types = await auditLogsService.getEntityTypes(businessId);
-
-    expect(types).toEqual(["User", "Order"]);
+    const expected = Object.values(AUDIT_ENTITY_TYPES).sort();
+    expect(types).toEqual(expected);
   });
 
   it("throws when businessId is missing in getAuditLogs", async () => {

@@ -7,6 +7,10 @@ import logger from "../../libs/logger.js";
 import { SAL } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
 import { enqueueAuditLogJob, createAuditLogData } from "../../libs/jobs.js";
+import {
+  AUDIT_EVENT_TYPES,
+  AUDIT_ENTITY_TYPES,
+} from "../../libs/auditConstants.js";
 
 export async function createPosOrderController({ body, store, set }) {
   try {
@@ -17,9 +21,9 @@ export async function createPosOrderController({ body, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "SALE_CREATED",
+        eventType: AUDIT_EVENT_TYPES.SALE_CREATED,
         outletId: order.outletId,
-        entityType: "PosOrder",
+        entityType: AUDIT_ENTITY_TYPES.POS_ORDER,
         entityId: order.id,
         payload: {
           orderNumber: order.orderNumber,
@@ -86,9 +90,9 @@ export async function completePosOrderController({ params, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "SALE_COMPLETED",
+        eventType: AUDIT_EVENT_TYPES.SALE_COMPLETED,
         outletId: order.outletId,
-        entityType: "PosOrder",
+        entityType: AUDIT_ENTITY_TYPES.POS_ORDER,
         entityId: order.id,
         payload: {
           orderNumber: order.orderNumber,
@@ -122,9 +126,9 @@ export async function cancelPosOrderController({ params, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "SALE_CANCELLED",
+        eventType: AUDIT_EVENT_TYPES.SALE_CANCELLED,
         outletId: order.outletId,
-        entityType: "PosOrder",
+        entityType: AUDIT_ENTITY_TYPES.POS_ORDER,
         entityId: order.id,
         payload: {
           orderNumber: order.orderNumber,
@@ -152,9 +156,9 @@ export async function addPaymentController({ params, body, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "PAYMENT_ADDED",
+        eventType: AUDIT_EVENT_TYPES.SALE_PAYMENT_ADDED,
         outletId: result.order.outletId,
-        entityType: "PosOrder",
+        entityType: AUDIT_ENTITY_TYPES.POS_ORDER,
         entityId: result.order.id,
         payload: {
           amount: body.amount,

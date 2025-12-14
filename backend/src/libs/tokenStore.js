@@ -21,16 +21,22 @@ function hashToken(token) {
  * @param {string} userId - User ID
  * @param {string} token - Access token
  * @param {number} ttl - Time to live in seconds
+ * @param {Object} [userData] - Optional user data to cache with token
  * @returns {Promise<void>}
  */
-export async function storeAccessToken(userId, token, ttl) {
+export async function storeAccessToken(userId, token, ttl, userData = null) {
   try {
     const tokenHash = hashToken(token);
     const key = `token:access:${userId}:${tokenHash}`;
 
-    await redis.setex(key, ttl, "1");
+    // Store user data if provided, otherwise just "1" for backward compatibility
+    const value = userData ? JSON.stringify(userData) : "1";
+    await redis.setex(key, ttl, value);
 
-    logger.debug({ userId, ttl, key }, "Stored access token in Redis");
+    logger.debug(
+      { userId, ttl, key, hasUserData: !!userData },
+      "Stored access token in Redis",
+    );
   } catch (err) {
     logger.error({ err, userId }, "Failed to store access token in Redis");
     throw err;
@@ -59,24 +65,43 @@ export async function storeRefreshToken(userId, token, ttl) {
 }
 
 /**
- * Validate if access token exists in Redis
+ * Validate if access token exists in Redis and return cached user data if available
  * @param {string} userId - User ID
  * @param {string} token - Access token
- * @returns {Promise<boolean>} True if token exists and is valid
+ * @returns {Promise<{valid: boolean, userData: Object|null}>} Validation result with optional user data
  */
 export async function validateAccessToken(userId, token) {
   try {
     const tokenHash = hashToken(token);
     const key = `token:access:${userId}:${tokenHash}`;
 
-    const exists = await redis.exists(key);
+    const data = await redis.get(key);
 
-    logger.debug({ userId, exists, key }, "Validated access token from Redis");
+    if (!data) {
+      logger.debug({ userId, key }, "Access token not found in Redis");
+      return { valid: false, userData: null };
+    }
 
-    return exists;
+    // Try to parse as JSON (user data), fallback to legacy "1" format
+    let userData = null;
+    if (data !== "1") {
+      try {
+        userData = JSON.parse(data);
+        logger.debug(
+          { userId, key },
+          "Access token valid with cached user data",
+        );
+      } catch {
+        logger.debug({ userId, key }, "Access token valid (legacy format)");
+      }
+    } else {
+      logger.debug({ userId, key }, "Access token valid (legacy format)");
+    }
+
+    return { valid: true, userData };
   } catch (err) {
     logger.debug({ err, userId }, "Failed to validate access token from Redis");
-    return false;
+    return { valid: false, userData: null };
   }
 }
 

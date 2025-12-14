@@ -14,28 +14,56 @@ export function purchaseOrdersTests() {
   ensureAuthenticated();
   const headers = getAuthHeaders();
   const headersWithOutlet = getAuthHeadersWithOutlet();
-  const outletId = getOutletId();
+  // const outletId = getOutletId(); // Use stable data fetch instead
+  let outletId = null;
   let createdPoId = null;
   let supplierId = null;
   let warehouseId = null;
   let productId = null;
 
   group("Purchase Orders API", () => {
-    // Get existing data for testing
-    const suppliersRes = http.get(`${config.baseUrl}/suppliers?limit=1`, {
-      headers,
+    // Get existing data for testing (filter out K6 test data to avoid concurrency issues)
+    const suppliersRes = http.get(`${config.baseUrl}/suppliers?limit=100`, {
+      headers: headersWithOutlet,
     });
-    if (
-      suppliersRes.status === 200 &&
-      suppliersRes.json().data?.suppliers?.length > 0
-    ) {
-      supplierId = suppliersRes.json().data.suppliers[0].id;
+    if (suppliersRes.status === 200 && suppliersRes.json().data.suppliers) {
+      const suppliers = suppliersRes.json().data.suppliers;
+      const stableSupplier = suppliers.find((s) => !s.name.includes("K6"));
+      supplierId = stableSupplier ? stableSupplier.id : suppliers[0]?.id;
     }
 
+    // Get Sample Products 1 and 2 for testing (consistent known products)
+    const productsRes = http.get(
+      `${config.baseUrl}/products?search=Sample%20Product&limit=10`,
+      {
+        headers: headersWithOutlet,
+      },
+    );
+    let productIds = [];
+    if (productsRes.status === 200 && productsRes.json().data?.products) {
+      const products = productsRes.json().data.products;
+      // Filter for Sample Product 1 or 2
+      const sampleProducts = products.filter(
+        (p) => p.name === "Sample Product 1" || p.name === "Sample Product 2",
+      );
+      productIds = sampleProducts.map((p) => p.id);
+      productId = productIds[0] || products[0]?.id;
+    }
+
+    const outletsRes = http.get(`${config.baseUrl}/outlets?limit=100`, {
+      headers: headersWithOutlet,
+    });
+    if (outletsRes.status === 200 && outletsRes.json().data.outlets) {
+      const outlets = outletsRes.json().data.outlets;
+      const stableOutlet = outlets.find((o) => !o.name.includes("K6"));
+      outletId = stableOutlet ? stableOutlet.id : outlets[0]?.id;
+    }
+
+    // Find warehouse for this outlet (search for 'Main' for consistency)
     if (outletId) {
       const warehousesRes = http.get(
-        `${config.baseUrl}/warehouses?outletId=${outletId}&limit=1`,
-        { headers },
+        `${config.baseUrl}/warehouses?outletId=${outletId}&search=Main&limit=1`,
+        { headers: headersWithOutlet },
       );
       if (
         warehousesRes.status === 200 &&
@@ -43,16 +71,6 @@ export function purchaseOrdersTests() {
       ) {
         warehouseId = warehousesRes.json().data.warehouses[0].id;
       }
-    }
-
-    const productsRes = http.get(`${config.baseUrl}/products?limit=1`, {
-      headers,
-    });
-    if (
-      productsRes.status === 200 &&
-      productsRes.json().data?.products?.length > 0
-    ) {
-      productId = productsRes.json().data.products[0].id;
     }
 
     // List purchase orders

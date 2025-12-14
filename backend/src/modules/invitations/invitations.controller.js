@@ -7,6 +7,10 @@ import logger from "../../libs/logger.js";
 import { INV_CODE } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
 import { enqueueAuditLogJob, createAuditLogData } from "../../libs/jobs.js";
+import {
+  AUDIT_EVENT_TYPES,
+  AUDIT_ENTITY_TYPES,
+} from "../../libs/auditConstants.js";
 
 export async function createInvitationController({
   body,
@@ -28,8 +32,8 @@ export async function createInvitationController({
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "USER_INVITATION_CREATED",
-        entityType: "UserInvitation",
+        eventType: AUDIT_EVENT_TYPES.INVITATION_CREATED,
+        entityType: AUDIT_ENTITY_TYPES.INVITATION,
         entityId: invitation.id,
         payload: { email: invitation.email, role: invitation.role },
       }),
@@ -73,8 +77,8 @@ export async function cancelInvitationController({ params, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "USER_INVITATION_CANCELLED",
-        entityType: "UserInvitation",
+        eventType: AUDIT_EVENT_TYPES.INVITATION_REVOKED,
+        entityType: AUDIT_ENTITY_TYPES.INVITATION,
         entityId: params.id,
       }),
     );
@@ -107,8 +111,8 @@ export async function resendInvitationController({
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "USER_INVITATION_RESENT",
-        entityType: "UserInvitation",
+        eventType: AUDIT_EVENT_TYPES.INVITATION_RESENT,
+        entityType: AUDIT_ENTITY_TYPES.INVITATION,
         entityId: params.id,
       }),
     );
@@ -144,10 +148,10 @@ export async function acceptInvitationController({ body, set }) {
 
     // Audit Log - manually constructed as this is a public endpoint (self-registration)
     enqueueAuditLogJob({
-      eventType: "USER_INVITATION_ACCEPTED",
+      eventType: AUDIT_EVENT_TYPES.INVITATION_ACCEPTED,
       userId: result.user.id,
       outletId: null,
-      entityType: "User",
+      entityType: AUDIT_ENTITY_TYPES.USER,
       entityId: result.user.id,
       payload: { email: result.user.email },
       impersonatedBy: null, // New users cannot be created via impersonation in this flow

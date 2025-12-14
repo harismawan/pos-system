@@ -7,6 +7,10 @@ import logger from "../../libs/logger.js";
 import { POR } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
 import { enqueueAuditLogJob, createAuditLogData } from "../../libs/jobs.js";
+import {
+  AUDIT_EVENT_TYPES,
+  AUDIT_ENTITY_TYPES,
+} from "../../libs/auditConstants.js";
 
 export async function getPurchaseOrdersController({ query, store, set }) {
   try {
@@ -62,9 +66,9 @@ export async function createPurchaseOrderController({ body, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "PURCHASE_ORDER_CREATED",
+        eventType: AUDIT_EVENT_TYPES.PURCHASE_ORDER_CREATED,
         outletId: order.outletId,
-        entityType: "PurchaseOrder",
+        entityType: AUDIT_ENTITY_TYPES.PURCHASE_ORDER,
         entityId: order.id,
         payload: {
           orderNumber: order.orderNumber,
@@ -103,9 +107,9 @@ export async function updatePurchaseOrderController({
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "PURCHASE_ORDER_UPDATED",
+        eventType: AUDIT_EVENT_TYPES.PURCHASE_ORDER_UPDATED,
         outletId: order.outletId,
-        entityType: "PurchaseOrder",
+        entityType: AUDIT_ENTITY_TYPES.PURCHASE_ORDER,
         entityId: order.id,
         payload: {
           status: order.status,
@@ -143,9 +147,9 @@ export async function receivePurchaseOrderController({
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "PURCHASE_ORDER_RECEIVED",
+        eventType: AUDIT_EVENT_TYPES.PURCHASE_ORDER_RECEIVED,
         outletId: order.outletId,
-        entityType: "PurchaseOrder",
+        entityType: AUDIT_ENTITY_TYPES.PURCHASE_ORDER,
         entityId: order.id,
         payload: {
           orderNumber: order.orderNumber,
@@ -176,9 +180,9 @@ export async function cancelPurchaseOrderController({ params, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "PURCHASE_ORDER_CANCELLED",
+        eventType: AUDIT_EVENT_TYPES.PURCHASE_ORDER_CANCELLED,
         outletId: order.outletId,
-        entityType: "PurchaseOrder",
+        entityType: AUDIT_ENTITY_TYPES.PURCHASE_ORDER,
         entityId: order.id,
         payload: {
           orderNumber: order.orderNumber,

@@ -7,6 +7,10 @@ import logger from "../../libs/logger.js";
 import { PRD } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
 import { enqueueAuditLogJob, createAuditLogData } from "../../libs/jobs.js";
+import {
+  AUDIT_EVENT_TYPES,
+  AUDIT_ENTITY_TYPES,
+} from "../../libs/auditConstants.js";
 
 export async function getProductsController({ query, store, set }) {
   try {
@@ -55,9 +59,9 @@ export async function createProductController({ body, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "PRODUCT_CREATED",
+        eventType: AUDIT_EVENT_TYPES.PRODUCT_CREATED,
         outletId: null,
-        entityType: "Product",
+        entityType: AUDIT_ENTITY_TYPES.PRODUCT,
         entityId: product.id,
         payload: {
           name: product.name,
@@ -90,9 +94,9 @@ export async function updateProductController({ params, body, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "PRODUCT_UPDATED",
+        eventType: AUDIT_EVENT_TYPES.PRODUCT_UPDATED,
         outletId: null,
-        entityType: "Product",
+        entityType: AUDIT_ENTITY_TYPES.PRODUCT,
         entityId: params.id,
         payload: {
           changes: Object.keys(body),
@@ -117,9 +121,9 @@ export async function deleteProductController({ params, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "PRODUCT_DELETED",
+        eventType: AUDIT_EVENT_TYPES.PRODUCT_DELETED,
         outletId: null,
-        entityType: "Product",
+        entityType: AUDIT_ENTITY_TYPES.PRODUCT,
         entityId: params.id,
         payload: {},
       }),

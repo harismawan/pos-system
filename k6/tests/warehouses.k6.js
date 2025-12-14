@@ -17,19 +17,22 @@ export function warehousesTests() {
   let existingWarehouseId = null;
 
   group("Warehouses API", () => {
-    // List warehouses
+    // List warehouses (search for 'Main')
     group("GET /warehouses", () => {
       const url = outletId
-        ? `${config.baseUrl}/warehouses?outletId=${outletId}`
-        : `${config.baseUrl}/warehouses`;
+        ? `${config.baseUrl}/warehouses?outletId=${outletId}&search=Main&limit=1`
+        : `${config.baseUrl}/warehouses?search=Main&limit=1`;
       const res = http.get(url, { headers });
       check(res, {
         "list warehouses status is 200": (r) => r.status === 200,
         "list warehouses returns data": (r) =>
           r.json().data?.warehouses !== undefined,
       });
-      if (res.status === 200 && res.json().data?.warehouses?.length > 0) {
-        existingWarehouseId = res.json().data.warehouses[0].id;
+      if (res.status === 200 && res.json().data?.warehouses) {
+        // Since we searched for 'Main', the first result should be the correct one
+        // and importantly, it's not a K6 test warehouse (assuming 'Main' is seeded/stable)
+        const warehouses = res.json().data.warehouses;
+        existingWarehouseId = warehouses[0]?.id;
       }
       thinkTime();
     });

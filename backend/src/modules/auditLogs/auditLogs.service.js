@@ -7,6 +7,10 @@ import {
   normalizePagination,
   buildPaginationMeta,
 } from "../../libs/pagination.js";
+import {
+  getAllEventTypes,
+  getAllEntityTypes,
+} from "../../libs/auditConstants.js";
 
 /**
  * Get audit logs with pagination and filters
@@ -149,35 +153,23 @@ export async function getAuditLogById(id, businessId) {
 }
 
 /**
- * Get distinct event types for filtering
+ * Get distinct event types for filtering - Returns predefined static list
  */
 export async function getEventTypes(businessId) {
   // businessId is required for multi-tenant isolation
   if (!businessId) {
     throw new Error("businessId is required");
   }
-  const result = await prisma.auditLog.findMany({
-    where: { businessId },
-    select: { eventType: true },
-    distinct: ["eventType"],
-    orderBy: { eventType: "asc" },
-  });
-  return result.map((r) => r.eventType);
+  return getAllEventTypes();
 }
 
 /**
- * Get distinct entity types for filtering
+ * Get distinct entity types for filtering - Returns predefined static list
  */
 export async function getEntityTypes(businessId) {
   // businessId is required for multi-tenant isolation
   if (!businessId) {
     throw new Error("businessId is required");
   }
-  const result = await prisma.auditLog.findMany({
-    where: { businessId },
-    select: { entityType: true },
-    distinct: ["entityType"],
-    orderBy: { entityType: "asc" },
-  });
-  return result.map((r) => r.entityType);
+  return getAllEntityTypes();
 }

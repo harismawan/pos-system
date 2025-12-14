@@ -6,7 +6,7 @@ import jwt from "jsonwebtoken";
 import config from "../config/index.js";
 import logger from "./logger.js";
 import prisma from "./prisma.js";
-import { validateAccessToken } from "./tokenStore.js";
+import { validateAccessToken, storeAccessToken } from "./tokenStore.js";
 
 /**
  * Generate access token
@@ -61,20 +61,13 @@ export function verifyRefreshToken(token) {
   }
 }
 
-/**
- * Elysia authentication beforeHandle function
- * Validates JWT and attaches user info to store
- */
 // Import response codes
 import { AUT } from "./responseCodes.js";
 
-// ... (previous imports)
-
-// ... (previous helper functions verifyAccessToken etc)
-
 /**
  * Elysia authentication beforeHandle function
  * Validates JWT and attaches user info to store
+ * Uses cached user data from Redis when available, falls back to DB
  */
 export async function authMiddleware({ headers, set, store }) {
   const authHeader = headers.authorization;
@@ -106,8 +99,9 @@ export async function authMiddleware({ headers, set, store }) {
       throw new Error("Invalid token");
     }
 
-    // Validate token exists in Redis
-    const isValidInRedis = await validateAccessToken(payload.userId, token);
+    // Validate token exists in Redis and get cached user data
+    const { valid: isValidInRedis, userData: cachedUser } =
+      await validateAccessToken(payload.userId, token);
     if (!isValidInRedis) {
       set.status = 401;
       return {
@@ -117,19 +111,69 @@ export async function authMiddleware({ headers, set, store }) {
       };
     }
 
-    // Fetch user from database
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
-      include: {
-        outletUsers: {
-          include: {
-            outlet: true,
+    let user;
+
+    // Use cached user data if available
+    if (cachedUser) {
+      user = cachedUser;
+      logger.debug({ userId: payload.userId }, "Using cached user data");
+    } else {
+      // Cache miss - fetch from database
+      logger.debug(
+        { userId: payload.userId },
+        "Cache miss, fetching user from DB",
+      );
+      const dbUser = await prisma.user.findUnique({
+        where: { id: payload.userId },
+        include: {
+          outletUsers: {
+            include: {
+              outlet: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    if (!user || !user.isActive) {
+      if (!dbUser || !dbUser.isActive) {
+        set.status = 401;
+        return {
+          success: false,
+          code: AUT.NOT_AUTHENTICATED,
+          error: "User not found or inactive",
+        };
+      }
+
+      // Build user object for caching
+      user = {
+        id: dbUser.id,
+        businessId: dbUser.businessId,
+        username: dbUser.username,
+        name: dbUser.name,
+        role: dbUser.role,
+        isActive: dbUser.isActive,
+        outletUsers: dbUser.outletUsers.map((ou) => ({
+          outletId: ou.outletId,
+          outletRole: ou.outletRole,
+          isDefaultForUser: ou.isDefaultForUser,
+          outlet: {
+            id: ou.outlet.id,
+            name: ou.outlet.name,
+            code: ou.outlet.code,
+          },
+        })),
+      };
+
+      // Store in cache for future requests (update the token's value)
+      await storeAccessToken(
+        payload.userId,
+        token,
+        config.jwt.accessTokenTTL,
+        user,
+      );
+    }
+
+    // Verify user is still active
+    if (!user.isActive) {
       set.status = 401;
       return {
         success: false,
@@ -138,8 +182,6 @@ export async function authMiddleware({ headers, set, store }) {
       };
     }
 
-    // ... (rest of user context building)
-
     // Build user context and attach to store
     store.user = {
       id: user.id,
@@ -147,7 +189,7 @@ export async function authMiddleware({ headers, set, store }) {
       username: user.username,
       name: user.name,
       role: user.role,
-      impersonatedBy: payload.impersonatedBy || null, // Super Admin ID if impersonating
+      impersonatedBy: payload.impersonatedBy || null,
       outlets: user.outletUsers.map((ou) => ({
         id: ou.outlet.id,
         name: ou.outlet.name,
@@ -162,7 +204,12 @@ export async function authMiddleware({ headers, set, store }) {
 
     if (outletId) {
       const hasAccess = user.outletUsers.some((ou) => ou.outletId === outletId);
-      if (!hasAccess && user.role !== "OWNER" && user.role !== "ADMIN") {
+      if (
+        !hasAccess &&
+        user.role !== "OWNER" &&
+        user.role !== "ADMIN" &&
+        user.role !== "SUPER_ADMIN"
+      ) {
         set.status = 403;
         return {
           success: false,

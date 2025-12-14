@@ -8,7 +8,7 @@ import prisma from "../../libs/prisma.js";
 import logger from "../../libs/logger.js";
 
 /**
- * Generate unique PO number
+ * Generate unique PO number with high entropy
  */
 async function generatePoNumber(outletId) {
   const outlet = await prisma.outlet.findUnique({
@@ -17,9 +17,13 @@ async function generatePoNumber(outletId) {
 
   const date = new Date();
   const dateStr = date.toISOString().slice(0, 10).replace(/-/g, "");
-  const random = Math.floor(Math.random() * 10000)
-    .toString()
-    .padStart(4, "0");
+
+  // Use 8 alphanumeric characters for higher entropy (~2.8 billion possibilities)
+  const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  let random = "";
+  for (let i = 0; i < 8; i++) {
+    random += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
 
   return `PO-${outlet?.code || "SYS"}-${dateStr}-${random}`;
 }

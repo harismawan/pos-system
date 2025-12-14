@@ -30,6 +30,7 @@ export const options = {
   ],
 
   thresholds: {
+    ...config.thresholds,
     // More lenient thresholds for stress testing
     http_req_failed: ["rate<0.10"], // Allow up to 10% failure
     http_req_duration: ["p(95)<2000"], // 2 second tolerance

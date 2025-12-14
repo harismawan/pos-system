@@ -54,6 +54,7 @@ function WarehousesListPage() {
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [filterType, setFilterType] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Delete modal state
   const [deleteModal, setDeleteModal] = useState({
@@ -74,7 +75,7 @@ function WarehousesListPage() {
 
   useEffect(() => {
     loadWarehouses();
-  }, [currentPage, perPage, filterType, activeOutlet]);
+  }, [currentPage, perPage, filterType, searchTerm, activeOutlet]);
 
   const loadWarehouses = async () => {
     try {
@@ -84,6 +85,7 @@ function WarehousesListPage() {
         limit: perPage,
       };
       if (filterType) params.type = filterType;
+      if (searchTerm) params.search = searchTerm;
       if (activeOutlet?.id) params.outletId = activeOutlet.id;
 
       const result = await warehousesApi.getWarehouses(params);
@@ -231,6 +233,16 @@ function WarehousesListPage() {
       </div>
 
       <div className="filter-bar">
+        <input
+          type="text"
+          placeholder="Search by name or code..."
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setCurrentPage(1);
+          }}
+          style={{ width: "250px" }}
+        />
         <select
           value={filterType}
           onChange={(e) => {

@@ -2,14 +2,12 @@
 import http from "k6/http";
 import { check, group } from "k6";
 import config from "../config.js";
-import { ensureAuthenticated, getAuthHeaders } from "../helpers/auth.js";
+import { getSuperAdminAuthHeaders } from "../helpers/auth.js";
 import { thinkTime } from "../helpers/http.js";
 
 export function superAdminTests() {
-  // Note: Super Admin tests require a super admin user
-  // These tests may fail for regular users due to permission restrictions
-  ensureAuthenticated();
-  const headers = getAuthHeaders();
+  // Get superadmin headers (uses separate auth session)
+  const headers = getSuperAdminAuthHeaders();
   let businessId = null;
   let userId = null;
 

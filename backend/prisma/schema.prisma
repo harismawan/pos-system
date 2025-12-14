@@ -185,6 +185,8 @@ model Warehouse {
   @@unique([outletId, code])
   @@index([outletId])
   @@index([isActive])
+  @@index([name])
+  @@index([code])
   @@map("warehouses")
 }
 

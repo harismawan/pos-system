@@ -7,6 +7,10 @@ import logger from "../../libs/logger.js";
 import { OUT } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
 import { enqueueAuditLogJob, createAuditLogData } from "../../libs/jobs.js";
+import {
+  AUDIT_EVENT_TYPES,
+  AUDIT_ENTITY_TYPES,
+} from "../../libs/auditConstants.js";
 
 export async function getOutletsController({ query, store, set }) {
   try {
@@ -55,9 +59,9 @@ export async function createOutletController({ body, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "OUTLET_CREATED",
+        eventType: AUDIT_EVENT_TYPES.OUTLET_CREATED,
         outletId: outlet.id,
-        entityType: "Outlet",
+        entityType: AUDIT_ENTITY_TYPES.OUTLET,
         entityId: outlet.id,
         payload: {
           name: outlet.name,
@@ -90,9 +94,9 @@ export async function updateOutletController({ params, body, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "OUTLET_UPDATED",
+        eventType: AUDIT_EVENT_TYPES.OUTLET_UPDATED,
         outletId: outlet.id,
-        entityType: "Outlet",
+        entityType: AUDIT_ENTITY_TYPES.OUTLET,
         entityId: outlet.id,
         payload: {
           name: outlet.name,
@@ -153,9 +157,9 @@ export async function assignUserToOutletController({
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "USER_ASSIGNED_TO_OUTLET",
+        eventType: AUDIT_EVENT_TYPES.USER_OUTLET_ASSIGNED,
         outletId: params.id,
-        entityType: "OutletUser",
+        entityType: AUDIT_ENTITY_TYPES.OUTLET_USER,
         entityId: outletUser.id,
         payload: {
           assignedUserId: body.userId,
@@ -186,9 +190,9 @@ export async function removeUserFromOutletController({ params, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "USER_REMOVED_FROM_OUTLET",
+        eventType: AUDIT_EVENT_TYPES.USER_OUTLET_REMOVED,
         outletId: params.id,
-        entityType: "OutletUser",
+        entityType: AUDIT_ENTITY_TYPES.OUTLET_USER,
         entityId: `${params.userId}-${params.id}`,
         payload: {
           removedUserId: params.userId,

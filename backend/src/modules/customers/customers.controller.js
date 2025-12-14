@@ -7,6 +7,10 @@ import logger from "../../libs/logger.js";
 import { CUS } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
 import { enqueueAuditLogJob, createAuditLogData } from "../../libs/jobs.js";
+import {
+  AUDIT_EVENT_TYPES,
+  AUDIT_ENTITY_TYPES,
+} from "../../libs/auditConstants.js";
 
 export async function getCustomersController({ query, store, set }) {
   try {
@@ -52,9 +56,9 @@ export async function createCustomerController({ body, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "CUSTOMER_CREATED",
+        eventType: AUDIT_EVENT_TYPES.CUSTOMER_CREATED,
         outletId: null,
-        entityType: "Customer",
+        entityType: AUDIT_ENTITY_TYPES.CUSTOMER,
         entityId: customer.id,
         payload: {
           name: customer.name,
@@ -86,9 +90,9 @@ export async function updateCustomerController({ params, body, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "CUSTOMER_UPDATED",
+        eventType: AUDIT_EVENT_TYPES.CUSTOMER_UPDATED,
         outletId: null,
-        entityType: "Customer",
+        entityType: AUDIT_ENTITY_TYPES.CUSTOMER,
         entityId: params.id,
         payload: {
           changes: Object.keys(body),
@@ -113,9 +117,9 @@ export async function deleteCustomerController({ params, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "CUSTOMER_DELETED",
+        eventType: AUDIT_EVENT_TYPES.CUSTOMER_DELETED,
         outletId: null,
-        entityType: "Customer",
+        entityType: AUDIT_ENTITY_TYPES.CUSTOMER,
         entityId: params.id,
         payload: {},
       }),

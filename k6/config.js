@@ -21,7 +21,7 @@ export const config = {
   thresholds: {
     // HTTP request failure rate should be less than 5%
     // Note: 4xx responses are now counted as "expected" due to setResponseCallback
-    http_req_failed: ["rate<0.05"],
+    http_req_failed: ["rate<0.01"],
     // 95% of requests should be below 500ms
     http_req_duration: ["p(95)<500"],
   },

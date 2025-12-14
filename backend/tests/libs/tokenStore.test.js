@@ -20,6 +20,7 @@ describe("libs/tokenStore", () => {
   beforeEach(() => {
     redisMock.setex.mockReset?.();
     redisMock.exists.mockReset?.();
+    redisMock.get.mockReset?.();
     redisMock.del.mockReset?.();
     redisMock.keys.mockReset?.();
     redisMock.hset.mockReset?.();
@@ -70,20 +71,30 @@ describe("libs/tokenStore", () => {
   });
 
   it("validates access tokens using hashed keys", async () => {
-    redisMock.exists.mockImplementation(async () => true);
-    const isValid = await tokenStore.validateAccessToken(userId, token);
-    expect(isValid).toBe(true);
-    expect(redisMock.exists.calls[0]).toEqual([
+    redisMock.get.mockImplementation(async () => "1");
+    const result = await tokenStore.validateAccessToken(userId, token);
+    expect(result.valid).toBe(true);
+    expect(result.userData).toBe(null);
+    expect(redisMock.get.calls[0]).toEqual([
       `token:access:${userId}:${tokenHash}`,
     ]);
   });
 
+  it("returns cached user data when available", async () => {
+    const userData = { id: "user-1", name: "Test" };
+    redisMock.get.mockImplementation(async () => JSON.stringify(userData));
+    const result = await tokenStore.validateAccessToken(userId, token);
+    expect(result.valid).toBe(true);
+    expect(result.userData).toEqual(userData);
+  });
+
   it("returns false when access token validation errors", async () => {
-    redisMock.exists.mockImplementation(async () => {
+    redisMock.get.mockImplementation(async () => {
       throw new Error("boom");
     });
-    const isValid = await tokenStore.validateAccessToken(userId, token);
-    expect(isValid).toBe(false);
+    const result = await tokenStore.validateAccessToken(userId, token);
+    expect(result.valid).toBe(false);
+    expect(result.userData).toBe(null);
     expect(loggerMock.debug.calls.length).toBe(1);
   });
 

@@ -76,8 +76,33 @@ export async function login(username, password) {
     .digest("hex")
     .substring(0, 16);
 
-  // Store tokens in Redis with TTL
-  await storeAccessToken(user.id, accessToken, config.jwt.accessTokenTTL);
+  // Build user data for caching (matches auth middleware format)
+  const userDataForCache = {
+    id: user.id,
+    businessId: user.businessId,
+    username: user.username,
+    name: user.name,
+    role: user.role,
+    isActive: user.isActive,
+    outletUsers: user.outletUsers.map((ou) => ({
+      outletId: ou.outletId,
+      outletRole: ou.outletRole,
+      isDefaultForUser: ou.isDefaultForUser,
+      outlet: {
+        id: ou.outlet.id,
+        name: ou.outlet.name,
+        code: ou.outlet.code,
+      },
+    })),
+  };
+
+  // Store tokens in Redis with TTL (include user data for caching)
+  await storeAccessToken(
+    user.id,
+    accessToken,
+    config.jwt.accessTokenTTL,
+    userDataForCache,
+  );
   await storeRefreshToken(user.id, refreshToken, config.jwt.refreshTokenTTL);
 
   // Store session for tracking (Super Admin can view/revoke sessions)
@@ -124,6 +149,13 @@ export async function refresh(refreshToken) {
 
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
+    include: {
+      outletUsers: {
+        include: {
+          outlet: true,
+        },
+      },
+    },
   });
 
   if (!user || !user.isActive) {
@@ -148,8 +180,33 @@ export async function refresh(refreshToken) {
     userId: user.id,
   });
 
-  // Store new tokens in Redis with TTL
-  await storeAccessToken(user.id, newAccessToken, config.jwt.accessTokenTTL);
+  // Build user data for caching (matches auth middleware format)
+  const userDataForCache = {
+    id: user.id,
+    businessId: user.businessId,
+    username: user.username,
+    name: user.name,
+    role: user.role,
+    isActive: user.isActive,
+    outletUsers: user.outletUsers.map((ou) => ({
+      outletId: ou.outletId,
+      outletRole: ou.outletRole,
+      isDefaultForUser: ou.isDefaultForUser,
+      outlet: {
+        id: ou.outlet.id,
+        name: ou.outlet.name,
+        code: ou.outlet.code,
+      },
+    })),
+  };
+
+  // Store new tokens in Redis with TTL (include user data for caching)
+  await storeAccessToken(
+    user.id,
+    newAccessToken,
+    config.jwt.accessTokenTTL,
+    userDataForCache,
+  );
   await storeRefreshToken(user.id, newRefreshToken, config.jwt.refreshTokenTTL);
 
   return {

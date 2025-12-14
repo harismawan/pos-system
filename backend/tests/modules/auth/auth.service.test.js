@@ -234,8 +234,19 @@ describe("modules/auth/auth.service refresh/getMe", () => {
   it("returns new tokens and stores them on refresh", async () => {
     prismaMock.user.findUnique.mockImplementation(async () => ({
       id: "user-1",
+      businessId: "biz-1",
+      username: "user",
+      name: "Test User",
       isActive: true,
       role: "ADMIN",
+      outletUsers: [
+        {
+          outletId: "o1",
+          outletRole: "MANAGER",
+          isDefaultForUser: true,
+          outlet: { id: "o1", name: "Outlet", code: "O1" },
+        },
+      ],
     }));
     tokenStoreMock.validateRefreshToken.mockResolvedValue(true);
     tokenStoreMock.revokeRefreshToken.mockResolvedValue();

@@ -7,6 +7,10 @@ import logger from "../../libs/logger.js";
 import { SADM } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
 import { enqueueAuditLogJob, createAuditLogData } from "../../libs/jobs.js";
+import {
+  AUDIT_EVENT_TYPES,
+  AUDIT_ENTITY_TYPES,
+} from "../../libs/auditConstants.js";
 
 // ============================================
 // BUSINESS MANAGEMENT
@@ -61,9 +65,9 @@ export async function updateBusinessStatusController({
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "BUSINESS_STATUS_CHANGED",
+        eventType: AUDIT_EVENT_TYPES.BUSINESS_STATUS_CHANGED,
         outletId: null,
-        entityType: "Business",
+        entityType: AUDIT_ENTITY_TYPES.BUSINESS,
         entityId: params.id,
         payload: { status: body.status, previousStatus },
       }),
@@ -128,9 +132,9 @@ export async function forcePasswordResetController({
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "USER_PASSWORD_FORCE_RESET",
+        eventType: AUDIT_EVENT_TYPES.USER_PASSWORD_FORCE_RESET,
         outletId: null,
-        entityType: "User",
+        entityType: AUDIT_ENTITY_TYPES.USER,
         entityId: params.id,
         payload: { resetBy: "SUPER_ADMIN" },
       }),
@@ -155,9 +159,11 @@ export async function updateUserStatusController({ params, body, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: body.isActive ? "USER_ACTIVATED" : "USER_DEACTIVATED",
+        eventType: body.isActive
+          ? AUDIT_EVENT_TYPES.USER_ACTIVATED
+          : AUDIT_EVENT_TYPES.USER_DEACTIVATED,
         outletId: null,
-        entityType: "User",
+        entityType: AUDIT_ENTITY_TYPES.USER,
         entityId: params.id,
         payload: { isActive: body.isActive },
       }),
@@ -195,9 +201,9 @@ export async function revokeAllSessionsController({ params, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "USER_ALL_SESSIONS_REVOKED",
+        eventType: AUDIT_EVENT_TYPES.USER_ALL_SESSIONS_REVOKED,
         outletId: null,
-        entityType: "User",
+        entityType: AUDIT_ENTITY_TYPES.USER,
         entityId: params.id,
         payload: {},
       }),
@@ -219,9 +225,9 @@ export async function revokeSessionController({ params, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "USER_SESSION_REVOKED",
+        eventType: AUDIT_EVENT_TYPES.USER_SESSION_REVOKED,
         outletId: null,
-        entityType: "User",
+        entityType: AUDIT_ENTITY_TYPES.USER,
         entityId: params.id,
         payload: { sessionId: params.sessionId },
       }),
@@ -250,9 +256,9 @@ export async function impersonateUserController({ params, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "USER_IMPERSONATION_STARTED",
+        eventType: AUDIT_EVENT_TYPES.USER_IMPERSONATION_STARTED,
         outletId: null,
-        entityType: "User",
+        entityType: AUDIT_ENTITY_TYPES.USER,
         entityId: params.id,
         payload: { targetUsername: result.user.username },
       }),

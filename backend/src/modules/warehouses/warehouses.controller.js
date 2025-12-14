@@ -7,6 +7,10 @@ import logger from "../../libs/logger.js";
 import { WAR } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
 import { enqueueAuditLogJob, createAuditLogData } from "../../libs/jobs.js";
+import {
+  AUDIT_EVENT_TYPES,
+  AUDIT_ENTITY_TYPES,
+} from "../../libs/auditConstants.js";
 
 export async function getWarehousesController({ query, store, set }) {
   try {
@@ -62,9 +66,9 @@ export async function createWarehouseController({ body, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "WAREHOUSE_CREATED",
+        eventType: AUDIT_EVENT_TYPES.WAREHOUSE_CREATED,
         outletId: warehouse.outletId,
-        entityType: "Warehouse",
+        entityType: AUDIT_ENTITY_TYPES.WAREHOUSE,
         entityId: warehouse.id,
         payload: {
           name: warehouse.name,
@@ -98,9 +102,9 @@ export async function updateWarehouseController({ params, body, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "WAREHOUSE_UPDATED",
+        eventType: AUDIT_EVENT_TYPES.WAREHOUSE_UPDATED,
         outletId: warehouse.outletId,
-        entityType: "Warehouse",
+        entityType: AUDIT_ENTITY_TYPES.WAREHOUSE,
         entityId: warehouse.id,
         payload: {
           name: warehouse.name,
@@ -129,9 +133,9 @@ export async function deleteWarehouseController({ params, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "WAREHOUSE_DELETED",
+        eventType: AUDIT_EVENT_TYPES.WAREHOUSE_DELETED,
         outletId: null,
-        entityType: "Warehouse",
+        entityType: AUDIT_ENTITY_TYPES.WAREHOUSE,
         entityId: params.id,
         payload: {},
       }),

@@ -7,6 +7,10 @@ import logger from "../../libs/logger.js";
 import { INV } from "../../libs/responseCodes.js";
 import { successResponse, errorResponse } from "../../libs/responses.js";
 import { enqueueAuditLogJob, createAuditLogData } from "../../libs/jobs.js";
+import {
+  AUDIT_EVENT_TYPES,
+  AUDIT_ENTITY_TYPES,
+} from "../../libs/auditConstants.js";
 
 export async function getInventoryController({ query, store, set }) {
   try {
@@ -52,9 +56,9 @@ export async function adjustInventoryController({ body, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "INVENTORY_ADJUSTED",
+        eventType: AUDIT_EVENT_TYPES.INVENTORY_ADJUSTED,
         outletId: outletId,
-        entityType: "Inventory",
+        entityType: AUDIT_ENTITY_TYPES.INVENTORY,
         entityId: result.id,
         payload: {
           productId: body.productId,
@@ -89,9 +93,9 @@ export async function transferInventoryController({ body, store, set }) {
     // Audit Log
     enqueueAuditLogJob(
       createAuditLogData(store, {
-        eventType: "INVENTORY_TRANSFERRED",
+        eventType: AUDIT_EVENT_TYPES.INVENTORY_TRANSFER,
         outletId: outletId,
-        entityType: "StockMovement",
+        entityType: AUDIT_ENTITY_TYPES.STOCK_MOVEMENT,
         entityId: `${body.productId}-${body.fromWarehouseId}-${body.toWarehouseId}`,
         payload: {
           productId: body.productId,

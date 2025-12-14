@@ -4,12 +4,28 @@ import { check } from "k6";
 import encoding from "k6/encoding";
 import config from "../config.js";
 
-// Shared authentication state
-let authToken = null;
-let refreshToken = null;
-let tokenExp = 0;
-let outletId = null;
-let userId = null;
+// Superadmin credentials (from seed.js)
+const SUPERADMIN_CREDENTIALS = {
+  username: "superadmin",
+  password: "superadmin123",
+};
+
+// Auth state for regular user
+let userAuth = {
+  authToken: null,
+  refreshToken: null,
+  tokenExp: 0,
+  outletId: null,
+  userId: null,
+};
+
+// Auth state for superadmin (separate session)
+let superAdminAuth = {
+  authToken: null,
+  refreshToken: null,
+  tokenExp: 0,
+  userId: null,
+};
 
 /**
  * Decode JWT to get expiration time
@@ -33,20 +49,16 @@ function getTokenExpiry(token) {
 /**
  * Check if token is expired or about to expire (within 10 seconds)
  */
-function isTokenExpired() {
-  if (!authToken || !tokenExp) return true;
-  // Current time in seconds (JWT exp is in seconds)
+function isTokenExpired(authState) {
+  if (!authState.authToken || !authState.tokenExp) return true;
   const now = Math.floor(Date.now() / 1000);
-  return now >= tokenExp - 10;
+  return now >= authState.tokenExp - 10;
 }
 
 /**
- * Perform login and store tokens
+ * Perform login and return auth data
  */
-export function login(
-  username = config.testUser.username,
-  password = config.testUser.password,
-) {
+function performLogin(username, password) {
   const res = http.post(
     `${config.baseUrl}/auth/login`,
     JSON.stringify({ username, password }),
@@ -58,23 +70,54 @@ export function login(
   });
 
   if (success && res.json().data) {
-    const data = res.json().data;
-    setAuthData(data);
-    return data;
+    return res.json().data;
   }
-
   return null;
 }
 
 /**
- * Refresh access token
+ * Set authentication data from API response
+ */
+function setAuthData(authState, data) {
+  if (data.accessToken) {
+    authState.authToken = data.accessToken;
+    authState.tokenExp = getTokenExpiry(data.accessToken);
+  }
+  if (data.refreshToken) {
+    authState.refreshToken = data.refreshToken;
+  }
+  if (data.user?.id) {
+    authState.userId = data.user.id;
+  }
+  if (data.outlets && data.outlets.length > 0) {
+    authState.outletId = data.outlets[0].id;
+  }
+}
+
+/**
+ * Login as regular test user
+ */
+export function login(
+  username = config.testUser.username,
+  password = config.testUser.password,
+) {
+  const data = performLogin(username, password);
+  if (data) {
+    setAuthData(userAuth, data);
+    return data;
+  }
+  return null;
+}
+
+/**
+ * Refresh access token for regular user
  */
 export function refresh() {
-  if (!refreshToken) return false;
+  if (!userAuth.refreshToken) return false;
 
   const res = http.post(
     `${config.baseUrl}/auth/refresh`,
-    JSON.stringify({ refreshToken }),
+    JSON.stringify({ refreshToken: userAuth.refreshToken }),
     { headers: config.headers },
   );
 
@@ -83,7 +126,7 @@ export function refresh() {
   });
 
   if (success && res.json().data) {
-    setAuthData(res.json().data);
+    setAuthData(userAuth, res.json().data);
     return true;
   }
 
@@ -91,52 +134,45 @@ export function refresh() {
 }
 
 /**
- * Set authentication data from API response
- */
-function setAuthData(data) {
-  if (data.accessToken) {
-    authToken = data.accessToken;
-    tokenExp = getTokenExpiry(authToken);
-  }
-  if (data.refreshToken) {
-    refreshToken = data.refreshToken;
-  }
-  if (data.user?.id) {
-    userId = data.user.id;
-  }
-  if (data.outlets && data.outlets.length > 0) {
-    outletId = data.outlets[0].id;
-  }
-}
-
-/**
- * Ensure valid authentication state
- * - Reuses existing valid token
- * - Refreshes if expired but have refresh token
- * - Logs in if invalid/missing
+ * Ensure valid authentication state for regular user
  */
 export function ensureAuthenticated() {
-  // Case 1: Active valid token
-  if (authToken && !isTokenExpired()) {
+  if (userAuth.authToken && !isTokenExpired(userAuth)) {
     return;
   }
 
-  // Case 2: Expired token, try refresh
-  if (isTokenExpired() && refreshToken) {
+  if (isTokenExpired(userAuth) && userAuth.refreshToken) {
     if (refresh()) {
       return;
     }
   }
 
-  // Case 3: No token or refresh failed -> Login
   login();
 }
 
 /**
- * Perform logout
+ * Ensure superadmin is authenticated (separate session)
+ */
+export function ensureSuperAdminAuthenticated() {
+  if (superAdminAuth.authToken && !isTokenExpired(superAdminAuth)) {
+    return;
+  }
+
+  // Login as superadmin
+  const data = performLogin(
+    SUPERADMIN_CREDENTIALS.username,
+    SUPERADMIN_CREDENTIALS.password,
+  );
+  if (data) {
+    setAuthData(superAdminAuth, data);
+  }
+}
+
+/**
+ * Perform logout for regular user
  */
 export function logout() {
-  if (!authToken) return;
+  if (!userAuth.authToken) return;
 
   http.post(`${config.baseUrl}/auth/logout`, null, {
     headers: getAuthHeaders(),
@@ -145,46 +181,70 @@ export function logout() {
 }
 
 /**
- * Get authentication headers
+ * Get authentication headers for regular user
  */
 export function getAuthHeaders() {
   ensureAuthenticated();
   return {
     ...config.headers,
-    Authorization: `Bearer ${authToken}`,
+    Authorization: `Bearer ${userAuth.authToken}`,
   };
 }
 
 /**
- * Get headers with outlet context
+ * Get authentication headers for superadmin
+ */
+export function getSuperAdminAuthHeaders() {
+  ensureSuperAdminAuthenticated();
+  return {
+    ...config.headers,
+    Authorization: `Bearer ${superAdminAuth.authToken}`,
+  };
+}
+
+/**
+ * Get headers with outlet context (regular user only)
  */
 export function getAuthHeadersWithOutlet() {
-  return {
-    ...getAuthHeaders(),
-    "X-Outlet-Id": outletId,
-  };
+  const headers = getAuthHeaders();
+  headers["X-Outlet-Id"] = userAuth.outletId;
+  return headers;
 }
 
 export function getOutletId() {
-  return outletId;
+  return userAuth.outletId;
 }
 export function getUserId() {
-  return userId;
+  return userAuth.userId;
 }
 export function getAuthToken() {
-  return authToken;
+  return userAuth.authToken;
 }
 export function getRefreshToken() {
-  return refreshToken;
+  return userAuth.refreshToken;
 }
 
 /**
- * Reset authentication state
+ * Reset regular user authentication state
  */
 export function resetAuth() {
-  authToken = null;
-  refreshToken = null;
-  tokenExp = 0;
-  outletId = null;
-  userId = null;
+  userAuth = {
+    authToken: null,
+    refreshToken: null,
+    tokenExp: 0,
+    outletId: null,
+    userId: null,
+  };
+}
+
+/**
+ * Reset superadmin authentication state
+ */
+export function resetSuperAdminAuth() {
+  superAdminAuth = {
+    authToken: null,
+    refreshToken: null,
+    tokenExp: 0,
+    userId: null,
+  };
 }

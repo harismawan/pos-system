@@ -20,7 +20,7 @@ import config from "../config.js";
 
 export const options = {
   // Smoke test: 1-3 virtual users for a short duration
-  vus: 1,
+  vus: 5,
   duration: "30s",
 
   thresholds: config.thresholds,

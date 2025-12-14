@@ -10,13 +10,21 @@ export async function getWarehouses(filters = {}, businessId) {
     throw new Error("businessId is required");
   }
 
-  const { outletId, type, isActive, page = 1, limit = 50 } = filters;
+  const { search, outletId, type, isActive, page = 1, limit = 50 } = filters;
 
   const where = {
     outlet: {
       businessId, // Filter by business
     },
   };
+
+  // Search filter - match on name or code
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: "insensitive" } },
+      { code: { contains: search, mode: "insensitive" } },
+    ];
+  }
 
   if (outletId) {
     const outlet = await prisma.outlet.findUnique({ where: { id: outletId } });

@@ -20,10 +20,10 @@ export function posTests() {
   let productId = null;
 
   group("POS/Sales API", () => {
-    // Get existing data for testing
+    // Get existing data for testing (search for 'Main' warehouse for consistency)
     if (outletId) {
       const warehousesRes = http.get(
-        `${config.baseUrl}/warehouses?outletId=${outletId}&limit=1`,
+        `${config.baseUrl}/warehouses?outletId=${outletId}&search=Main&limit=1`,
         { headers },
       );
       if (
@@ -34,15 +34,20 @@ export function posTests() {
       }
     }
 
+    // Get Sample Products 1 and 2 for testing (consistent known products)
     const productsRes = http.get(
-      `${config.baseUrl}/products?limit=1&isActive=true`,
+      `${config.baseUrl}/products?search=Sample%20Product&limit=10&isActive=true`,
       { headers },
     );
-    if (
-      productsRes.status === 200 &&
-      productsRes.json().data?.products?.length > 0
-    ) {
-      productId = productsRes.json().data.products[0].id;
+    let productIds = [];
+    if (productsRes.status === 200 && productsRes.json().data?.products) {
+      const products = productsRes.json().data.products;
+      // Filter for Sample Product 1 or 2
+      const sampleProducts = products.filter(
+        (p) => p.name === "Sample Product 1" || p.name === "Sample Product 2",
+      );
+      productIds = sampleProducts.map((p) => p.id);
+      productId = productIds[0] || products[0]?.id;
     }
 
     // List POS orders
