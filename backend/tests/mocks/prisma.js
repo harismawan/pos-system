@@ -31,6 +31,8 @@ export function createPrismaMock() {
   client.$queryRaw = createMockFn();
   client.$queryRawUnsafe = createMockFn();
   client.$on = createMockFn();
+  client.$connect = createMockFn();
+  client.$disconnect = createMockFn();
   client.$transaction = createMockFn(async (callback) => callback(proxy));
 
   return proxy;

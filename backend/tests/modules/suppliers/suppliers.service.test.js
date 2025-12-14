@@ -1,9 +1,16 @@
 import "../../testSetup.js";
 import { describe, it, expect, mock, beforeEach } from "bun:test";
 import { createPrismaMock } from "../../mocks/prisma.js";
+import { resolve } from "path";
 
 const prismaMock = createPrismaMock();
 
+// Use absolute path to ensure specific mocking
+mock.module(resolve(import.meta.dir, "../../../src/libs/prisma.js"), () => ({
+  default: prismaMock,
+}));
+
+// Also mock the relative path used by the service just in case
 mock.module("../../../src/libs/prisma.js", () => ({ default: prismaMock }));
 
 const suppliersService =

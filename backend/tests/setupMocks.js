@@ -15,23 +15,13 @@ mock.module("../src/libs/redis.js", () => {
 });
 
 // Mock Prisma
-mock.module("../src/libs/prisma.js", () => {
+import { createPrismaMock } from "./mocks/prisma.js";
+import { resolve } from "path";
+
+// Use absolute path to ensure all imports of prisma.js get mocked
+mock.module(resolve(import.meta.dir, "../src/libs/prisma.js"), () => {
   return {
-    default: {
-      $connect: mock(() => Promise.resolve()),
-      $disconnect: mock(() => Promise.resolve()),
-      $on: mock(),
-      user: {
-        findUnique: mock(),
-        findFirst: mock(),
-        findMany: mock(),
-        create: mock(),
-        update: mock(),
-        delete: mock(),
-      },
-      // We'll add a catch-all proxy later or specific models as we discover them
-      // For now, let's just mock the basics to prevent connection errors
-    },
+    default: createPrismaMock(),
   };
 });
 
