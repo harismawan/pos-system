@@ -15,14 +15,22 @@ mock.module(resolve(import.meta.dir, "../../src/libs/logger.js"), () => ({
 }));
 
 // Mock email templates
+const mockTemplate = (name) => (data) => ({
+  subject: `Test Subject for ${name}`,
+  html: `<p>Test HTML for ${name}</p>`,
+  text: `Test text for ${name}`,
+});
+
 mock.module(
   resolve(import.meta.dir, "../../src/templates/emailTemplates.js"),
   () => ({
-    renderTemplate: (templateName, data) => ({
-      subject: `Test Subject for ${templateName}`,
-      html: `<p>Test HTML for ${templateName}</p>`,
-      text: `Test text for ${templateName}`,
-    }),
+    renderTemplate: (templateName, data) => mockTemplate(templateName)(data),
+    orderReceiptTemplate: mockTemplate("order_receipt"),
+    welcomeTemplate: mockTemplate("welcome"),
+    passwordResetTemplate: mockTemplate("password_reset"),
+    lowStockAlertTemplate: mockTemplate("low_stock_alert"),
+    generalNotificationTemplate: mockTemplate("general_notification"),
+    userInvitationTemplate: mockTemplate("user_invitation"),
   }),
 );
 
