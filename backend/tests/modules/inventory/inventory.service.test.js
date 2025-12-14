@@ -19,7 +19,7 @@ mock.module("../../../src/libs/logger.js", () => ({ default: loggerMock }));
 mock.module("../../../src/libs/jobs.js", () => jobsMock);
 
 const inventoryService =
-  await import("../../../src/modules/inventory/inventory.service.js");
+  await import("../../../src/modules/inventory/inventory.service.js?real");
 
 const businessId = "biz-1";
 

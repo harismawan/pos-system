@@ -30,7 +30,7 @@ mock.module("../../../src/libs/cache.js", () => ({
 }));
 
 const reportsService =
-  await import("../../../src/modules/reports/reports.service.js");
+  await import("../../../src/modules/reports/reports.service.js?real");
 
 const businessId = "biz-1";
 

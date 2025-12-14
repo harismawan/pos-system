@@ -11,7 +11,7 @@ mock.module(resolve(import.meta.dir, "../../../src/libs/prisma.js"), () => ({
 }));
 
 const suppliersService =
-  await import("../../../src/modules/suppliers/suppliers.service.js");
+  await import("../../../src/modules/suppliers/suppliers.service.js?real");
 
 const businessId = "biz-1";
 
