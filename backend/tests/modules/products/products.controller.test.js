@@ -11,12 +11,17 @@ const serviceMock = {
 };
 
 const loggerMock = { error: createMockFn() };
+const jobsMock = {
+  enqueueAuditLogJob: createMockFn(),
+  createAuditLogData: (store, data) => data,
+};
 
 mock.module(
   "../../../src/modules/products/products.service.js",
   () => serviceMock,
 );
 mock.module("../../../src/libs/logger.js", () => ({ default: loggerMock }));
+mock.module("../../../src/libs/jobs.js", () => jobsMock);
 
 const controller =
   await import("../../../src/modules/products/products.controller.js");
@@ -32,7 +37,9 @@ const resetMocks = () => {
   serviceMock.updateProduct.mockResolvedValue({ id: "p1", name: "updated" });
   serviceMock.deleteProduct.mockReset();
   serviceMock.deleteProduct.mockResolvedValue({ deleted: true });
+  serviceMock.deleteProduct.mockResolvedValue({ deleted: true });
   loggerMock.error.mockReset();
+  jobsMock.enqueueAuditLogJob.mockReset();
 };
 
 const mockStore = {
@@ -54,6 +61,18 @@ describe("modules/products/products.controller", () => {
     expect(res.success).toBe(true);
     expect(serviceMock.getProducts.calls[0][0].outletId).toBe("store-1");
     expect(serviceMock.getProducts.calls[0][0].businessId).toBe("biz-1");
+  });
+
+  it("lists products with isActive filter", async () => {
+    const set = {};
+    await controller.getProductsController({
+      query: { isActive: "true" },
+      store: mockStore,
+      set,
+    });
+
+    expect(serviceMock.getProducts.calls.length).toBe(1);
+    expect(serviceMock.getProducts.calls[0][0].isActive).toBe(true);
   });
 
   it("returns error when get products fails", async () => {

@@ -10,6 +10,7 @@ import { AUT } from "../../src/libs/responseCodes.js";
 const prismaMock = createPrismaMock();
 const tokenStoreMock = {
   validateAccessToken: createMockFn(),
+  storeAccessToken: createMockFn(),
 };
 const loggerMock = createLoggerMock();
 
@@ -19,7 +20,7 @@ mock.module(resolve(import.meta.dir, "../../src/libs/prisma.js"), () => ({
 }));
 mock.module("../../src/libs/tokenStore.js", () => ({
   validateAccessToken: tokenStoreMock.validateAccessToken,
-  storeAccessToken: createMockFn(),
+  storeAccessToken: tokenStoreMock.storeAccessToken,
   storeRefreshToken: createMockFn(),
   validateRefreshToken: createMockFn(),
   revokeAccessToken: createMockFn(),
@@ -245,6 +246,119 @@ describe("libs/auth middleware", () => {
     expect(store.user.id).toBe("user-1");
     expect(store.outletId).toBe("out-1");
     expect(set.status).toBeUndefined();
+  });
+
+  it("handles cache miss by fetching from DB and updating cache", async () => {
+    const token = jwt.sign(
+      { userId: "user-1", role: "ADMIN" },
+      process.env.JWT_SECRET,
+    );
+
+    // Cache miss
+    tokenStoreMock.validateAccessToken.mockResolvedValue({
+      valid: true,
+      userData: null,
+    });
+
+    // DB hit
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      businessId: "biz-1",
+      username: "admin",
+      name: "Admin",
+      role: "ADMIN",
+      isActive: true,
+      outletUsers: [
+        {
+          outletId: "out-1",
+          outletRole: "ADMIN",
+          isDefaultForUser: true,
+          outlet: { id: "out-1", name: "Outlet 1", code: "O1" },
+        },
+      ],
+    });
+
+    const set = {};
+    const store = {};
+    await authModule.authMiddleware({
+      headers: { authorization: `Bearer ${token}` },
+      set,
+      store,
+    });
+
+    // Should store back to cache
+    expect(tokenStoreMock.storeAccessToken.calls.length).toBe(1);
+    expect(tokenStoreMock.storeAccessToken.calls[0][0]).toBe("user-1");
+    expect(store.user.id).toBe("user-1");
+  });
+
+  it("rejects when cache miss and user not found in DB", async () => {
+    const token = jwt.sign({ userId: "user-deleted" }, process.env.JWT_SECRET);
+
+    tokenStoreMock.validateAccessToken.mockResolvedValue({
+      valid: true,
+      userData: null,
+    });
+
+    prismaMock.user.findUnique.mockResolvedValue(null);
+
+    const set = {};
+    const result = await authModule.authMiddleware({
+      headers: { authorization: `Bearer ${token}` },
+      set,
+      store: {},
+    });
+
+    expect(set.status).toBe(401);
+    expect(result.error).toBe("User not found or inactive");
+  });
+
+  it("rejects when cache miss and user inactive in DB", async () => {
+    const token = jwt.sign({ userId: "user-inactive" }, process.env.JWT_SECRET);
+
+    tokenStoreMock.validateAccessToken.mockResolvedValue({
+      valid: true,
+      userData: null,
+    });
+
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: "user-inactive",
+      isActive: false,
+      outletUsers: [],
+    });
+
+    const set = {};
+    const result = await authModule.authMiddleware({
+      headers: { authorization: `Bearer ${token}` },
+      set,
+      store: {},
+    });
+
+    expect(set.status).toBe(401);
+    expect(result.code).toBe(AUT.NOT_AUTHENTICATED);
+  });
+
+  it("rejects when cache hit but user is inactive", async () => {
+    const token = jwt.sign({ userId: "user-1" }, process.env.JWT_SECRET);
+
+    tokenStoreMock.validateAccessToken.mockResolvedValue({
+      valid: true,
+      userData: {
+        id: "user-1",
+        isActive: false, // Inactive in cache
+        outletUsers: [],
+      },
+    });
+
+    const set = {};
+    const result = await authModule.authMiddleware({
+      headers: { authorization: `Bearer ${token}` },
+      set,
+      store: {},
+    });
+
+    expect(set.status).toBe(401);
+    expect(result.error).toBe("User not found or inactive");
   });
 });
 

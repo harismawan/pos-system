@@ -14,12 +14,17 @@ const serviceMock = {
 };
 
 const loggerMock = { error: createMockFn() };
+const jobsMock = {
+  enqueueAuditLogJob: createMockFn(),
+  createAuditLogData: (store, data) => data,
+};
 
 mock.module(
   "../../../src/modules/outlets/outlets.service.js",
   () => serviceMock,
 );
 mock.module("../../../src/libs/logger.js", () => ({ default: loggerMock }));
+mock.module("../../../src/libs/jobs.js", () => jobsMock);
 
 const controller =
   await import("../../../src/modules/outlets/outlets.controller.js");
@@ -46,7 +51,9 @@ describe("modules/outlets/outlets.controller", () => {
     serviceMock.assignUserToOutlet.mockResolvedValue({ id: "ou-1" });
     serviceMock.removeUserFromOutlet.mockReset();
     serviceMock.removeUserFromOutlet.mockResolvedValue({ message: "removed" });
+    serviceMock.removeUserFromOutlet.mockResolvedValue({ message: "removed" });
     loggerMock.error.mockReset();
+    jobsMock.enqueueAuditLogJob.mockReset();
   });
 
   it("returns outlets list", async () => {
@@ -59,6 +66,18 @@ describe("modules/outlets/outlets.controller", () => {
     expect(res.success).toBe(true);
     expect(serviceMock.getOutlets.calls.length).toBeGreaterThan(0);
     expect(serviceMock.getOutlets.calls[0][0].businessId).toBe("biz-1");
+  });
+
+  it("lists outlets with isActive filter", async () => {
+    const set = {};
+    await controller.getOutletsController({
+      query: { isActive: "true" },
+      store: mockStore,
+      set,
+    });
+
+    expect(serviceMock.getOutlets.calls.length).toBe(1);
+    expect(serviceMock.getOutlets.calls[0][0].isActive).toBe(true);
   });
 
   it("returns error when list fails", async () => {

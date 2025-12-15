@@ -12,12 +12,17 @@ const serviceMock = {
 };
 
 const loggerMock = { error: createMockFn() };
+const jobsMock = {
+  enqueueAuditLogJob: createMockFn(),
+  createAuditLogData: (store, data) => data,
+};
 
 mock.module(
   "../../../src/modules/warehouses/warehouses.service.js",
   () => serviceMock,
 );
 mock.module("../../../src/libs/logger.js", () => ({ default: loggerMock }));
+mock.module("../../../src/libs/jobs.js", () => jobsMock);
 
 const controller =
   await import("../../../src/modules/warehouses/warehouses.controller.js");
@@ -46,7 +51,9 @@ describe("modules/warehouses/warehouses.controller", () => {
     serviceMock.deleteWarehouse.mockResolvedValue({ message: "deleted" });
     serviceMock.getWarehouseInventory.mockReset();
     serviceMock.getWarehouseInventory.mockResolvedValue({ inventory: [] });
+    serviceMock.getWarehouseInventory.mockResolvedValue({ inventory: [] });
     loggerMock.error.mockReset();
+    jobsMock.enqueueAuditLogJob.mockReset();
   });
 
   it("lists warehouses", async () => {
@@ -60,6 +67,18 @@ describe("modules/warehouses/warehouses.controller", () => {
     expect(res.success).toBe(true);
     expect(serviceMock.getWarehouses.calls.length).toBe(1);
     expect(serviceMock.getWarehouses.calls[0][1]).toBe("biz-1");
+  });
+
+  it("lists warehouses with isActive filter", async () => {
+    const set = {};
+    await controller.getWarehousesController({
+      query: { isActive: "true" },
+      store: mockStore,
+      set,
+    });
+
+    expect(serviceMock.getWarehouses.calls.length).toBe(1);
+    expect(serviceMock.getWarehouses.calls[0][0].isActive).toBe(true);
   });
 
   it("returns error when list warehouses fails", async () => {

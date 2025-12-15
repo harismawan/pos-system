@@ -10,12 +10,17 @@ const serviceMock = {
 };
 
 const loggerMock = { error: createMockFn() };
+const jobsMock = {
+  enqueueAuditLogJob: createMockFn(),
+  createAuditLogData: (store, data) => data,
+};
 
 mock.module(
   "../../../src/modules/inventory/inventory.service.js",
   () => serviceMock,
 );
 mock.module("../../../src/libs/logger.js", () => ({ default: loggerMock }));
+mock.module("../../../src/libs/jobs.js", () => jobsMock);
 
 const controller =
   await import("../../../src/modules/inventory/inventory.controller.js");
@@ -33,7 +38,9 @@ describe("modules/inventory/inventory.controller", () => {
     serviceMock.transferInventory.mockResolvedValue({ id: "tr1" });
     serviceMock.getStockMovements.mockReset();
     serviceMock.getStockMovements.mockResolvedValue({ movements: [] });
+    serviceMock.getStockMovements.mockResolvedValue({ movements: [] });
     loggerMock.error.mockReset();
+    jobsMock.enqueueAuditLogJob.mockReset();
   });
 
   const mockStore = {
@@ -51,6 +58,16 @@ describe("modules/inventory/inventory.controller", () => {
     expect(res.success).toBe(true);
     expect(serviceMock.getInventory.calls[0][0].outletId).toBe("out-1");
     expect(serviceMock.getInventory.calls[0][1]).toBe("biz-1");
+  });
+
+  it("passes lowStock filter to get inventory", async () => {
+    const set = {};
+    await controller.getInventoryController({
+      query: { lowStock: "true" },
+      store: mockStore,
+      set,
+    });
+    expect(serviceMock.getInventory.calls[0][0].lowStock).toBe(true);
   });
 
   it("returns error response when get inventory fails", async () => {

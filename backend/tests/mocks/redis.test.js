@@ -26,6 +26,16 @@ describe("tests/mocks/redis", () => {
     expect(redis.expire.calls[0]).toEqual(["key", 100]);
     expect(redis.hgetall.calls[0][0]).toBe("hash");
     expect(redis.ttl.calls[0][0]).toBe("key");
+
+    // Explicitly call missing methods for coverage
+    await redis.set("k", "v");
+    await redis.hget("h", "f");
+    redis.recordCacheHit("op");
+    redis.recordCacheMiss("op");
+    expect(redis.set.calls.length).toBe(1);
+    expect(redis.hget.calls.length).toBe(1);
+    expect(redis.recordCacheHit.calls.length).toBe(1);
+    expect(redis.recordCacheMiss.calls.length).toBe(1);
   });
 
   it("supports mockReset on functions", async () => {

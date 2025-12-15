@@ -71,6 +71,23 @@ describe("modules/warehouses/warehouses.service", () => {
     expect(res.pagination.totalPages).toBe(1);
   });
 
+  it("lists warehouses with search filter", async () => {
+    prismaMock.outlet.findUnique.mockResolvedValue({
+      id: "out1",
+      businessId: "biz-1",
+    });
+    prismaMock.warehouse.findMany.mockResolvedValue([]);
+    prismaMock.warehouse.count.mockResolvedValue(0);
+
+    await warehousesService.getWarehouses({ search: "query" }, "biz-1");
+
+    const args = prismaMock.warehouse.findMany.calls[0][0];
+    expect(args.where.OR).toEqual([
+      { name: { contains: "query", mode: "insensitive" } },
+      { code: { contains: "query", mode: "insensitive" } },
+    ]);
+  });
+
   it("returns warehouse by id with inventories", async () => {
     prismaMock.warehouse.findUnique.mockResolvedValue({
       id: "w1",

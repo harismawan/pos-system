@@ -28,6 +28,10 @@ describe("libs/tokenStore", () => {
     redisMock.hgetall.mockReset?.();
     redisMock.ttl.mockReset?.();
     loggerMock.error.mockReset?.();
+    redisMock.ttl.mockReset?.();
+    redisMock.recordCacheHit.mockReset?.();
+    redisMock.recordCacheMiss.mockReset?.();
+    loggerMock.error.mockReset?.();
     loggerMock.debug.mockReset?.();
   });
 
@@ -87,6 +91,15 @@ describe("libs/tokenStore", () => {
     const result = await tokenStore.validateAccessToken(userId, token);
     expect(result.valid).toBe(true);
     expect(result.userData).toEqual(userData);
+  });
+
+  it("returns invalid and records cache miss when access token missing", async () => {
+    redisMock.get.mockResolvedValue(null);
+    const result = await tokenStore.validateAccessToken(userId, token);
+    expect(result.valid).toBe(false);
+    expect(result.userData).toBeNull();
+    expect(redisMock.recordCacheMiss.calls.length).toBe(1);
+    expect(redisMock.recordCacheMiss.calls[0][0]).toBe("user_cache");
   });
 
   it("returns false when access token validation errors", async () => {

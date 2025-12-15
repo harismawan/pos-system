@@ -11,12 +11,17 @@ const serviceMock = {
 };
 
 const loggerMock = { error: createMockFn() };
+const jobsMock = {
+  enqueueAuditLogJob: createMockFn(),
+  createAuditLogData: (store, data) => data,
+};
 
 mock.module(
   "../../../src/modules/suppliers/suppliers.service.js",
   () => serviceMock,
 );
 mock.module("../../../src/libs/logger.js", () => ({ default: loggerMock }));
+mock.module("../../../src/libs/jobs.js", () => jobsMock);
 
 const controller =
   await import("../../../src/modules/suppliers/suppliers.controller.js");
@@ -41,7 +46,9 @@ describe("modules/suppliers/suppliers.controller", () => {
     serviceMock.updateSupplier.mockResolvedValue({ id: "s1", name: "Updated" });
     serviceMock.deleteSupplier.mockReset();
     serviceMock.deleteSupplier.mockResolvedValue({ message: "deleted" });
+    serviceMock.deleteSupplier.mockResolvedValue({ message: "deleted" });
     loggerMock.error.mockReset();
+    jobsMock.enqueueAuditLogJob.mockReset();
   });
 
   it("returns suppliers list on success", async () => {
@@ -54,6 +61,18 @@ describe("modules/suppliers/suppliers.controller", () => {
     expect(res.success).toBe(true);
     expect(serviceMock.getSuppliers.calls[0][0].search).toBe("a");
     expect(serviceMock.getSuppliers.calls[0][0].businessId).toBe("biz-1");
+  });
+
+  it("lists suppliers with isActive filter", async () => {
+    const set = {};
+    await controller.getSuppliersController({
+      query: { isActive: "true" },
+      store: mockStore,
+      set,
+    });
+
+    expect(serviceMock.getSuppliers.calls.length).toBe(1);
+    expect(serviceMock.getSuppliers.calls[0][0].isActive).toBe(true);
   });
 
   it("returns error when list fails", async () => {

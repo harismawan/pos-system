@@ -19,20 +19,34 @@ pos-system/
 ├── backend/              # Elysia + Bun API server
 │   ├── src/
 │   │   ├── modules/      # Domain modules (auth, products, sales, etc.)
-│   │   ├── libs/         # Shared libraries (logger, prisma, redis, auth)
+│   │   ├── libs/         # Shared libraries (logger, prisma, redis, auth, metrics)
 │   │   └── config/       # Configuration
-│   └── prisma/           # Database schema and migrations
+│   ├── prisma/           # Database schema and migrations
+│   ├── tests/            # Unit and integration tests
+│   └── k8s/              # Kubernetes manifests (Kustomize)
 ├── frontend/             # React + Vite SPA
 │   └── src/
 │       ├── pages/        # Page components
 │       ├── store/        # Zustand state management
 │       ├── api/          # API client modules
 │       └── layouts/      # Layout components
+│   └── k8s/              # Kubernetes manifests (Kustomize)
 ├── worker/               # Redis queue consumer
 │   └── src/
 │       ├── jobs/         # Job handlers
 │       └── libs/         # Shared utilities
-└── docker-compose.yml    # PostgreSQL + Redis services
+│   ├── tests/            # Unit tests
+│   └── k8s/              # Kubernetes manifests (Kustomize)
+├── k6/                   # Performance testing suite
+│   ├── tests/            # API test scripts (15 modules)
+│   ├── scenarios/        # Smoke, load, stress scenarios
+│   └── helpers/          # Auth and HTTP utilities
+├── monitoring/           # Observability stack configs
+│   ├── grafana/          # Dashboards and provisioning
+│   ├── prometheus/       # Prometheus config
+│   └── loki/             # Loki log aggregation config
+├── .github/workflows/    # CI/CD pipelines
+└── docker-compose.yml    # Dev services (PostgreSQL, Redis, Prometheus, Grafana, Loki)
 ```
 
 ## 🛠️ Tech Stack
@@ -41,6 +55,7 @@ pos-system/
 
 - **Runtime**: Bun (JavaScript)
 - **Framework**: Elysia
+- **Metrics**: Prometheus (prom-client)
 - **Database**: PostgreSQL with Prisma ORM
 - **Cache/Queue**: Redis (ioredis)
 - **Auth**: JWT (access + refresh tokens)
@@ -59,6 +74,7 @@ pos-system/
 
 - **Runtime**: Bun (JavaScript)
 - **Queue**: Redis (BRPOP pattern)
+- **Metrics**: Prometheus (prom-client)
 - **Jobs**: Audit logs, email notifications, report generation
 
 ## 📋 Prerequisites
@@ -136,7 +152,7 @@ SMTP_HOST="smtp.example.com"
 VITE_API_URL="http://localhost:3000"
 ```
 
-### 4. Start PostgreSQL and Redis
+### 4. Start Development Services
 
 Using Docker Compose:
 
@@ -146,8 +162,11 @@ docker-compose up -d
 
 This will start:
 
-- PostgreSQL on `localhost:5432`
-- Redis on `localhost:6379`
+- **PostgreSQL** on `localhost:5432`
+- **Redis** on `localhost:6379`
+- **Prometheus** on `localhost:9091`
+- **Grafana** on `localhost:3001` (admin/admin)
+- **Loki** on `localhost:3100`
 
 ### 5. Run database migrations and seed
 
@@ -413,6 +432,64 @@ The worker processes three types of jobs from Redis queues:
 
 Jobs are enqueued from the backend and consumed by the worker using Redis `BRPOP` (blocking pop) pattern with retry logic.
 
+## 🧪 Performance Testing (K6)
+
+Comprehensive load testing suite with 15+ API test modules.
+
+### Quick Start
+
+```bash
+# Install k6 (macOS)
+brew install k6
+
+# Run tests from project root
+bun run k6:smoke    # Quick validation (1 VU, 30s)
+bun run k6:load     # Normal load (50 VUs, 5min)
+bun run k6:stress   # Stress test (200 VUs, 10min)
+```
+
+### Test Scenarios
+
+| Scenario | VUs    | Duration | Purpose                |
+| -------- | ------ | -------- | ---------------------- |
+| Smoke    | 1      | 30s      | Quick validation       |
+| Load     | 10→50  | 5min     | Normal load simulation |
+| Stress   | 50→200 | 10min    | Find breaking points   |
+
+### API Coverage
+
+Covers ~90 endpoints across 15 modules: Auth, Users, Products, Pricing, Customers, Outlets, Warehouses, Inventory, Suppliers, Purchase Orders, POS/Sales, Reports, Audit Logs, Super Admin, and Invitations.
+
+See [k6/README.md](./k6/README.md) for detailed documentation.
+
+## 📊 Observability Stack
+
+Integrated monitoring with Prometheus, Grafana, and Loki.
+
+### Components
+
+| Service    | Port | Purpose                    |
+| ---------- | ---- | -------------------------- |
+| Prometheus | 9091 | Metrics collection         |
+| Grafana    | 3001 | Dashboards & visualization |
+| Loki       | 3100 | Log aggregation            |
+
+### Pre-configured Dashboards
+
+- **Backend Performance**: Request rates, latencies, error codes, endpoint breakdown
+- **Worker Performance**: Job processing rates, queue depths, job durations
+
+### Accessing Grafana
+
+1. Navigate to http://localhost:3001
+2. Login with `admin` / `admin`
+3. Dashboards are auto-provisioned in the "POS System" folder
+
+### Prometheus Metrics Endpoints
+
+- **Backend**: `http://localhost:3000/metrics`
+- **Worker**: `http://localhost:3002/metrics`
+
 ## 🔄 CI/CD Pipeline
 
 The project includes automated CI/CD using GitHub Actions with deployment to microk8s.
@@ -467,7 +544,24 @@ Images are pushed to GitHub Container Registry:
 - `ghcr.io/<owner>/pos-frontend`
 - `ghcr.io/<owner>/pos-worker`
 
-Tags: `latest`, `<commit-sha>`
+Tags: `latest`, `<commit-sha>`, `v*` (semantic version tags)
+
+### Kubernetes Deployment (Kustomize)
+
+Each service includes Kubernetes manifests with Kustomize:
+
+```bash
+# Deploy all services to kubectl-configured cluster
+bun run deploy:k8s
+
+# Or individually
+bun run deploy:k8s:backend
+bun run deploy:k8s:frontend
+bun run deploy:k8s:worker
+
+# For microk8s
+bun run deploy:microk8s
+```
 
 ## 🧪 Database Tools
 
@@ -486,9 +580,9 @@ npx prisma migrate deploy
 npx prisma db seed
 ```
 
-## 📊 Monitoring
+## 📊 Logs & Debugging
 
-### Logs
+### Application Logs
 
 All services use Pino for structured logging:
 
@@ -499,6 +593,8 @@ bun run backend:dev
 # Worker logs
 bun run worker:dev
 ```
+
+Logs are also shipped to Loki for centralized viewing in Grafana.
 
 ### Database
 
@@ -523,6 +619,18 @@ LLEN queue:report_generation
 # View keys
 KEYS *
 ```
+
+## 🔗 Pre-commit Hooks (Husky)
+
+The project uses Husky for Git hooks:
+
+```bash
+# Hooks are automatically installed via `bun install`
+# To manually set up:
+bun run prepare
+```
+
+Configured hooks ensure code quality before commits.
 
 ## 🚧 Development Notes
 
@@ -554,10 +662,14 @@ This is a comprehensive POS system template. Key areas for extension:
 - [x] Implement comprehensive validation schemas
 - [x] Add unit and integration tests
 - [x] Implement token refresh logic in frontend
-- [ ] Add WebSocket support for real-time updates
 - [x] Implement advanced reporting with charts
-- [ ] Add barcode scanning support
 - [x] Implement receipt printing
+- [x] Add CI/CD pipeline (GitHub Actions)
+- [x] Kubernetes deployment manifests (Kustomize)
+- [x] Performance testing suite (K6)
+- [x] Observability stack (Prometheus, Grafana, Loki)
+- [ ] Add WebSocket support for real-time updates
+- [ ] Add barcode scanning support
 
 ## 📝 License
 

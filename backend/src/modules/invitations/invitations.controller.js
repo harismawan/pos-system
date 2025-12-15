@@ -40,12 +40,14 @@ export async function createInvitationController({
     );
 
     set.status = 201;
-    return successResponse(INV_CODE.CREATE_SUCCESS, { invitation });
+    const response = successResponse(INV_CODE.CREATE_SUCCESS, { invitation });
+    return response;
   } catch (err) {
     logger.error({ err }, "Create invitation failed");
     set.status = err.statusCode || 500;
     const message = err.statusCode ? err.message : "Internal Server Error";
-    return errorResponse(INV_CODE.CREATE_FAILED, message);
+    const response = errorResponse(INV_CODE.CREATE_FAILED, message);
+    return response;
   }
 }
 
@@ -60,12 +62,14 @@ export async function getInvitationsController({ query, store, set }) {
       businessId,
     });
 
-    return successResponse(INV_CODE.LIST_SUCCESS, result);
+    const response = successResponse(INV_CODE.LIST_SUCCESS, result);
+    return response;
   } catch (err) {
     logger.error({ err }, "Get invitations failed");
     set.status = err.statusCode || 500;
     const message = err.statusCode ? err.message : "Internal Server Error";
-    return errorResponse(INV_CODE.LIST_FAILED, message);
+    const response = errorResponse(INV_CODE.LIST_FAILED, message);
+    return response;
   }
 }
 
@@ -83,12 +87,14 @@ export async function cancelInvitationController({ params, store, set }) {
       }),
     );
 
-    return successResponse(INV_CODE.CANCEL_SUCCESS, null);
+    const response = successResponse(INV_CODE.CANCEL_SUCCESS, null);
+    return response;
   } catch (err) {
     logger.error({ err }, "Cancel invitation failed");
     set.status = err.statusCode || 500;
     const message = err.statusCode ? err.message : "Internal Server Error";
-    return errorResponse(INV_CODE.CANCEL_FAILED, message);
+    const response = errorResponse(INV_CODE.CANCEL_FAILED, message);
+    return response;
   }
 }
 
@@ -117,12 +123,14 @@ export async function resendInvitationController({
       }),
     );
 
-    return successResponse(INV_CODE.RESEND_SUCCESS, result);
+    const response = successResponse(INV_CODE.RESEND_SUCCESS, result);
+    return response;
   } catch (err) {
     logger.error({ err }, "Resend invitation failed");
     set.status = err.statusCode || 500;
     const message = err.statusCode ? err.message : "Internal Server Error";
-    return errorResponse(INV_CODE.RESEND_FAILED, message);
+    const response = errorResponse(INV_CODE.RESEND_FAILED, message);
+    return response;
   }
 }
 
@@ -133,12 +141,14 @@ export async function verifyInvitationController({ params, set }) {
     const invitation = await invitationsService.verifyInvitationToken(
       params.token,
     );
-    return successResponse(INV_CODE.VERIFY_SUCCESS, { invitation });
+    const response = successResponse(INV_CODE.VERIFY_SUCCESS, { invitation });
+    return response;
   } catch (err) {
     logger.error({ err }, "Verify invitation failed");
     set.status = err.statusCode || 500;
     const message = err.statusCode ? err.message : "Internal Server Error";
-    return errorResponse(INV_CODE.VERIFY_FAILED, message);
+    const response = errorResponse(INV_CODE.VERIFY_FAILED, message);
+    return response;
   }
 }
 
@@ -158,11 +168,13 @@ export async function acceptInvitationController({ body, set }) {
     });
 
     set.status = 201;
-    return successResponse(INV_CODE.ACCEPT_SUCCESS, result);
+    const response = successResponse(INV_CODE.ACCEPT_SUCCESS, result);
+    return response;
   } catch (err) {
     logger.error({ err }, "Accept invitation failed");
     set.status = err.statusCode || 500;
     const message = err.statusCode ? err.message : "Internal Server Error";
-    return errorResponse(INV_CODE.ACCEPT_FAILED, message);
+    const response = errorResponse(INV_CODE.ACCEPT_FAILED, message);
+    return response;
   }
 }
