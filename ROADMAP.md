@@ -12,7 +12,7 @@ Improvement recommendations for features, performance, and system architecture.
 | -------- | ----------------------------------- | ------------------------------------ |
 | ✅ Done  | Add unit tests for backend services | Catch bugs early, enable refactoring |
 | 🔴 High  | Add E2E tests with Playwright       | Ensure critical flows work           |
-| 🔴 High  | Add performance/load tests (k6)     | Validate API scalability             |
+| ✅ Done  | Add performance/load tests (k6)     | Validate API scalability             |
 | ✅ Done  | Setup ESLint + Prettier             | Consistent code style                |
 | ✅ Done  | Add Husky pre-commit hooks          | Prevent bad commits                  |
 
